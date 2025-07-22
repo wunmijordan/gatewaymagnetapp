@@ -1,0 +1,36 @@
+[
+{
+  "model": "auth.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$LJHAkjWBdNi6EPGedDLQS2$aN6ngEqRAhBZMsEGHxRHOu5l3M5rEgpQaW6u/EqlyH0=",
+    "last_login": "2025-07-22T03:49:01.020Z",
+    "is_superuser": true,
+    "username": "wunmijordan",
+    "first_name": "",
+    "last_name": "",
+    "email": "wunmijordan@gmail.com",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-07-22T02:57:22.423Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "sessions.session",
+  "pk": "5n0u5r4xmoc7slpd5r36r3ouxo6pk5ob",
+  "fields": {
+    "session_data": ".eJxVjMESgiAURf-FdTLwEJCW7fsGBnjPtEwc0WnR9O_pjIva3nPueTMf1qXza6HZ98jOTLLT7xZDetC4A7yH8ZZ5yuMy95HvCj9o4deMNFwO9y_QhdJtbyeEsBqcQwdAkMjVxjrphFISrCHU6JpEra6VkZCa1piAEYWSMgZt7BYdQln8i4aUn-SnPK3T1gUBuhK2AmCfL7ZeQS8:1ue3zy:0rEVDuoCG1DYU45fCEywoXqyI7pHzSKjziAReBWAoVE",
+    "expire_date": "2025-08-05T03:49:02.106Z"
+  }
+},
+{
+  "model": "accounts.profile",
+  "pk": 1,
+  "fields": {
+    "user": 1,
+    "image": ""
+  }
+}
+]
