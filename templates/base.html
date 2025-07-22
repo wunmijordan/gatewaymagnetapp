@@ -65,7 +65,7 @@
     </style>
     {% block extra_css %}{% endblock %}
   </head>
-  <body>
+  <body class="d-flex flex-column min-vh-100">
 
     
     <!-- Scrolling Banner -->
@@ -112,7 +112,7 @@
     </header>
 
     <!-- Page Content -->
-    <main class="page-wrapper">
+    <main class="page-wrapper flex-grow-1">
       <div class="page-body">
         {% block content %}{% endblock %}
       </div>
