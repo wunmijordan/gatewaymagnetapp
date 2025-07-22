@@ -82,9 +82,14 @@ WSGI_APPLICATION = 'gatewaymagnetapp.wsgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL')
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'gatewaymagnetapp_db',
+        'USER': 'gatewaymagnetapp_db_user',
+        'PASSWORD': 'eqB4l6oaSSg3k1TmaoivpLqGfjDxWOCy',
+        'HOST': 'dpg-d1vfedemcj7s73fb5ko0-a.oregon-postgres.render.com',
+        'PORT': '5432',
+    }
 }
 
 
