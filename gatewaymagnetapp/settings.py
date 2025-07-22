@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'gatewaymagnetapp.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg3',
         'NAME': 'gatewaymagnetapp_db',
         'USER': 'gatewaymagnetapp_db_user',
         'PASSWORD': 'eqB4l6oaSSg3k1TmaoivpLqGfjDxWOCy',
