@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="page page-center">
+  <div class="container-tight py-4">
+    <form method="post" enctype="multipart/form-data" class="card card-md bg-dark text-white border border-secondary">
+      {% csrf_token %}
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">Create New User</h2>
+
+        {% if form.errors %}
+          <div class="alert alert-danger">
+            Please fix the errors below.
+          </div>
+        {% endif %}
+
+        {% for field in form %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors.0 }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        <div class="form-footer">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="ti ti-user-plus me-1"></i> Create User
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

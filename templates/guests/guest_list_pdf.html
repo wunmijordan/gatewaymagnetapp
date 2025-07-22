@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Guest List PDF</title></head>
+<body>
+  <h2>All Guest Entries</h2>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr><th>Name</th><th>Phone</th><th>Email</th><th>Date of Visit</th></tr>
+    </thead>
+    <tbody>
+      {% for guest in guests %}
+        <tr>
+          <td>{{ guest.full_name }}</td>
+          <td>{{ guest.phone_number }}</td>
+          <td>{{ guest.email }}</td>
+          <td>{{ guest.date_of_visit }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

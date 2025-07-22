@@ -1,0 +1,60 @@
+<form method="post" id="followupReportForm" data-guest-id="{{ guest.id }}">
+  {% csrf_token %}  
+  
+  <div class="modal-header">
+    <h2 class="modal-title text-center"> {{ guest.full_name }}</h2>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+
+  <form id="followupReportForm">
+    <div class="modal-body">
+      {% csrf_token %}
+      <div class="mb-3">
+        {{ form.report_date.label_tag }} {{ form.report_date }}
+      </div>
+      <div class="mb-3">
+        {{ form.notes.label_tag }} {{ form.notes }}
+      </div>
+      <div class="form-check mb-2">
+        {{ form.attended_sunday }} {{ form.attended_sunday.label_tag }}
+      </div>
+      <div class="form-check mb-2">
+        {{ form.attended_midweek }} {{ form.attended_midweek.label_tag }}
+      </div>
+
+      <!-- Hidden Past Reports Panel -->
+      {% if past_reports %}
+      <div class="collapse mt-3" id="pastReportsCollapse">
+        <div class="card card-body">
+          <h6>Past Reports ({{ past_reports.count }})</h6>
+          <ul class="list-group list-group-flush">
+            {% for report in past_reports %}
+            <li class="list-group-item">
+              <strong>{{ report.report_date|date:"Y-m-d" }}</strong>: {{ report.notes|truncatewords:10 }}<br>
+              <small>
+                Sunday: {{ report.attended_sunday|yesno:"✅,❌" }} |
+                Midweek: {{ report.attended_midweek|yesno:"✅,❌" }}
+              </small>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="modal-footer d-flex justify-content-between">
+      <div>
+        {% if past_reports %}
+        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#pastReportsCollapse" aria-expanded="false" aria-controls="pastReportsCollapse">
+          <i class="ti ti-history"></i> View Past Reports ({{ past_reports.count }})
+        </button>
+        {% endif %}
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary">Submit Report</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </form>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Follow-up Report PDF</title></head>
+<body>
+  <h2>Follow-up Reports for {{ guest.full_name }}</h2>
+  <ul>
+    {% for report in reports %}
+      <li>
+        <strong>{{ report.report_date }}</strong> — {{ report.outcome }}<br>
+        <small>{{ report.notes }}</small>
+      </li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

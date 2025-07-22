@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% load guest_extras %}
+{% block title %}Dashboard - Gateway Magnet{% endblock %}
+
+{% block content %}
+
+
+
+
+<div class="container-fluid px-md-5 px-3 mt-3">
+
+
+  <!-- Sticky Navbar for Filters and Tools -->
+  <div class="sticky-filter-block bg-dark text-light py-2 px-3 shadow-sm mb-4 rounded">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+      <!-- Left Side: Dashboard Button -->
+      <a href="{% url 'dashboard' %}" class="btn bg-dark shadow-lg d-flex flex-wrap gap-2 align-items-center justify-content-end">
+        <i class="bi bi-house-door-fill"></i> Dashboard
+      </a>
+
+      <!-- Right Side: Filters, Search, Reset -->
+      <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+
+        {% if is_admin_group or request.user.is_superuser %}
+        <!-- User Filter -->
+        <form method="get" onchange="this.submit()">
+          <input type="hidden" name="service" value="{{ request.GET.service }}">
+          <input type="hidden" name="q" value="{{ request.GET.q }}">
+          <select name="user" class="form-select d-flex flex-wrap gap-2 align-items-center justify-content-end" style="width: 160px;">
+            <option value="">All Users</option>
+            {% for user in users %}
+              <option value="{{ user.id }}" {% if user.id|stringformat:"s" == request.GET.user %}selected{% endif %}>
+                {{ user.get_full_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </form>
+        {% endif %}
+
+        <!-- Service Filter -->
+        <form method="get" onchange="this.submit()">
+          <input type="hidden" name="user" value="{{ request.GET.user }}">
+          <input type="hidden" name="q" value="{{ request.GET.q }}">
+          <select name="service" class="form-select d-flex flex-wrap gap-2 align-items-center justify-content-end style="width: 180px;">
+            <option value="">All Services</option>
+            <!--
+            <option {% if request.GET.service == "Black Ball" %}selected{% endif %}>Black Ball</option>
+            <option {% if request.GET.service == "Breakthrough Campaign" %}selected{% endif %}>Breakthrough Campaign</option>
+            <option {% if request.GET.service == "Breakthrough Festival" %}selected{% endif %}>Breakthrough Festival</option>
+            <option {% if request.GET.service == "Code Red. Revival" %}selected{% endif %}>Code Red. Revival</option>
+            <option {% if request.GET.service == "Cross Over" %}selected{% endif %}>Cross Over</option>
+            <option {% if request.GET.service == "Deep Dive" %}selected{% endif %}>Deep Dive</option>
+            <option {% if request.GET.service == "Family Hangout" %}selected{% endif %}>Family Hangout</option>
+            <option {% if request.GET.service == "Forecasting" %}selected{% endif %}>Forecasting</option>
+            <option {% if request.GET.service == "Life Masterclass" %}selected{% endif %}>Life Masterclass</option>
+            <option {% if request.GET.service == "Love Lounge" %}selected{% endif %}>Love Lounge</option>
+            <option {% if request.GET.service == "Midweek Recharge" %}selected{% endif %}>Midweek Recharge</option>
+            <option {% if request.GET.service == "Outreach" %}selected{% endif %}>Outreach</option>
+            <option {% if request.GET.service == "Quantum Leap" %}selected{% endif %}>Quantum Leap</option>
+            <option {% if request.GET.service == "Recalibrate Marathon" %}selected{% endif %}>Recalibrate Marathon</option>
+            <option {% if request.GET.service == "Singles Connect" %}selected{% endif %}>Singles Connect</option>
+            <option {% if request.GET.service == "Supernatural Encounter" %}selected{% endif %}>Supernatural Encounter</option>
+            -->
+            {% for service in services %}
+              <option value="{{ service }}" {% if request.GET.service == service %}selected{% endif %}>{{ service }}</option>
+            {% endfor %}
+          </select>
+        </form>
+
+        <!-- Add this to your existing filters -->
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-center justify-content-end">
+          <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            <option value="Planted" {% if request.GET.status == 'Planted' %}selected{% endif %}>Planted</option>
+            <option value="Planted Elsewhere" {% if request.GET.status == 'Planted Elsewhere' %}selected{% endif %}>Planted Elsewhere</option>
+            <option value="Relocated" {% if request.GET.status == 'Relocated' %}selected{% endif %}>Relocated</option>
+            <option value="Work in Progress" {% if request.GET.status == 'Work in Progress' %}selected{% endif %}>Work in Progress</option>
+          </select>
+        </form>
+
+
+        <!-- Search Form -->
+        <form method="get" class="d-flex" style="gap: 6px;">
+          <input type="hidden" name="user" value="{{ request.GET.user }}">
+          <input type="hidden" name="service" value="{{ request.GET.service }}">
+          <input type="search" name="q" class="form-control d-flex flex-wrap gap-2 align-items-center justify-content-end" style="width: 160px;" placeholder="Search guests..." value="{{ request.GET.q }}">
+          <button type="submit" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 align-items-center justify-content-end"><i class="bi bi-search"></i></button>
+        </form>
+
+        <!-- Reset Button -->
+        <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center">
+          <i class="bi bi-x-circle me-1"></i> Reset
+        </a>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+
+  <!-- Welcome Section with Performance Message and Action Buttons -->
+  <div class="row align-items-center mb-4">
+    <!-- Performance Message and Badge -->
+    <div class="col text-light">
+      <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-3">
+        <div class="flex-grow-1">
+          <h2 class="mb-1 fw-bold text-wrap" style="word-break: break-word;">
+            {{ badge.message }}
+            <i class="{{ badge.bootstrap_icon }} {{ badge.class }} ms-2 text-warning"></i>
+          </h2>
+          <span class="badge {{ badge.class }}">
+            <i class="bi bi-alarm-fill me-1 fs-2"></i>
+            You have {{ entry_count }} entry{% if entry_count != 1 %}(s){% endif %} so far
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="col-auto d-flex gap-2">
+      <a href="{% url 'guest_entry' %}" class="btn btn-success d-flex align-items-center">
+        <i class="bi bi-person-plus-fill me-1"></i> Add Guest
+      </a>
+      {% if is_admin_group or request.user.is_superuser %}
+      <a href="{% url 'create_user' %}" class="btn btn-secondary d-flex align-items-center">
+        <i class="bi-person-badge-fill"></i> Add User
+      </a>
+      {% endif %}
+      <div class="dropdown ms-auto">
+        <button class="btn btn-primary dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+          <i class="bi bi-share me-1"></i> Export / Import
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 260px;">
+          <!-- Export as CSV -->
+          <a class="dropdown-item d-flex align-items-center" href="{% url 'export_csv' %}?{{ request.GET.urlencode }}">
+            <i class="bi bi-filetype-csv me-2"></i> Export as CSV
+          </a>
+
+          <!-- Export as Excel -->
+          <a class="dropdown-item d-flex align-items-center" href="{% url 'export_excel' %}?{{ request.GET.urlencode }}">
+            <i class="bi bi-file-earmark-excel me-2 text-success"></i> Export as Excel
+          </a>
+
+          <hr class="dropdown-divider">
+
+          <!-- Import from Excel -->
+          <form method="post" action="{% url 'import_excel' %}" enctype="multipart/form-data" class="dropdown-item p-0">
+            {% csrf_token %}
+            <label class="form-label small text-muted ms-3 mt-2 mb-1">Import Excel</label>
+            <div class="px-3">
+              <input type="file" name="excel_file" class="form-control form-control-sm mb-2" accept=".xlsx,.xls">
+              <button type="submit" class="btn btn-sm btn-outline-success w-100">
+                <i class="bi bi-upload me-1"></i> Upload Excel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+
+
+
+
+  <!-- Guest Cards -->
+  <div class="row">
+    {% for guest in page_obj %}
+    <div class="col-md-6 col-lg-4 mb-4 d-flex">
+      <div class="card position-relative overflow-visible bg-dark border-0 shadow-lg text-light w-100 h-100 d-flex flex-column"
+          style="min-height: 270px; max-width: 100%; overflow: hidden; word-break: break-word; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
+        
+        <div class="card-body p-3 d-flex gap-3 flex-grow-1">
+          <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{{ MEDIA_URL }}guest_pictures/default_guest.jpg{% endif %}"
+              class="rounded shadow-sm border-0 flex-shrink-0"
+              style="width: 100px; height: 100px; object-fit: cover;"
+              alt="{{ guest.full_name }}"
+              data-bs-toggle="modal"
+              data-bs-target="#previewModal{{ guest.id }}">
+
+          <div class="d-flex flex-column flex-grow-1" style="min-width: 0;">
+            <h2 class="card-title mb-1 text-white fs-2 fw-bold" title="{{ guest.title }} {{ guest.full_name }}">
+              {{ guest.title }} {{ guest.full_name }}
+            </h2>
+
+            <div class="text-muted small mb-2" title="{{ guest.phone_number }}">
+              <strong>Phone No.:</strong>
+              <a href="tel:{{ guest.phone_number }}" class="text-info text-decoration-none">{{ guest.phone_number }}</a>
+            </div>
+
+            <div class="text-muted small mb-2" style="word-break: break-word;" title="{{ guest.service_attended }}">
+              <strong>Service Attended:</strong> {{ guest.service_attended }}
+            </div>
+
+            <div class="dropdown dropup mb-2 mt-auto">
+              <a href="#" class="dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}" data-bs-toggle="dropdown" aria-expanded="false">
+                {{ guest.status }}
+                {% if guest.status == "Planted" %}
+                  <i class="bi bi-star-fill ms-1"></i>
+                {% elif guest.status == "Work in Progress" %}
+                  <i class="bi bi-arrow-repeat ms-1"></i>
+                {% elif guest.status == "Planted Elsewhere" %}
+                  <i class="bi bi-x-octagon-fill ms-1"></i>
+                {% else %}
+                  <i class="bi bi-question-circle-fill ms-1"></i>
+                {% endif %}
+              </a>
+              <div class="dropdown-menu">
+                {% for key, label in guest.STATUS_CHOICES %}
+                <a class="dropdown-item text-white" href="{% url 'update_status' guest.id key %}">
+                  {{ label }}
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+
+            {% if is_admin_group %}
+            <div class="text-muted small"><strong>Created by:</strong> {{ guest.created_by.get_full_name }}</div>
+            {% endif %}
+
+            <div class="mt-2">
+              <a href="{% url 'edit_guest' guest.id %}" class="btn btn-sm btn-warning">
+                <i class="ti ti-edit"></i> Edit
+              </a>
+              <!-- Follow-Up Report Icon/Button -->
+              <button 
+                class="btn btn-sm btn-outline-info"
+                data-bs-toggle="modal"
+                data-bs-target="#followupModal"
+                data-guest-id="{{ guest.id }}"
+                title="Add Follow-Up Report"
+              >
+                <i class="bi bi-info fs-4"></i> Report {{ guest.report_count }}
+              </button>
+              <!-- Report Count and Last Reported -->
+              <div class="text-sm mt-2">
+                <strong>Last Reported:</strong>
+                {% if guest.last_reported %}
+                  {{ guest.last_reported|date:"M d, Y" }}
+                {% else %}
+                  Never
+                {% endif %}
+              </div>
+
+            </div>
+            
+            <!--
+            <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
+              <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                  <div class="toast-body">
+                    Report submitted successfully!
+                  </div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+              </div>
+            </div>
+            -->
+
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col text-center text-muted">No guest entries found.</div>
+    {% endfor %}
+  </div>
+
+  {% for guest in page_obj %}
+  <div class="modal fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark border-light text-white">
+        <div class="modal-body text-center">
+          <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{{ MEDIA_URL }}guest_pictures/default_guest.jpg{% endif %}"
+              class="img-fluid rounded shadow">
+          <p class="mt-3 mb-0 fw-bold">{{ guest.full_name }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+
+  <div class="mt-4 d-flex justify-content-center">
+    <nav>
+      <ul class="pagination">
+        {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Previous</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Previous</span></li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Next</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Next</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+
+
+
+</div>
+{% endblock %}
+
+
+
+
+
+    

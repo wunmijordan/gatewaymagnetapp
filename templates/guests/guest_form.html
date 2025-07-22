@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load form_tags %}
+
+{% get_media_prefix as MEDIA_URL %}
+
+{% block content %}
+
+<div class="page-header d-print-none mb-3">
+  <div class="container-xl">
+    <div class="row g-2 align-items-center">
+      <div class="col">
+        <h2 class="page-title text-white">
+          {% if guest %}Edit Guest{% else %}Add Guest{% endif %}
+        </h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-xl">
+  <div class="card bg-dark text-white border-0 shadow-sm">
+    <div class="card-body">
+
+      <!-- Guest Image Preview -->
+      <div class="mb-4 text-center">
+        <span class="avatar avatar-xl rounded" style="width: 100px; height: 100px;">
+          <img id="preview-img" 
+               src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'default_guest.jpg' %}{% endif %}" 
+               alt="Guest Picture" 
+               class="rounded border border-secondary shadow-sm"
+               style="object-fit: cover; width: 100px; height: 100px;">
+        </span>
+      </div>
+
+      <!-- Guest Form Start -->
+      <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+
+        <div class="row g-3">
+
+          {% for field in form.visible_fields %}
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="{{ field.id_for_label }}" class="form-label text-white">{{ field.label }}</label>
+
+                <div class="input-group input-group-flat">
+                  {% if field.name == 'picture' %}
+                    <span class="input-group-text bg-dark border-secondary text-white">
+                      <i class="ti ti-camera"></i>
+                    </span>
+                    <input type="file" 
+                           name="picture" 
+                           id="{{ field.id_for_label }}" 
+                           accept="image/*" 
+                           class="form-control bg-dark text-white border-secondary"
+                           onchange="previewImage(this)">
+                  {% elif field.name == 'full_name' %}
+                    <span class="input-group-text bg-dark border-secondary text-white"><i class="ti ti-user"></i></span>
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% elif field.name == 'phone_number' %}
+                    <span class="input-group-text bg-dark border-secondary text-white"><i class="ti ti-phone"></i></span>
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% elif field.name == 'email' %}
+                    <span class="input-group-text bg-dark border-secondary text-white"><i class="ti ti-mail"></i></span>
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% elif field.name == 'date_of_birth' or field.name == 'date_of_visit' %}
+                    <span class="input-group-text bg-dark border-secondary text-white"><i class="ti ti-calendar"></i></span>
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% elif field.name == 'occupation' %}
+                    <span class="input-group-text bg-dark border-secondary text-white"><i class="ti ti-briefcase"></i></span>
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% else %}
+                    {{ field|add_class:"form-control bg-dark text-white border-secondary" }}
+                  {% endif %}
+                </div>
+
+                {% if field.help_text %}
+                  <small class="form-hint text-muted">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                  <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+
+          {% if guest and guest.picture %}
+          <div class="col-md-6">
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" name="clear_picture" id="clear-picture-checkbox">
+              <label class="form-check-label text-white" for="clear-picture-checkbox">
+                Clear Current Picture
+              </label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Buttons -->
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" name="save_return" class="btn btn-primary">
+            <i class="ti ti-device-floppy"></i> Save
+          </button>
+          <button type="submit" name="save_add_another" class="btn btn-outline-primary">
+            <i class="ti ti-plus"></i> Save & Add New Guest
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Script -->
+<script>
+  function previewImage(input) {
+    const preview = document.getElementById('preview-img');
+    const file = input.files[0];
+    if (file && preview) {
+      preview.src = URL.createObjectURL(file);
+    }
+  }
+</script>
+
+<!-- Flatpickr: Day + Month Picker Only -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!--
+<script>
+  flatpickr("input[name='date_of_birth']", {
+    dateFormat: "F j",
+    allowInput: true,
+    defaultDate: "January 1"
+  });
+</script>
+-->
+
+{% endblock %}
