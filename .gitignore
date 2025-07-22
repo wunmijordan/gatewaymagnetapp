@@ -245,7 +245,7 @@ media/
 staticfiles/
 
 # If you run collectstatic locally
-static/
+#static/
 
 # PyInstaller
 *.manifest
