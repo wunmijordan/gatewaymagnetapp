@@ -102,7 +102,7 @@
             {% endif %}
           </div>
 
-          {% if guest and (request.user.is_superuser or request.user.groups.filter(name='admin').exists) %}
+          {% if guest and (request.user.is_superuser or is_admin_group) %}
             <div class="mb-3">
               <label for="id_reassign_user" class="form-label text-white">Reassign Guest To</label>
               <select name="reassign_user" id="id_reassign_user" class="form-select bg-dark text-white border-secondary">
