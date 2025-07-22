@@ -224,6 +224,27 @@
             <div class="text-muted small"><strong>Created by:</strong> {{ guest.created_by.get_full_name }}</div>
             {% endif %}
 
+            {% if is_admin_group or request.user.is_superuser %}
+              <form method="post" action="{% url 'reassign_guest' guest.id %}" class="reassign-form" data-guest-id="{{ guest.id }}">
+                {% csrf_token %}
+                <label for="reassign-user-{{ guest.id }}" class="form-label small text-white">Reassign to:</label>
+                <select 
+                  name="reassign_user" 
+                  id="reassign-user-{{ guest.id }}" 
+                  class="form-select form-select-sm"
+                  onchange="this.form.submit()"
+                  >
+                  <option value="">-- Select User --</option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}" {% if user.id == guest.created_by.id %}selected{% endif %}>
+                      {{ user.get_full_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% endif %}
+
+
             <div class="mt-2">
               <a href="{% url 'edit_guest' guest.id %}" class="btn btn-sm btn-warning">
                 <i class="ti ti-edit"></i> Edit

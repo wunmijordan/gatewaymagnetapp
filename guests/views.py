@@ -176,12 +176,21 @@ def dashboard_view(request):
 @login_required
 def guest_entry_view(request, pk=None):
     """
-    Handles guest entry create/edit.
+    Handles guest entry create/edit, including reassignment for allowed users.
     """
     guest = get_object_or_404(GuestEntry, pk=pk) if pk else None
 
+    # Permission check: Only staff or creator can edit
     if guest and not (request.user.is_staff or guest.created_by == request.user):
         return redirect('dashboard')  # Permission denied
+
+    # For the reassignment dropdown, prepare the users queryset (for allowed users)
+    can_reassign = request.user.is_superuser or request.user.groups.filter(name='admin').exists()
+    all_users = None
+    if can_reassign:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        all_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
 
     if request.method == 'POST':
         form = GuestEntryForm(request.POST, request.FILES, instance=guest)
@@ -189,12 +198,25 @@ def guest_entry_view(request, pk=None):
             entry = form.save(commit=False)
 
             if not guest:
+                # New guest created by current user
                 entry.created_by = request.user
 
-            # Clear picture if user requested
+            # Clear picture if requested
             if 'clear_picture' in request.POST and guest and guest.picture:
                 guest.picture.delete(save=False)
                 entry.picture = None
+
+            # Handle reassignment if allowed and value provided
+            if can_reassign and 'reassign_user' in request.POST:
+                try:
+                    reassign_user_id = int(request.POST['reassign_user'])
+                    if guest:
+                        # Reassign only if different user chosen
+                        if guest.created_by_id != reassign_user_id:
+                            entry.created_by_id = reassign_user_id
+                except (ValueError, TypeError):
+                    # Invalid user id, ignore
+                    pass
 
             entry.save()
 
@@ -208,8 +230,10 @@ def guest_entry_view(request, pk=None):
 
     return render(request, 'guests/guest_form.html', {
         'form': form,
-        'guest': guest
+        'guest': guest,
+        'all_users': all_users,  # for reassignment dropdown
     })
+
 
 
 @require_POST
@@ -230,6 +254,28 @@ def update_guest_status(request, pk):
         guest.save()
 
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+
+@login_required
+def reassign_guest_view(request, pk):
+    guest = get_object_or_404(GuestEntry, pk=pk)
+
+    # Only superuser or admin group allowed
+    if not (request.user.is_superuser or request.user.groups.filter(name='admin').exists()):
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        new_user_id = request.POST.get('reassign_user')
+        User = get_user_model()
+        try:
+            new_user = User.objects.get(pk=new_user_id)
+            guest.created_by = new_user
+            guest.save()
+        except (User.DoesNotExist, ValueError, TypeError):
+            # Optionally handle invalid user id
+            pass
+
+    return redirect('dashboard')
 
 
 
