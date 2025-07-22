@@ -27,7 +27,10 @@ SECRET_KEY = os.getenv('django-insecure-1n1m_s7e7q-$om0+^ugi&343ncbben4nz$bmk+ng
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = [
+    'gatewaymagnetapp.onrender.com',  # use your actual Render URL
+    os.getenv('RENDER_EXTERNAL_HOSTNAME'),  # optional for dynamic setup
+]
 
 
 # Application definition
