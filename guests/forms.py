@@ -17,7 +17,7 @@ class GuestEntryForm(forms.ModelForm):
 
     class Meta:
         model = GuestEntry
-        exclude = ['created_by', 'status']
+        exclude = ['created_by', 'assigned_to', 'status']
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -117,3 +117,5 @@ class FollowUpReportForm(forms.ModelForm):
             'attended_Sunday': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'attended_Midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
+
+

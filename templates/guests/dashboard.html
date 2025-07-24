@@ -7,17 +7,27 @@
 
 
 
+
 <div class="container-fluid px-md-5 px-3 mt-3">
 
 
   <!-- Sticky Navbar for Filters and Tools -->
-  <div class="sticky-filter-block bg-dark text-light py-2 px-3 shadow-sm mb-4 rounded">
+  <div class="sticky-filter-block bg-dark text-light py-1 px-3 shadow-sm mb-4 rounded">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
 
       <!-- Left Side: Dashboard Button -->
       <a href="{% url 'dashboard' %}" class="btn bg-dark shadow-lg d-flex flex-wrap gap-2 align-items-center justify-content-end">
         <i class="bi bi-house-door-fill"></i> Dashboard
       </a>
+
+      <!-- Toggler Button for Mobile -->
+      <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#filterNavbar" aria-controls="filterNavbar" aria-expanded="false" aria-label="Toggle filters">
+        <i class="bi bi-funnel-fill fs-5"></i>
+      </button>
+    </div>
+
+    <!-- Collapsible Filter Block -->
+    <div class="collapse mt-3" id="filterNavbar">
 
       <!-- Right Side: Filters, Search, Reset -->
       <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
@@ -132,9 +142,19 @@
       {% endif %}
       <div class="dropdown ms-auto">
         <button class="btn btn-primary dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
-          <i class="bi bi-share me-1"></i> Export / Import
+          <i class="bi bi-share me-1"></i> Import/Export
         </button>
         <div class="dropdown-menu dropdown-menu-end p-2" style="min-width: 260px;">
+          <!-- Download CSV Template -->
+          <a href="{% url 'download_csv_template' %}" class="btn btn-outline-primary">
+              <i class="ti ti-download"></i> Download CSV Template
+          </a>
+
+          <!-- Trigger Button -->
+          <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#importCSVModal">
+            <i class="bi bi-upload"></i> Import CSV
+          </button>
+
           <!-- Export as CSV -->
           <a class="dropdown-item d-flex align-items-center" href="{% url 'export_csv' %}?{{ request.GET.urlencode }}">
             <i class="bi bi-filetype-csv me-2"></i> Export as CSV
@@ -172,10 +192,10 @@
   <!-- Guest Cards -->
   <div class="row">
     {% for guest in page_obj %}
-    <div class="col-md-6 col-lg-4 mb-4 d-flex">
+    <div class="col-12 col-sm-6 col-md-4 col-lg-4 mb-4 d-flex">
       <div class="card position-relative overflow-visible bg-dark border-0 shadow-lg text-light w-100 h-100 d-flex flex-column"
           style="min-height: 270px; max-width: 100%; overflow: hidden; word-break: break-word; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
-        
+
         <div class="card-body p-3 d-flex gap-3 flex-grow-1">
           <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{{ MEDIA_URL }}guest_pictures/default_guest.jpg{% endif %}"
               class="rounded shadow-sm border-0 flex-shrink-0"
@@ -189,15 +209,15 @@
               {{ guest.title }} {{ guest.full_name }}
             </h2>
 
-            <div class="text-muted small mb-2" title="{{ guest.phone_number }}">
-              <strong>Phone No.:</strong>
+            <div class="text fs-3 small mb-2" title="{{ guest.phone_number }}">
               <a href="tel:{{ guest.phone_number }}" class="text-info text-decoration-none">{{ guest.phone_number }}</a>
             </div>
 
-            <div class="text-muted small mb-2" style="word-break: break-word;" title="{{ guest.service_attended }}">
+            <div class="text fs-4 small mb-2" style="word-break: break-word;" title="{{ guest.service_attended }}">
               <strong>Service Attended:</strong> {{ guest.service_attended }}
             </div>
 
+            <!-- Status Dropdown -->
             <div class="dropdown dropup mb-2 mt-auto">
               <a href="#" class="dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}" data-bs-toggle="dropdown" aria-expanded="false">
                 {{ guest.status }}
@@ -220,35 +240,50 @@
               </div>
             </div>
 
-            {% if is_admin_group %}
-            <div class="text-muted small"><strong>Created by:</strong> {{ guest.created_by.get_full_name }}</div>
+            <!-- Assignment / Creator Badges -->
+            {% if is_staff_group or request.user.is_superuser %}
+              {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
+                <span class="badge bg-grey text-warning">
+                  Assigned to: {{ guest.assigned_to.get_full_name|default:guest.assigned_to.username }}
+                </span>
+                <span class="badge bg-grey text-success">
+                  Created by: {{ guest.created_by.get_full_name|default:guest.created_by.username }}
+                </span>
+              {% else %}
+                <span class="badge bg-grey text-success">
+                  Created by: {{ guest.created_by.get_full_name|default:guest.created_by.username }}
+                </span>
+              {% endif %}
+            {% else %}
+              {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
+                <span class="badge bg-grey text-danger">
+                  Assigned to you
+                </span>
+              {% endif %}
             {% endif %}
 
-            {% if is_admin_group or request.user.is_superuser %}
-              <form method="post" action="{% url 'reassign_guest' guest.id %}" class="reassign-form" data-guest-id="{{ guest.id }}">
+            {% if is_staff_group or request.user.is_superuser %}
+              <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
                 {% csrf_token %}
-                <label for="reassign-user-{{ guest.id }}" class="form-label small text-white">Reassign to:</label>
-                <select 
-                  name="reassign_user" 
-                  id="reassign-user-{{ guest.id }}" 
-                  class="form-select form-select-sm"
-                  onchange="this.form.submit()"
-                  >
-                  <option value="">-- Select User --</option>
-                  {% for user in users %}
-                    <option value="{{ user.id }}" {% if user.id == guest.created_by.id %}selected{% endif %}>
-                      {{ user.get_full_name }}
+                <select name="assigned_to" class="form-select form-select-sm">
+                  <option value="">-- Assign to user --</option>
+                  {% for u in users %}
+                    <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
+                      {{ u.get_full_name|default:u.username }}
                     </option>
                   {% endfor %}
                 </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Reassign</button>
               </form>
             {% endif %}
 
 
+            <!-- Actions -->
             <div class="mt-2">
               <a href="{% url 'edit_guest' guest.id %}" class="btn btn-sm btn-warning">
                 <i class="ti ti-edit"></i> Edit
               </a>
+
               <!-- Follow-Up Report Icon/Button -->
               <button 
                 class="btn btn-sm btn-outline-info"
@@ -259,7 +294,8 @@
               >
                 <i class="bi bi-info fs-4"></i> Report {{ guest.report_count }}
               </button>
-              <!-- Report Count and Last Reported -->
+
+              <!-- Last Reported -->
               <div class="text-sm mt-2">
                 <strong>Last Reported:</strong>
                 {% if guest.last_reported %}
@@ -268,30 +304,54 @@
                   Never
                 {% endif %}
               </div>
-
             </div>
-            
-            <!--
-            <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer">
-              <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                  <div class="toast-body">
-                    Report submitted successfully!
-                  </div>
-                  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-              </div>
-            </div>
-            -->
-
           </div>
         </div>
       </div>
     </div>
     {% empty %}
-    <div class="col text-center text-muted">No guest entries found.</div>
+      <div class="col text-center text-muted">No guest entries found.</div>
     {% endfor %}
   </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center flex-wrap">
+
+      <!-- Previous Page -->
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">&laquo;</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+      {% endif %}
+
+      <!-- Page Numbers with Ellipses -->
+      {% for i in page_obj.paginator.page_range %}
+        {% if i == 1 or i == page_obj.paginator.num_pages or i >= page_obj.number|add:'-1' and i <= page_obj.number|add:'1' %}
+          {% if i == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+          {% endif %}
+        {% elif i == page_obj.number|add:'-2' or i == page_obj.number|add:'2' %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Next Page -->
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">&raquo;</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+      {% endif %}
+
+    </ul>
+  </nav>
+  {% endif %}
 
   {% for guest in page_obj %}
   <div class="modal fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
@@ -308,37 +368,8 @@
   {% endfor %}
 
 
-  <div class="mt-4 d-flex justify-content-center">
-    <nav>
-      <ul class="pagination">
-        {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Previous</a>
-          </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Previous</span></li>
-        {% endif %}
+  
 
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% else %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
-            </li>
-          {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-          <li class="page-item">
-            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Next</a>
-          </li>
-        {% else %}
-          <li class="page-item disabled"><span class="page-link">Next</span></li>
-        {% endif %}
-      </ul>
-    </nav>
-  </div>
 
 
 

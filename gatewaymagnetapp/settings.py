@@ -25,11 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('django-insecure-1n1m_s7e7q-$om0+^ugi&343ncbben4nz$bmk+nghcf@@vfnef', 'goodnewsonlygoodnewsalways')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'gatewaymagnetapp.onrender.com',  # use your actual Render URL
     os.getenv('RENDER_EXTERNAL_HOSTNAME'),  # optional for dynamic setup
+    #'127.0.0.1',
 ]
 
 
@@ -155,3 +156,7 @@ LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = False
+

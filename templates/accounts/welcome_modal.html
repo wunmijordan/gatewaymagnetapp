@@ -5,12 +5,17 @@
 <div class="modal fade show d-block" id="dailyWelcomeModal" tabindex="-1" aria-hidden="false" style="background-color: rgba(0,0,0,0.8);">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title">Hello, {{ request.user.get_full_name }}!</h5>
+      <div class="modal-header bg-dark text-success">
+        <h1 class="modal-title text-center">Hello, {{ request.user.get_full_name }}!</h1>
       </div>
       <div class="modal-body">
-        <p>Today is <strong>{{ day_name }}</strong> and the time is <strong>{{ time_str }}</strong>.</p>
-        <p>Welcome back to doing the LORD'S Work! <br>Are you here to check on a Kingdom Recruit or to enlist another?<br></p>
+        <div>
+          <p><strong>{{ day_name }} {{ time_str }}</strong></p>
+          <p>Welcome back to doing the LORD'S Work! <br>Are you here to check on a Kingdom Recruit or to enlist another?<br></p>
+          <p class="text-warning mt-3 mb-0"><em><q> {{ quote }} </q></em></p>
+        </div>
+      </div>
+      <div class='modal-footer'>    
         <div class="d-flex justify-content-end gap-2 mt-4">
           <a href="{% url 'dashboard' %}" class="btn btn-dark">Proceed to Dashboard</a>
           <a href="{% url 'guest_entry' %}" class="btn btn-primary">Add New Guest</a>

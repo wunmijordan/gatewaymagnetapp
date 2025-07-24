@@ -7,31 +7,45 @@ from datetime import datetime
 import pytz
 from django.utils.timezone import localtime, now
 
-def post_login_redirect(request):
-    """
-    View shown right after login, checks if the user has seen the welcome popup today.
-    """
 
+DAY_QUOTES = {
+    'Monday': "Start strong — the harvest is plenty!",
+    'Tuesday': "God doesn't call the qualified — He qualifies the called.",
+    'Wednesday': "It's the hump of the week. You're not alone in this mission.", 
+    'Thursday': "It's Midweek Recharge: Reload your Artillery.",
+    'Friday': "The weekend is here — prepare for His people.",
+    'Saturday': "Pray. Plan. Prepare for the Sunday harvest.",
+    'Sunday': "Today is the Lord’s day — Souls are waiting!",
+}
+
+
+
+from django.utils.timezone import localtime, now
+import pytz
+
+def post_login_redirect(request):
     tz = pytz.timezone('Africa/Lagos')
     now_in_wat = localtime(now(), timezone=tz)
     today_str = now_in_wat.strftime('%Y-%m-%d')
+    day_name = now_in_wat.strftime('%A')
+    time_str = now_in_wat.strftime('%I:%M %p')
+
     seen_today = request.session.get('welcome_shown') == today_str
 
     if not seen_today:
-        # Set session flag to prevent repeat today
         request.session['welcome_shown'] = today_str
+        request.session.modified = True  # ✅ Tell Django the session has changed
 
-        # Get day name and current time
-        day_name = now_in_wat.strftime('%A')
-        time_str = now_in_wat.strftime('%I:%M %p')  # e.g., "03:25 PM WAT"
+        quote = DAY_QUOTES.get(day_name, "Stay faithful — your work in the Kingdom is never in vain.")
 
         return render(request, 'accounts/welcome_modal.html', {
             'day_name': day_name,
             'time_str': time_str,
+            'quote': quote,
         })
 
-    # If already seen, go straight to dashboard
     return redirect('dashboard')
+
 
 
 

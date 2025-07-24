@@ -2,6 +2,8 @@
 
 from django.urls import path
 from . import views
+from .views import import_guests_csv
+from .views import download_csv_template
 
 urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
@@ -9,8 +11,10 @@ urlpatterns = [
     path('entry/<int:pk>/', views.guest_entry_view, name='edit_guest'),
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),
     path('export-csv/', views.export_csv, name='export_csv'),
+    path("guests/import/", import_guests_csv, name="import_guests_csv"),
+    path("guests/download-template/", download_csv_template, name="download_csv_template"),
     path('guest/<int:guest_id>/status/<str:status_key>/', views.update_status_view, name='update_status'),
-    path('guest/<int:pk>/reassign/', views.reassign_guest_view, name='reassign_guest'),
+    path('guests/<int:guest_id>/reassign/', views.reassign_guest, name='reassign_guest'),
     path('export/excel/', views.export_guests_excel, name='export_excel'),
     path('import/excel/', views.import_guests_excel, name='import_excel'),
     path('followup/<int:guest_id>/form/', views.get_followup_form, name='get_followup_form'),

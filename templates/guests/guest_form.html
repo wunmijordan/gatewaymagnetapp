@@ -102,17 +102,7 @@
             {% endif %}
           </div>
 
-          {% if guest and (is_admin_group) %}
-            <div class="mb-3">
-              <label for="id_reassign_user" class="form-label text-white">Reassign Guest To</label>
-              <select name="reassign_user" id="id_reassign_user" class="form-select bg-dark text-white border-secondary">
-                {% for user in all_users %}
-                  <option value="{{ user.id }}" {% if guest.created_by == user %}selected{% endif %}>{{ user.get_full_name }}</option>
-                {% endfor %}
-              </select>
-              <small class="form-text text-muted">Only superusers and admin group can reassign guests.</small>
-            </div>
-          {% endif %}
+          
 
 
           <!-- Buttons -->
@@ -123,6 +113,13 @@
             <button type="submit" name="save_add_another" class="btn btn-outline-primary">
               <i class="ti ti-plus"></i> Save & Add New Guest
             </button>
+            {% if show_delete %}
+              <form method="post" onsubmit="return confirm('Are you sure you want to delete this guest?');" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" name="delete_guest" class="btn btn-danger">Delete Guest</button>
+              </form>
+            {% endif %}
+
           </div>
         </form>
 

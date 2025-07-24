@@ -1,8 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class GuestEntry(models.Model):
+
     TITLE_CHOICES = [
         ('Chief', 'Chief'),
         ('Dr.', 'Dr.'),
@@ -85,13 +89,13 @@ class GuestEntry(models.Model):
     title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True)
     full_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20, blank=True, null= True)
     email = models.EmailField(blank=True)
-    date_of_birth = models.DateField(blank=True, null=True)
+    date_of_birth = models.CharField(blank=True, null=True)
     marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
     home_address = models.TextField(blank=True)
     occupation = models.CharField(max_length=100, blank=True)
-    date_of_visit = models.DateField()
+    date_of_visit = models.DateField(blank=True, null= True)
     purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
     channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
     service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=True)
@@ -99,8 +103,8 @@ class GuestEntry(models.Model):
     referrer_phone_number = models.CharField(max_length=20, blank=True)
     message = models.TextField(blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Select Status')
-
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_guests')
+    assigned_to = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='assigned_guests')
 
     def get_status_color(self):
         """Returns Tabler badge color class based on status."""
