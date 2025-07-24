@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('django-insecure-1n1m_s7e7q-$om0+^ugi&343ncbben4nz$bmk+nghcf@@vfnef', 'goodnewsonlygoodnewsalways')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
     'gatewaymagnetapp.onrender.com',  # use your actual Render URL
@@ -89,13 +89,14 @@ WSGI_APPLICATION = 'gatewaymagnetapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('gatewaymagnetapp_db'),
-        'USER': os.getenv('gatewaymagnetapp_db_user'),
-        'PASSWORD': os.getenv('eqB4l6oaSSg3k1TmaoivpLqGfjDxWOCy'),
-        'HOST': os.getenv('dpg-d1vfedemcj7s73fb5ko0-a.oregon-postgres.render.com'),
-        'PORT': os.getenv('5432'),
+        'NAME': os.getenv('DB_NAME'),         # environment variable: DB_NAME
+        'USER': os.getenv('DB_USER'),         # environment variable: DB_USER
+        'PASSWORD': os.getenv('DB_PASSWORD'), # environment variable: DB_PASSWORD
+        'HOST': os.getenv('DB_HOST'),         # environment variable: DB_HOST
+        'PORT': os.getenv('DB_PORT'),         # environment variable: DB_PORT
     }
 }
+
 
 #DATABASES = {
 #    'default': {
