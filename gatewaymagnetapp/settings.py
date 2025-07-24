@@ -89,13 +89,17 @@ WSGI_APPLICATION = 'gatewaymagnetapp.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gatewaymagnetapp_db',
-        'USER': 'gatewaymagnetapp_user',
-        'PASSWORD': 'eqB4l6oaSSg3k1TmaoivpLqGfjDxWOCy',
-        'HOST': 'dpg-d1vfedemcj7s73fb5ko0-a.oregon-postgres.render.com',
-        'PORT': '5432',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
+        'OPTIONS': {
+            'sslmode': 'require',   # enforce SSL connection
+        },
     }
 }
+
 
 
 
