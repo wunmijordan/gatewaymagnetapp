@@ -128,18 +128,17 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {'class': 'logging.StreamHandler'},
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
         'file': {
-            'level': 'WARNING',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs/django.log',
+            'filename': os.path.join(BASE_DIR, 'logs/django.log'),
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console' if DEBUG else 'file'],
-            'level': 'DEBUG' if DEBUG else 'WARNING',
-        },
+    'root': {
+        'handlers': ['console'],  # Change to just 'console' for now
+        'level': 'INFO',
     },
 }
 

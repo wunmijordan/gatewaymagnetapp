@@ -4,6 +4,9 @@ import os
 import sys
 
 
+os.makedirs(os.path.join(os.path.dirname(__file__), 'logs'), exist_ok=True)
+
+
 def main():
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gatewaymagnetapp.settings')
