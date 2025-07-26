@@ -82,7 +82,7 @@ class GuestEntry(models.Model):
 
     picture = models.ImageField(
         upload_to='guest_pictures/',
-        default='guest_pictures/default_guest.jpg',
+        default='https://res.cloudinary.com/dahx6bbyr/image/upload/v1753468187/default_guest_memhgq.jpg',
         blank=True,
         null=True
     )

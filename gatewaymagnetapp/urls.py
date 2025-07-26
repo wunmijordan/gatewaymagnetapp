@@ -14,15 +14,15 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-# gatewaymagnetapp/urls.py
-
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-# For serving media files
 from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import post_login_redirect
+import debug_toolbar
+from django.views.generic import TemplateView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,7 +30,14 @@ urlpatterns = [
     path('', include('guests.urls')),  # guests app routes
     path('accounts/', include('accounts.urls')),  # accounts app routes
     path('post-login/', post_login_redirect, name='post_login_redirect'),
+    path('', include('pwa.urls')),
+    path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
+
 ]
 
+# Add media + debug toolbar URLs if in DEBUG mode
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += [  # <-- this line was missing!
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]

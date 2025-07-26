@@ -4,11 +4,15 @@ from django.urls import path
 from . import views
 from .views import import_guests_csv
 from .views import download_csv_template
+from .views import create_guest, edit_guest
+
 
 urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
-    path('entry/', views.guest_entry_view, name='guest_entry'),
-    path('entry/<int:pk>/', views.guest_entry_view, name='edit_guest'),
+    #path('entry/', views.guest_entry_view, name='guest_entry'),
+    #path('entry/<int:pk>/', views.guest_entry_view, name='edit_guest'),
+    path('guest/create/', create_guest, name='create_guest'),
+    path('guest/<int:pk>/edit/', edit_guest, name='edit_guest'),
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),
     path('export-csv/', views.export_csv, name='export_csv'),
     path("guests/import/", import_guests_csv, name="import_guests_csv"),

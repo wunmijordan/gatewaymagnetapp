@@ -29,10 +29,11 @@ import weasyprint
 from guests.models import GuestEntry
 from django.utils.dateparse import parse_date
 
+
 User = get_user_model()
 
-def is_admin_group(user):
-    return user.is_authenticated and user.groups.filter(name='admin').exists()
+#def is_admin_group(user):
+#    return user.is_authenticated and user.groups.filter(name='admin').exists()
 
 @login_required
 @user_passes_test(lambda u: is_admin_group)
@@ -98,7 +99,8 @@ def dashboard_view(request):
     else:
         # Show only guests user created or was assigned to
         guests = GuestEntry.objects.filter(
-            Q(created_by=request.user) | Q(assigned_to=request.user)
+            Q(created_by=request.user, assigned_to__isnull=True) |
+            Q(assigned_to=request.user)
         )
 
     # Add report annotations
@@ -195,62 +197,93 @@ def dashboard_view(request):
 
 
 
-@login_required
-def guest_entry_view(request, pk=None):
-    """
-    Handles guest creation, editing, reassignment, and deletion.
-    """
-    guest = get_object_or_404(GuestEntry, pk=pk) if pk else None
+def is_admin_group(user):
+    return user.groups.filter(name='Admin').exists()
 
-    # Only staff or creator can edit/delete
-    if guest and not (request.user.is_staff or guest.created_by == request.user):
+def can_edit_guest(user, guest):
+    return (
+        user == guest.created_by or
+        user == guest.assigned_to or
+        user.is_superuser or
+        is_admin_group(user)
+    )
+
+def can_reassign(user):
+    return user.is_superuser or is_admin_group(user)
+
+@login_required
+def create_guest(request):
+    form = GuestEntryForm(request.POST or None, request.FILES or None)
+
+    if request.method == 'POST':
+        if form.is_valid():
+            guest = form.save(commit=False)
+            guest.created_by = request.user
+            guest.save()
+            if 'save_add_another' in request.POST:
+                return redirect('create_guest')
+            return redirect('dashboard')
+
+    return render(request, 'guests/guest_form.html', {
+        'form': form,
+        'edit_mode': False,
+        'show_delete': False,
+    })
+
+@login_required
+def edit_guest(request, pk):
+    guest = get_object_or_404(GuestEntry, pk=pk)
+    user = request.user
+
+    if not can_edit_guest(user, guest):
         return redirect('dashboard')
 
-    # Allow reassignment for superusers or admin group
-    can_reassign = request.user.is_superuser or request.user.groups.filter(name='admin').exists()
-    all_users = None
-    if can_reassign:
-        User = get_user_model()
-        all_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    # Reassignment and user list (if allowed)
+    reassign_allowed = can_reassign(user)
+    all_users = get_user_model().objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
 
     if request.method == 'POST':
         # Handle Delete
-        if guest and 'delete_guest' in request.POST:
-            guest.delete()
+        if 'delete_guest' in request.POST:
+            if user == guest.created_by or user.is_superuser or is_admin_group(user):
+                guest.delete()
             return redirect('dashboard')
 
-        # Handle Create/Edit
+        # Handle Edit
         form = GuestEntryForm(request.POST, request.FILES, instance=guest)
         if form.is_valid():
-            entry = form.save(commit=False)
+            updated_guest = form.save(commit=False)
 
-            # Only set created_by on first save
-            if not guest:
-                entry.created_by = request.user
+            # Reassign if permitted
+            if reassign_allowed and 'assigned_to' in request.POST:
+                assigned_id = request.POST.get('assigned_to')
+                if assigned_id:
+                    assigned_user = get_user_model().objects.filter(pk=assigned_id).first()
+                    if assigned_user:
+                        updated_guest.assigned_to = assigned_user
 
-        entry.save()
+            # Clear picture if checked
+            if 'clear_picture' in request.POST and guest.picture:
+                guest.picture.delete(save=False)
+                updated_guest.picture = None
 
-        # Clear picture if checkbox checked
-        if 'clear_picture' in request.POST and guest and guest.picture:
-            guest.picture.delete(save=False)
-            entry.picture = None
+            updated_guest.save()
 
-
-        if 'save_return' in request.POST:
+            if 'save_add_another' in request.POST:
+                return redirect('create_guest')
             return redirect('dashboard')
-        elif 'save_add_another' in request.POST:
-            return redirect('guest_entry')
-
     else:
         form = GuestEntryForm(instance=guest)
 
     return render(request, 'guests/guest_form.html', {
         'form': form,
         'guest': guest,
+        'edit_mode': True,
+        'can_reassign': reassign_allowed,
         'all_users': all_users,
-        'can_reassign': can_reassign,
-        'show_delete': guest is not None
+        'show_delete': True,
     })
+
 
 
 
