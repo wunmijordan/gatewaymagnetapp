@@ -16,28 +16,32 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from accounts.views import post_login_redirect
-import debug_toolbar
 from django.views.generic import TemplateView
-
+from gatewaymagnetapp import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),  # for login/logout
-    path('', include('guests.urls')),  # guests app routes
-    path('accounts/', include('accounts.urls')),  # accounts app routes
-    path('post-login/', post_login_redirect, name='post_login_redirect'),
-    path('', include('pwa.urls')),
-    path('offline/', TemplateView.as_view(template_name='offline.html'), name='offline'),
 
+    # Core app routes
+    path('guests/', include('guests.urls')),  # Only include once
+    path('accounts/', include('django.contrib.auth.urls')),
+    path('accounts/', include('accounts.urls')),
+
+    # Post-login redirection
+    path('post-login/', post_login_redirect, name='post_login_redirect'),
+
+    # PWA and offline
+    path('', include('pwa.urls')),
+    path('offline/', views.offline_page, name='offline_page'),
+    path('serviceworker.js', views.service_worker, name='service_worker'),
 ]
 
-# Add media + debug toolbar URLs if in DEBUG mode
+# Debug + media
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += [  # <-- this line was missing!
-        path('__debug__/', include(debug_toolbar.urls)),
+    urlpatterns += [
+        path('__debug__/', include('debug_toolbar.urls')),
     ]

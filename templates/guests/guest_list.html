@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load guest_extras %}
+{% block title %}Guest List - Gateway Magnet{% endblock %}
+
+{% block content %}
+
+<div class="page-wrapper">
+
+  <div class="page-header d-print-none" aria-label="Page Header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h3 class="page-title">
+            <div class="text-white mt-1">
+              {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+                <small class="text-warning">You are viewing {{ start }}-{{ end }} of {{ total }} Guest(s)</small>
+              {% endwith %}
+            </div>
+          </h3>
+        </div>
+    
+        <div class="col-auto ms-auto d-print-none">
+          <div class="d-flex">   
+            <!-- Search Form -->
+            <form method="get" class="d-flex" style="gap: 6px;">
+              <input type="hidden" name="user" value="{{ request.GET.user }}">
+              <input type="hidden" name="service" value="{{ request.GET.service }}">
+              <input type="search" name="q" class="form-control d-flex flex-wrap gap-2 align-items-center justify-content-end" style="width: 160px;" placeholder="Search guests..." value="{{ request.GET.q }}">
+              <button type="submit" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 align-items-center justify-content-end"><i class="bi bi-search"></i></button>
+            </form>
+          
+            <!-- Reset Button -->
+            <a href="{% url 'guest_list' %}" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 ms-2 align-items-center justify-content-end">
+              Reset
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="row row-cards g-3">
+        {% for guest in page_obj %}
+        <div class="col-6 col-md-4">
+          <div class="card flex-fill h-100">
+            
+            <!-- Card Header -->
+            <div class="card-header border-0 pb-0 d-flex justify-content-end">
+              <div class="dropdown">
+                <a href="#" class="text-white" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="5" r="1" />
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="12" cy="19" r="1" />
+                  </svg>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end p-1">
+                  <a class="dropdown-item py-1 text-grey" href="{% url 'edit_guest' guest.id %}">Edit</a>
+                  <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" 
+                    href="{% url 'followup_report_page' guest.id %}">
+                    Report
+                    <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card-body text-center">
+              {% if guest.picture %}
+                <span class="avatar avatar-xl" style="background-image: url('{{ guest.picture.url }}')"></span>
+              {% else %}
+                <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center" 
+                      style="font-weight: bold; width: 64px; height: 64px; font-size: 24px; line-height: 1;">
+                  {{ guest.initials }}
+                </span>
+              {% endif %}
+
+              <h3 class="m-0 mb-1">{{ guest.full_name }}</h3>
+              <div class="text-secondary">Service Attended: {{ guest.service_attended }}</div>
+
+              <!-- Badges -->
+              <div class="mt-3">
+                {% if is_staff_group or request.user.is_superuser %}
+                  {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
+                    <span class="badge bg-warning-lt">Assigned to: {{ guest.assigned_to.get_full_name|default:guest.assigned_to.username }}</span>
+                  {% endif %}
+                  <span class="badge bg-success-lt">Created by: {{ guest.created_by.get_full_name|default:guest.created_by.username }}</span>
+                {% else %}
+                  {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
+                    <span class="badge bg-danger-lt">Assigned to you</span>
+                  {% endif %}
+                {% endif %}
+
+                <!-- Reassign Form -->
+                {% if is_staff_group or request.user.is_superuser %}
+                  <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
+                    {% csrf_token %}
+                    <select name="assigned_to" class="form-select form-select-sm">
+                      <option value="">-- Assign to user --</option>
+                      {% for u in users %}
+                        <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm">Reassign</button>
+                  </form>
+                {% endif %}
+
+                <!-- Last Reported -->
+                <div class="text-sm mt-2">
+                  <strong>Last Reported:</strong>
+                  {{ guest.last_reported|default:"Never" }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Actions -->
+            <div class="d-flex w-100">
+              <a href="tel:{{ guest.phone_number }}" class="card-btn text-success flex-fill text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor" fill="none" class="icon me-2"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"></path></svg>
+                Call
+              </a>
+
+              <div class="dropdown flex-fill text-center">
+                <a href="#" 
+                  class="card-btn dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}" 
+                  data-bs-toggle="dropdown" 
+                  data-bs-display="static" 
+                  aria-expanded="false">
+                  {{ guest.status|default:"Select Status" }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                  {% for key, label in guest.STATUS_CHOICES %}
+                    <li>
+                      <a class="dropdown-item" href="{% url 'update_status' guest.id key %}">
+                        {{ label }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {% empty %}
+          <div class="col text-center text-muted">You Don't Have Any Guest(s) Registered Yet.</div>
+        {% endfor %}
+      </div>
+
+      <!--Pagination-->
+      <div class="d-flex mt-4">
+        <ul class="pagination ms-auto">
+
+          {# Previous Button #}
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Previous">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                    class="icon icon-1">
+                  <path d="M15 6l-6 6l6 6"></path>
+                </svg>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                    class="icon icon-1">
+                  <path d="M15 6l-6 6l6 6"></path>
+                </svg>
+              </span>
+            </li>
+          {% endif %}
+
+          {# Page Numbers (max 5 visible) #}
+          {% for num in page_obj.paginator.page_range %}
+            {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+              {% if num == page_obj.number %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% else %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}{% if query_string %}&{{ query_string }}{% endif %}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {# Next Button #}
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Next">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                    class="icon icon-1">
+                  <path d="M9 6l6 6l-6 6"></path>
+                </svg>
+              </a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+                    class="icon icon-1">
+                  <path d="M9 6l6 6l-6 6"></path>
+                </svg>
+              </span>
+            </li>
+          {% endif %}
+
+        </ul>
+      </div>
+
+      <!--Guest Picture Preview-->
+      {% for guest in page_obj %}
+      <div class="modal fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content bg-dark border-light text-white">
+            <div class="modal-body text-center">
+              <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{{ MEDIA_URL }}guest_pictures/default_guest.jpg{% endif %}"
+                  class="img-fluid rounded shadow">
+              <p class="mt-3 mb-0 fw-bold">{{ guest.full_name }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+
+
+
+</div>
+{% endblock %}
+
+
+
+
+
+    

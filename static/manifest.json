@@ -3,7 +3,7 @@
   "short_name": "Gateway",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#2e303e",
   "theme_color": "#000000",
   "orientation": "portrait-primary",
   "description": "Official PWA for Gateway Nation Guest Management",

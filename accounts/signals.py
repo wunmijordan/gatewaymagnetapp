@@ -6,13 +6,16 @@ from .models import Profile
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
-        # Create profile only if it doesn't exist
-        Profile.objects.get_or_create(user=instance)
+        # Create a Profile when a new User is created
+        Profile.objects.create(user=instance)
     else:
-        # Update the profile safely if it exists
+        # For existing users, save the related profile if it exists
         try:
             instance.profile.save()
         except Profile.DoesNotExist:
+            # If no profile exists, create one (fallback)
             Profile.objects.create(user=instance)
-# This signal handler ensures that a Profile instance is created or updated
-# whenever a User instance is created or updated. It connects to the post_save
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()

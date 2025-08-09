@@ -1,31 +1,49 @@
-# guests/urls.py
-
 from django.urls import path
 from . import views
-from .views import import_guests_csv
-from .views import download_csv_template
-from .views import create_guest, edit_guest
-
 
 urlpatterns = [
-    path('', views.dashboard_view, name='dashboard'),
-    #path('entry/', views.guest_entry_view, name='guest_entry'),
-    #path('entry/<int:pk>/', views.guest_entry_view, name='edit_guest'),
-    path('guest/create/', create_guest, name='create_guest'),
-    path('guest/<int:pk>/edit/', edit_guest, name='edit_guest'),
+    # Default page: Guest List
+    path('', views.guest_list_view, name='guest_list'),
+
+    # Chart Dashboard
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+
+    # Guest Creation + Editing
+    path('guest/create/', views.create_guest, name='create_guest'),
+    path('guest/<int:pk>/edit/', views.edit_guest, name='edit_guest'),
+
+    # Status updates
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),
-    path('export-csv/', views.export_csv, name='export_csv'),
-    path("guests/import/", import_guests_csv, name="import_guests_csv"),
-    path("guests/download-template/", download_csv_template, name="download_csv_template"),
     path('guest/<int:guest_id>/status/<str:status_key>/', views.update_status_view, name='update_status'),
     path('guests/<int:guest_id>/reassign/', views.reassign_guest, name='reassign_guest'),
+
+    # Import/Export
+    path('export-csv/', views.export_csv, name='export_csv'),
+    path("import/", views.import_guests_csv, name="import_guests_csv"),
+    path("download-template/", views.download_csv_template, name="download_csv_template"),
     path('export/excel/', views.export_guests_excel, name='export_excel'),
     path('import/excel/', views.import_guests_excel, name='import_excel'),
-    path('followup/<int:guest_id>/form/', views.get_followup_form, name='get_followup_form'),
-    path('followup/<int:guest_id>/submit/', views.submit_followup_report, name='submit_followup_report'),
-    path('followup/<int:report_id>/edit/', views.edit_followup_report, name='edit_followup_report'),
-    path('followup/<int:report_id>/delete/', views.delete_followup_report, name='delete_followup_report'),
-    path('guests/<int:guest_id>/followup/', views.followup_history_view, name='followup_history'),
-    path('guests/export/pdf/', views.export_guests_pdf, name='export_guests_pdf'),
-    path('guests/<int:guest_id>/followup/export/pdf/', views.export_followup_report_pdf, name='export_followup_report_pdf'),
+    path('export/pdf/', views.export_guests_pdf, name='export_guests_pdf'),
+
+    # Follow-Up
+    # urls.py
+
+    path('guests/<int:guest_id>/report/', views.followup_report_page, name='followup_report_page'),
+    path('<int:guest_id>/followup/', views.followup_history_view, name='followup_history'),
+    path('guests/<int:guest_id>/export-pdf/', views.export_followup_reports_pdf, name='export_followup_reports_pdf'),
+
+
+
+    # Charts & API
+   
+     # AJAX Endpoints
+    
+    path('ajax/services-attended/', views.services_attended_chart, name='services_attended_chart'),
+    path('ajax/channel-breakdown/', views.channel_breakdown, name='channel_breakdown'),
+
+    # Guest Entry Summary
+    path('ajax/guest-entry-summary/', views.guest_entry_summary, name='guest_entry_summary'),
+
+    # Top 10 Services
+    path('ajax/top-services/', views.top_services_data, name='top_services_data'),
 ]

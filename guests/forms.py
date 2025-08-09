@@ -10,9 +10,9 @@ class GuestEntryForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'e.g. January 01',
+            'placeholder': 'January 01 (Ignore Year)',
         }),
-        help_text="Enter month and day only, e.g., January 01"
+        help_text="Date of Birth."
     )
 
     class Meta:
@@ -21,28 +21,30 @@ class GuestEntryForm(forms.ModelForm):
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
-            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter full name'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Enter email'}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'John Doe'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'johndoe@guest.gatewaynation'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
             'date_of_birth': forms.DateInput(attrs={
                 'type': 'text',
                 'class': 'form-control',
-                'placeholder': 'e.g. January 01',
+                'placeholder': 'January 01 (Ignore Year)',
                 'autocomplete': 'off'
             }),
             'marital_status': forms.Select(attrs={'class': 'form-select'}),
-            'gender': forms.Select(attrs={'class': 'form-select'}),
-            'occupation': forms.TextInput(attrs={'class': 'form-control'}),
-            'home_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'date_of_visit': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'gender': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
+            'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manager'}),
+            'home_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
+            'date_of_visit': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
             'purpose_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'channel_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'service_attended': forms.Select(attrs={'class': 'form-select'}),
-            'referrer_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'referrer_phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'referrer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sis. Jane Doe'}),
+            'referrer_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
             'followup_status': forms.Select(attrs={'class': 'form-select'}),
-            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Write any additional notes about the Guest here...'}),
         }
+        
+        
         labels = {
             'title': 'Title',
             'picture': 'Profile Picture',
@@ -59,19 +61,26 @@ class GuestEntryForm(forms.ModelForm):
             'referrer_name': 'Referrer Name',
             'referrer_phone_number': 'Referrer Phone Number',
         }
+        
+
         help_texts = {
-            'full_name': 'Enter the full name of the guest.',
-            'phone_number': 'Enter a valid phone number.',
-            'email': 'Optional: Enter a valid email address.',
-            'date_of_birth': 'Ex: January 01 (year will be ignored).',
-            'marital_status': 'Select marital status if applicable.',
-            'occupation': 'Optional: Enter occupation details.',
-            'date_of_visit': 'Select the date of visit.',
-            'purpose_of_visit': 'Select the purpose of visit from the list.',
-            'channel_of_visit': 'Select how the guest found out about us.',
-            'service_attended': 'Select the service attended during the visit.',
-            'referrer_name': 'Optional: Name of the person who referred the guest.',
-            'referrer_phone_number': 'Optional: Phone number of the referrer.'
+            'title': 'Title.',
+            'picture': 'Profile Picture for the Guest.',
+            'gender': 'Gender',
+            'full_name': 'Full Name.',
+            'phone_number': 'Phone Number.',
+            'email': 'Email Address.',
+            'date_of_birth': 'Date of Birth.',
+            'marital_status': 'Marital Status.',
+            'home_address': 'Home Address.',
+            'occupation': 'Occupation.',
+            'date_of_visit': 'Date of Visit.',
+            'purpose_of_visit': 'Purpose of Visit.',
+            'channel_of_visit': 'How did the Guest found out about us?',
+            'service_attended': 'What Service did the Guest Attend?',
+            'referrer_name': 'Who referred the Guest?',
+            'referrer_phone_number': 'Referrer\'s Phone Number.',
+            'message': 'Additional Notes.',
         }
 
     def clean_phone_number(self):
@@ -104,18 +113,35 @@ class GuestEntryForm(forms.ModelForm):
 class FollowUpReportForm(forms.ModelForm):
     class Meta:
         model = FollowUpReport
-        fields = ['report_date', 'notes', 'attended_sunday', 'attended_midweek']
+        exclude = ['guest', 'created_by', 'created_at']
+        fields = ['report_date', 'note', 'service_sunday', 'service_midweek']
         widgets = {
             'report_date': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'form-control'
             }),
-            'notes': forms.Textarea(attrs={
+            'note': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': 'Write follow-up notes here...'
+                'placeholder': 'Write follow-up note here...'
             }),
-            'attended_Sunday': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'attended_Midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            'service_sunday': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'service_midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
 
+    def __init__(self, *args, **kwargs):
+        self.guest = kwargs.pop('guest', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        report_date = cleaned_data.get('report_date')
+
+        if FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exists():
+            raise ValidationError("You already submitted a report for this date.")
+
+        return cleaned_data
+
+
+
+    
 

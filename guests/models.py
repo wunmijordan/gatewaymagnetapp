@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils.timezone import localdate
+
 
 User = get_user_model()
 
@@ -82,29 +84,36 @@ class GuestEntry(models.Model):
 
     picture = models.ImageField(
         upload_to='guest_pictures/',
-        default='https://res.cloudinary.com/dahx6bbyr/image/upload/v1753468187/default_guest_memhgq.jpg',
         blank=True,
         null=True
     )
-    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True)
+
+    @property
+    def initials(self):
+        if self.full_name:
+            return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
+        return 'G'
+
+    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, default='Mr.')
     full_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
     phone_number = models.CharField(max_length=20, blank=True, null= True)
     email = models.EmailField(blank=True)
     date_of_birth = models.CharField(blank=True, null=True)
-    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
+    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, default='Single')
     home_address = models.TextField(blank=True)
     occupation = models.CharField(max_length=100, blank=True)
-    date_of_visit = models.DateField(blank=True, null= True)
-    purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
-    channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
-    service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=True)
+    date_of_visit = models.DateField(default=localdate)
+    purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True, default='Home Church')
+    channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True, default='Referral')
+    service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=True, default='Love Lounge')
     referrer_name = models.CharField(max_length=100, blank=True)
     referrer_phone_number = models.CharField(max_length=20, blank=True)
     message = models.TextField(blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Select Status')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_guests')
     assigned_to = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='assigned_guests')
+
 
     def get_status_color(self):
         """Returns Tabler badge color class based on status."""
@@ -114,18 +123,20 @@ class GuestEntry(models.Model):
             'Relocated': 'primary',
             'Work in Progress': 'warning',
             'Select Status': 'secondary',
-        }.get(self.status, 'primary')
+        }.get(self.status, 'secondary')
 
     def __str__(self):
         return self.full_name
 
 
 class FollowUpReport(models.Model):
-    guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name='followup_reports')
+    guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name='reports')
     report_date = models.DateField()
-    notes = models.TextField()
-    attended_sunday = models.BooleanField(default=False)
-    attended_midweek = models.BooleanField(default=False)
+    note = models.TextField()
+    service_sunday = models.BooleanField(default=False)
+    service_midweek = models.BooleanField(default=False)
+    reviewed = models.BooleanField(default=False)
+    # Assuming you want to track who created the report
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

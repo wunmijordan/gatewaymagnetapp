@@ -1,37 +1,102 @@
-{% extends "base.html" %}
-{% load form_tags %}
+{% load static %}
+{% load pwa %}
+{% load user_avatar_tags %}
+{% load guest_avatar_tags %}
+{% load widget_tweaks %}
 
-{% block title %}Login{% endblock %}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Gateway Magnet{% endblock %}</title>
+    {% progressive_web_app_meta %}
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon-192x192.png' %}">
+    
+    <!-- Bootstrap 5.3 CSS (or your Tabler CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
-{% block content %}
-<div class="page page-center">
-  <div class="container-tight py-4">
-    <form method="post" class="card card-md bg-dark text-white border-0 shadow-sm">
-      {% csrf_token %}
-      <div class="card-body">
-        <h2 class="card-title text-center mb-4 text-white">Sign In</h2>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont/tabler-icons.min.css">
 
-        {% if form.errors %}
-          <div class="alert alert-danger">
-            Invalid username or password.
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+
+  <head>
+  <body>
+  
+
+
+
+
+    <div class="page page-center">
+      <div class="container container-tight py-4">
+        <div class="text-center mb-4">
+          <!-- BEGIN NAVBAR LOGO -->
+          <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand navbar-brand-autodark">
+            <img src="{% static 'images/church_logo.png' %}" alt="Logo" style="width: 120px; height: 120px;">
+          </a>
+          <!-- END NAVBAR LOGO -->
+        </div>
+        <div class="card card-md">
+          <div class="card-body">
+            <h2 class="h2 text-center mb-4">Login to your Account</h2>
+            <form method="post">
+              {% csrf_token %}
+
+              {% if form.errors %}
+                <div class="alert alert-danger">
+                  Invalid username or password.
+                </div>
+              {% endif %}
+              
+              <div class="mb-3">                
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                {{ form.username|add_class:"form-control"|attr:"placeholder:magnetmember" }}
+              </div>
+              <div class="mb-2">
+                <label for="{{ form.password.id_for_label }}" class="form-label">
+                  Password
+                  <span class="form-label-description fst-italic">
+                    <a href="tel:+2349011099449"> I forgot my Password</a>
+                  </span>
+                </label>
+                <div class="input-group input-group-flat">
+                  {{ form.password|add_class:"form-control"|attr:"placeholder:mypxxxword"|attr:"id:passwordInput" }}
+                  <span class="input-group-text">
+                    <a href="#" class="link-secondary toggle-password" data-bs-toggle="tooltip" aria-label="Show password" data-bs-original-title="Show password">
+                      <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="icon icon-1 transition" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                      </svg>
+                    </a>
+                  </span>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-check">
+                  <input type="checkbox" name="remember_me" class="form-check-input">
+                  <span class="form-check-label">Remember me on this device</span>
+                </label>
+              </div>
+              <div class="form-footer">
+                <button type="submit" class="btn btn-success w-100">Sign in</button>
+              </div>
+            </form>
           </div>
-        {% endif %}
-
-        <div class="mb-3">
-          <label for="{{ form.username.id_for_label }}" class="form-label text-white">Username</label>
-          {{ form.username|add_class:"form-control bg-dark text-white border-secondary" }}
         </div>
-
-        <div class="mb-3">
-          <label for="{{ form.password.id_for_label }}" class="form-label text-white">Password</label>
-          {{ form.password|add_class:"form-control bg-dark text-white border-secondary" }}
-        </div>
-
-        <div class="form-footer mt-4">
-          <button type="submit" class="btn btn-primary w-100">Sign In</button>
-        </div>
+        <div class="text-center text-secondary mt-3">Any trouble signing in? <a href="tel:+2349011099449" tabindex="-1">Contact Admin</a></div>
       </div>
-    </form>
-  </div>
-</div>
-{% endblock %}
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- Your custom JS -->
+    <script src="{% static 'js/custom.js' %}"></script>
+  </body>
+</html>

@@ -7,25 +7,32 @@ import socket
 from pathlib import Path
 import environ
 from decouple import config
+import cloudinary
+from dotenv import load_dotenv
 
 # Paths & Environment
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
+# Load environment variables early
+load_dotenv(dotenv_path=BASE_DIR / '.env')
+
 # Core Settings
 SECRET_KEY = config('SECRET_KEY', default='goodnewsonlygoodnewsalways')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ENVIRONMENT = config('DJANGO_ENV', default='development')
 
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='127.0.0.1,localhost',
-    cast=lambda v: [s.strip() for s in v.split(',')]
-)
+# Allowed hosts
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
 
 # Installed Apps
 INSTALLED_APPS = [
+    # Third-party
+    'cloudinary',
+    'cloudinary_storage',
+
     # Default Django apps
     'django.contrib.admin',
     'django.contrib.auth',
@@ -34,19 +41,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pwa',
+    'widget_tweaks',
 
     # Your apps
     'guests',
     'accounts',
-
-    # Third-party
-    'cloudinary',
-    'cloudinary_storage',
 ]
 
-# Add debug_toolbar in development
 if DEBUG:
-    INSTALLED_APPS += ['debug_toolbar']
+    INSTALLED_APPS.append('debug_toolbar')
 
 # Middleware
 MIDDLEWARE = [
@@ -109,7 +112,7 @@ else:
                 'PORT': config('DB_PORT'),
             }
         }
-    except:
+    except Exception:
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
@@ -128,30 +131,36 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
+        'console': {'class': 'logging.StreamHandler'},
         'file': {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs/django.log'),
         },
     },
     'root': {
-        'handlers': ['console'],  # Change to just 'console' for now
+        'handlers': ['console'],
         'level': 'INFO',
     },
 }
 
-# Cloudinary Config
+# Cloudinary config initialization
+cloudinary.config(
+    cloud_name=config('CLOUDINARY_CLOUD_NAME'),
+    api_key=config('CLOUDINARY_API_KEY'),
+    api_secret=config('CLOUDINARY_API_SECRET')
+)
+
+# Use Cloudinary storage for media files both in development and production
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# Cloudinary storage settings (used by cloudinary_storage)
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': config('CLOUDINARY_API_KEY'),
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# Auth
+# Auth password validators
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -172,57 +181,42 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # fallback, but uploads go to Cloudinary
 
-# Auth Redirects
+# Auth redirects
 LOGIN_REDIRECT_URL = '/post-login/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
-# Session Config
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # default
+# Sessions
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_SAVE_EVERY_REQUEST = False
 
-# Default PK Field
+# Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# PWA config (unchanged)
 PWA_APP_NAME = 'Gateway Magnet App'
 PWA_APP_SHORT_NAME = 'Magnet'
 PWA_APP_DESCRIPTION = "Guest Management System for Gateway Nation"
 PWA_APP_THEME_COLOR = '#2e303e'
-PWA_APP_BACKGROUND_COLOR = '#ffffff'
+PWA_APP_BACKGROUND_COLOR = '#2e303e'
 PWA_APP_DISPLAY = 'standalone'
 PWA_APP_SCOPE = '/'
 PWA_APP_ORIENTATION = 'portrait'
 PWA_APP_START_URL = '/'
 PWA_APP_STATUS_BAR_COLOR = 'default'
 PWA_APP_ICONS = [
-    {
-        'src': '/static/images/icons/icon-192x192.png',
-        'sizes': '192x192'
-    },
-    {
-        'src': '/static/images/icons/icon-512x512.png',
-        'sizes': '512x512'
-    }
+    {'src': '/static/images/icons/icon-192x192.png', 'sizes': '192x192'},
+    {'src': '/static/images/icons/icon-512x512.png', 'sizes': '512x512'},
 ]
 PWA_APP_ICONS_APPLE = [
-    {
-        "src": "/static/images/icons/icon-192x192.png",
-        "sizes": "192x192"
-    },
-    {
-        'src': '/static/images/icons/icon-512x512.png',
-        'sizes': '512x512'
-    }
+    {'src': '/static/images/icons/icon-192x192.png', 'sizes': '192x192'},
+    {'src': '/static/images/icons/icon-512x512.png', 'sizes': '512x512'},
 ]
 PWA_APP_SPLASH_SCREEN = [
-    {
-        'src': '/static/images/splash-512x1024.png',
-        'media': '(device-width: 360px) and (device-height: 740px)'
-    }
+    {'src': '/static/images/splash-512x1024.png', 'media': '(device-width: 360px) and (device-height: 740px)'}
 ]
 PWA_APP_DIR = 'ltr'
 PWA_APP_LANG = 'en-US'
-PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/serviceworker.js')
-
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'gatewaymagnetapp/static/serviceworker.js')

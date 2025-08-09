@@ -1,11 +1,42 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import user_passes_test, login_required
 from .forms import CustomUserCreationForm
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from datetime import datetime
 import pytz
 from django.utils.timezone import localtime, now
+from django.contrib.auth.views import LoginView
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm
+
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.forms import AuthenticationForm
+from django.urls import reverse_lazy
+
+class CustomLoginForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+class CustomLoginView(LoginView):
+    form_class = CustomLoginForm
+    template_name = 'accounts/login.html'
+
+    def form_valid(self, form):
+        remember_me = self.request.POST.get('remember_me')
+
+        if not remember_me:
+            self.request.session.set_expiry(0)
+        else:
+            self.request.session.set_expiry(60 * 60 * 24 * 28)
+
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('dashboard')
+
+
+
 
 
 DAY_QUOTES = {
@@ -19,9 +50,6 @@ DAY_QUOTES = {
 }
 
 
-
-from django.utils.timezone import localtime, now
-import pytz
 
 def post_login_redirect(request):
     tz = pytz.timezone('Africa/Lagos')
@@ -68,4 +96,3 @@ def create_user_view(request):
     return render(request, 'accounts/create_user.html', {
         'form': form
     })
-
