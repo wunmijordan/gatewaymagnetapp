@@ -26,7 +26,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Core app routes
-    path('guests/', include('guests.urls')),  # Only include once
+    path('', include('guests.urls')),  # Only include once
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('accounts.urls')),
 
