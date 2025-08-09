@@ -25,7 +25,7 @@ admin.site.register(User, UserAdmin)
 # Register Profile independently if you want (without online status fields)
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'phone_number', 'image')
+    list_display = ('user', 'image')
     search_fields = ('user__username', 'user__first_name', 'user__last_name')
 
     @admin.display(description='Image')

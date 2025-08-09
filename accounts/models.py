@@ -6,7 +6,6 @@ def user_profile_upload_path(instance, filename):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number = models.CharField(max_length=20, blank=True, null=True, help_text="Phone number in international format, e.g. +1234567890")
     image = models.ImageField(upload_to=user_profile_upload_path, blank=True, null=True)
 
     def __str__(self):
