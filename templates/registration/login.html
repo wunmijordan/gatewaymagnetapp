@@ -1,102 +1,134 @@
 {% load static %}
-{% load pwa %}
 {% load user_avatar_tags %}
 {% load guest_avatar_tags %}
 {% load widget_tweaks %}
 
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Gateway Magnet{% endblock %}</title>
-    {% progressive_web_app_meta %}
-    <link rel="manifest" href="{% static 'manifest.json' %}">
-    <meta name="theme-color" content="#000000">
-    <link rel="apple-touch-icon" href="{% static 'icons/icon-192x192.png' %}">
-    
-    <!-- Bootstrap 5.3 CSS (or your Tabler CSS) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Gateway Magnet{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont/tabler-icons.min.css">
+  <!-- PWA manifest and theme color -->
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <meta name="theme-color" content="#2e303e">
 
-    <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+  <!-- Apple support -->
+  <link rel="apple-touch-icon" href="{% static 'images/icons/icon-192x192.png' %}">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <head>
-  <body>
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512.png' %}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512-maskable.png' %}">
+
+  <!-- CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont/tabler-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+  <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
+
+<head>
+<body>
   
 
 
 
 
-    <div class="page page-center">
-      <div class="container container-tight py-4">
-        <div class="text-center mb-4">
-          <!-- BEGIN NAVBAR LOGO -->
-          <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand navbar-brand-autodark">
-            <img src="{% static 'images/church_logo.png' %}" alt="Logo" style="width: 120px; height: 120px;">
-          </a>
-          <!-- END NAVBAR LOGO -->
-        </div>
-        <div class="card card-md">
-          <div class="card-body">
-            <h2 class="h2 text-center mb-4">Login to your Account</h2>
-            <form method="post">
-              {% csrf_token %}
-
-              {% if form.errors %}
-                <div class="alert alert-danger">
-                  Invalid username or password.
-                </div>
-              {% endif %}
-              
-              <div class="mb-3">                
-                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
-                {{ form.username|add_class:"form-control"|attr:"placeholder:magnetmember" }}
-              </div>
-              <div class="mb-2">
-                <label for="{{ form.password.id_for_label }}" class="form-label">
-                  Password
-                  <span class="form-label-description fst-italic">
-                    <a href="tel:+2349011099449"> I forgot my Password</a>
-                  </span>
-                </label>
-                <div class="input-group input-group-flat">
-                  {{ form.password|add_class:"form-control"|attr:"placeholder:mypxxxword"|attr:"id:passwordInput" }}
-                  <span class="input-group-text">
-                    <a href="#" class="link-secondary toggle-password" data-bs-toggle="tooltip" aria-label="Show password" data-bs-original-title="Show password">
-                      <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="icon icon-1 transition" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
-                        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
-                      </svg>
-                    </a>
-                  </span>
-                </div>
-              </div>
-              <div class="mb-2">
-                <label class="form-check">
-                  <input type="checkbox" name="remember_me" class="form-check-input">
-                  <span class="form-check-label">Remember me on this device</span>
-                </label>
-              </div>
-              <div class="form-footer">
-                <button type="submit" class="btn btn-success w-100">Sign in</button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div class="text-center text-secondary mt-3">Any trouble signing in? <a href="tel:+2349011099449" tabindex="-1">Contact Admin</a></div>
+  <div class="page page-center">
+    <div class="container container-tight py-4">
+      <div class="text-center mb-4">
+        <!-- BEGIN NAVBAR LOGO -->
+        <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand navbar-brand-autodark">
+          <img src="{% static 'images/church_logo.png' %}" alt="Logo" style="width: 120px; height: 120px;">
+        </a>
+        <!-- END NAVBAR LOGO -->
       </div>
+      <div class="card card-md">
+        <div class="card-body">
+          <h2 class="h2 text-center mb-4">Login to your Account</h2>
+          <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+              <div class="alert alert-danger">
+                Invalid username or password.
+              </div>
+            {% endif %}
+            
+            <div class="mb-3">                
+              <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+              {{ form.username|add_class:"form-control"|attr:"placeholder:magnetmember" }}
+            </div>
+            <div class="mb-2">
+              <label for="{{ form.password.id_for_label }}" class="form-label">
+                Password
+                <span class="form-label-description fst-italic">
+                  <a href="tel:+2349011099449"> I forgot my Password</a>
+                </span>
+              </label>
+              <div class="input-group input-group-flat">
+                {{ form.password|add_class:"form-control"|attr:"placeholder:mypxxxword"|attr:"id:passwordInput" }}
+                <span class="input-group-text">
+                  <a href="#" class="link-secondary toggle-password" data-bs-toggle="tooltip" aria-label="Show password" data-bs-original-title="Show password">
+                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="icon icon-1 transition" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                      <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6" />
+                    </svg>
+                  </a>
+                </span>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-check">
+                <input type="checkbox" name="remember_me" class="form-check-input">
+                <span class="form-check-label">Remember me on this device</span>
+              </label>
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-success w-100">Sign in</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="text-center text-secondary mt-3">Any trouble signing in? <a href="tel:+2349011099449" tabindex="-1">Contact Admin</a></div>
     </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const togglePassword = document.querySelector('.toggle-password');
+      const passwordInput = document.getElementById('passwordInput');
+      const eyeIcon = document.getElementById('eyeIcon');
+
+      if (togglePassword && passwordInput && eyeIcon) {
+        const eye = `<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
+                    <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>`;
+        const eyeOff = `<path d="M3 3l18 18"></path>
+                        <path d="M10.584 10.587a2 2 0 0 0 2.83 2.83"></path>
+                        <path d="M9.366 5.653a9.05 9.05 0 0 1 11.087 6.347c-.717 2.43 -2.19 4.2 -4.364 5.295"></path>
+                        <path d="M6.79 6.793c-1.825 1.108 -3.06 2.766 -3.79 4.707a9.053 9.053 0 0 0 9 5.5c1.477 0 2.867 -.36 4.1 -1"></path>`;
+
+        togglePassword.addEventListener('click', function (e) {
+          e.preventDefault();
+          const type = passwordInput.type === 'password' ? 'text' : 'password';
+          passwordInput.type = type;
+          eyeIcon.classList.toggle('rotate');
+          eyeIcon.innerHTML = (type === 'password') ? eye : eyeOff;
+        });
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-
-    <!-- Your custom JS -->
-    <script src="{% static 'js/custom.js' %}"></script>
-  </body>
+  <!-- Your custom JS -->
+  <script src="{% static 'js/custom.js' %}"></script>
+</body>
 </html>

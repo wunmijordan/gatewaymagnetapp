@@ -1,41 +1,32 @@
 document.addEventListener('DOMContentLoaded', function () {
-
-  /* --------------------------------------------------------------------
-   * 0. FLATPICKR DATEPICKER INIT
-   * ------------------------------------------------------------------ */
+  /* 0. FLATPICKR DATEPICKER INIT */
   const isoInput = document.getElementById('date_of_visit');
   const displayInput = document.getElementById('date_of_visit_display');
 
   if (isoInput && displayInput) {
-    // Pre-fill visible input if hidden ISO date exists and is valid
-    if (isoInput.value) {
-      const parts = isoInput.value.split('-');
-      if (parts.length === 3) {
-        displayInput.value = `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
+    // If isoInput has a valid YYYY-MM-DD value, convert to DD/MM/YYYY for displayInput
+    if (isoInput.value && /^\d{4}-\d{2}-\d{2}$/.test(isoInput.value)) {
+      const [year, month, day] = isoInput.value.split('-');
+      displayInput.value = `${day}/${month}/${year}`;
     }
 
     flatpickr(displayInput, {
       dateFormat: "d/m/Y",
       allowInput: true,
       defaultDate: displayInput.value || new Date(),
-      onChange: function (selectedDates, dateStr, instance) {
+      onChange(selectedDates, dateStr, instance) {
         if (selectedDates.length > 0) {
           isoInput.value = instance.formatDate(selectedDates[0], "Y-m-d");
         } else {
-          // Prevent empty ISO value: fallback to today’s date
           const today = new Date();
           isoInput.value = instance.formatDate(today, "Y-m-d");
-          // Also update displayInput so user sees a date
           displayInput.value = instance.formatDate(today, "d/m/Y");
         }
       }
     });
   }
 
-  /* --------------------------------------------------------------------
-   * 1. DROPDOWN BEHAVIOR
-   * ------------------------------------------------------------------ */
+  /* 1. DROPDOWN BEHAVIOR */
   document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
     toggle.addEventListener('click', function () {
       const dropdown = toggle.closest('.dropdown');
@@ -50,7 +41,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Dropend submenu (mobile click toggle)
   document.querySelectorAll('.dropdown-menu .dropend > .dropdown-toggle').forEach(el => {
     el.addEventListener('click', function (e) {
       if (window.innerWidth < 768) {
@@ -61,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Dropend hover (desktop)
   document.querySelectorAll('.dropend').forEach(dropend => {
     const toggle = dropend.querySelector('[data-bs-toggle="dropdown"]');
     if (!toggle) return;
@@ -75,19 +64,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* --------------------------------------------------------------------
-   * 2. TOOLTIP INIT
-   * ------------------------------------------------------------------ */
-  function initTooltips() {
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-      new bootstrap.Tooltip(el);
-    });
-  }
-  initTooltips();
+  /* 2. TOOLTIP INIT */
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+  });
 
-  /* --------------------------------------------------------------------
-   * 3. TOP SERVICES PROGRESS BARS (AJAX)
-   * ------------------------------------------------------------------ */
+  /* 3. TOP SERVICES PROGRESS BARS (AJAX) */
   fetch(window.APP_CONFIG.urls.topServicesData)
     .then(res => res.json())
     .then(data => {
@@ -133,13 +115,14 @@ document.addEventListener('DOMContentLoaded', function () {
         labelsContainer.appendChild(labelCol);
       });
 
-      initTooltips();
+      // Re-initialize tooltips on new elements
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+      });
     })
     .catch(err => console.error('Failed to fetch top services:', err));
 
-  /* --------------------------------------------------------------------
-   * 4. ANIMATED COUNTERS
-   * ------------------------------------------------------------------ */
+  /* 4. ANIMATED COUNTERS */
   document.querySelectorAll('[data-count]').forEach(el => {
     let endValue = parseInt(el.getAttribute('data-count'), 10);
     let startTime = null;
@@ -153,9 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     requestAnimationFrame(step);
   });
 
-  /* --------------------------------------------------------------------
-   * 5. CHANNEL OF VISIT TABLE (AJAX)
-   * ------------------------------------------------------------------ */
+  /* 5. CHANNEL OF VISIT TABLE (AJAX) */
   fetch(window.APP_CONFIG.urls.channelBreakdown)
     .then(res => res.json())
     .then(data => {
@@ -183,40 +164,4 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     })
     .catch(err => console.error('Channel table load error:', err));
-
-}); // DOMContentLoaded end
-
-/* ----------------------------------------------------------------------
- * 6. PASSWORD TOGGLE
- * -------------------------------------------------------------------- */
-const togglePassword = document.querySelector('.toggle-password');
-const passwordInput = document.getElementById('passwordInput');
-const eyeIcon = document.getElementById('eyeIcon');
-
-if (togglePassword && passwordInput && eyeIcon) {
-  const eye = `<path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0"></path>
-               <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"></path>`;
-  const eyeOff = `<path d="M3 3l18 18"></path>
-                  <path d="M10.584 10.587a2 2 0 0 0 2.83 2.83"></path>
-                  <path d="M9.366 5.653a9.05 9.05 0 0 1 11.087 6.347c-.717 2.43 -2.19 4.2 -4.364 5.295"></path>
-                  <path d="M6.79 6.793c-1.825 1.108 -3.06 2.766 -3.79 4.707a9.053 9.053 0 0 0 9 5.5c1.477 0 2.867 -.36 4.1 -1"></path>`;
-
-  togglePassword.addEventListener('click', function (e) {
-    e.preventDefault();
-    const type = passwordInput.type === 'password' ? 'text' : 'password';
-    passwordInput.type = type;
-    eyeIcon.classList.toggle('rotate');
-    eyeIcon.innerHTML = (type === 'password') ? eye : eyeOff;
-  });
-}
-
-/* ----------------------------------------------------------------------
- * 7. MINIMAL SERVICE WORKER REGISTRATION
- * -------------------------------------------------------------------- */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/serviceworker.js')
-      .then(reg => console.log('SW registered:', reg.scope))
-      .catch(err => console.error('SW registration failed:', err));
-  });
-}
+});

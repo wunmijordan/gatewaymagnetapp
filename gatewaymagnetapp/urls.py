@@ -32,16 +32,14 @@ urlpatterns = [
 
     # Post-login redirection
     path('post-login/', post_login_redirect, name='post_login_redirect'),
-
-    # PWA and offline
-    path('', include('pwa.urls')),
-    path('offline/', views.offline_page, name='offline_page'),
-    path('serviceworker.js', views.service_worker, name='service_worker'),
 ]
 
 # Debug + media
 if settings.DEBUG:
+    from django.conf.urls.static import static
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += [
         path('__debug__/', include('debug_toolbar.urls')),
     ]
+

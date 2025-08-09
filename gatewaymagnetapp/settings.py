@@ -1,7 +1,3 @@
-"""
-Django settings for gatewaymagnetapp project.
-"""
-
 import os
 import socket
 from pathlib import Path
@@ -10,15 +6,15 @@ from decouple import config
 import cloudinary
 from dotenv import load_dotenv
 
-# Paths & Environment
+# Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Environment setup
 env = environ.Env(DEBUG=(bool, False))
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
-
-# Load environment variables early
 load_dotenv(dotenv_path=BASE_DIR / '.env')
 
-# Core Settings
+# Core settings
 SECRET_KEY = config('SECRET_KEY', default='goodnewsonlygoodnewsalways')
 DEBUG = config('DEBUG', default=True, cast=bool)
 ENVIRONMENT = config('DJANGO_ENV', default='development')
@@ -27,21 +23,20 @@ ENVIRONMENT = config('DJANGO_ENV', default='development')
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
 
-# Installed Apps
+# Installed apps
 INSTALLED_APPS = [
-    # Third-party
+    # Third-party apps
     'cloudinary',
     'cloudinary_storage',
+    'widget_tweaks',
 
-    # Default Django apps
+    # Django default apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pwa',
-    'widget_tweaks',
 
     # Your apps
     'guests',
@@ -120,13 +115,13 @@ else:
             }
         }
 
-# Debug Toolbar IPs
+# Debug toolbar internal IPs
 if DEBUG:
     INTERNAL_IPS = ['127.0.0.1']
     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
     INTERNAL_IPS += [ip[:-1] + "1" for ip in ips]
 
-# Logging
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -143,24 +138,22 @@ LOGGING = {
     },
 }
 
-# Cloudinary config initialization
+# Cloudinary configuration
 cloudinary.config(
     cloud_name=config('CLOUDINARY_CLOUD_NAME'),
     api_key=config('CLOUDINARY_API_KEY'),
     api_secret=config('CLOUDINARY_API_SECRET')
 )
 
-# Use Cloudinary storage for media files both in development and production
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# Cloudinary storage settings (used by cloudinary_storage)
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': config('CLOUDINARY_API_KEY'),
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
 
-# Auth password validators
+# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -174,16 +167,16 @@ TIME_ZONE = 'Africa/Lagos'
 USE_I18N = True
 USE_TZ = True
 
-# Static / Media
+# Static and media files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # fallback, but uploads go to Cloudinary
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # fallback for local uploads
 
-# Auth redirects
+# Authentication redirects
 LOGIN_REDIRECT_URL = '/post-login/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
@@ -192,10 +185,10 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 86400  # 24 hours
 SESSION_SAVE_EVERY_REQUEST = False
 
-# Default primary key field type
+# Default primary key field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# PWA config (unchanged)
+# PWA Configuration (minimal, no caching)
 PWA_APP_NAME = 'Gateway Magnet App'
 PWA_APP_SHORT_NAME = 'Magnet'
 PWA_APP_DESCRIPTION = "Guest Management System for Gateway Nation"
@@ -210,13 +203,9 @@ PWA_APP_ICONS = [
     {'src': '/static/images/icons/icon-192x192.png', 'sizes': '192x192'},
     {'src': '/static/images/icons/icon-512x512.png', 'sizes': '512x512'},
 ]
-PWA_APP_ICONS_APPLE = [
-    {'src': '/static/images/icons/icon-192x192.png', 'sizes': '192x192'},
-    {'src': '/static/images/icons/icon-512x512.png', 'sizes': '512x512'},
-]
+PWA_APP_ICONS_APPLE = PWA_APP_ICONS
 PWA_APP_SPLASH_SCREEN = [
     {'src': '/static/images/splash-512x1024.png', 'media': '(device-width: 360px) and (device-height: 740px)'}
 ]
 PWA_APP_DIR = 'ltr'
 PWA_APP_LANG = 'en-US'
-PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'gatewaymagnetapp/static/serviceworker.js')
