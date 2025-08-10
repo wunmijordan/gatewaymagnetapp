@@ -150,16 +150,20 @@
           </div>
           <div class="nav-item dropdown">
             <a href="#" class="nav-link d-flex lh-1 p-0 px-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
-              <img src="{% static 'profile_pics/'|add:request.user.username|add:'/image.jpg' %}" alt="User Picture">
+              <img src="{% static 'profile_pics/'|add:user.username|add:'/'|add:user.profile.image %}">
               <div class="d-none d-xl-block ps-2">
                 <div>{{ user.get_full_name|default:user.username }}</div>
                 <div class="mt-1 small text-secondary">
                   {% if user.is_superuser %}
                     Superuser
-                  {% elif user.groups.first %}
-                    {{ user.groups.first.name }}
                   {% else %}
-                    Sign-in
+                    {% with user.groups.all|first as first_group %}
+                      {% if first_group %}
+                        {{ first_group.name }}
+                      {% else %}
+                        Sign-in
+                      {% endif %}
+                    {% endwith %}
                   {% endif %}
                 </div>
               </div>
