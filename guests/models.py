@@ -85,11 +85,11 @@ class GuestEntry(models.Model):
 
     picture = CloudinaryField('image', blank=True, null=True)
 
-#    @property
-#    def initials(self):
-#        if self.full_name:
-#            return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
-#        return 'G'
+    @property
+    def initials(self):
+        if self.full_name:
+            return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
+        return 'G'
 
     title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, default='Mr.')
     full_name = models.CharField(max_length=100)

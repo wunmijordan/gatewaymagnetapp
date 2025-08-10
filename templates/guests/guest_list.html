@@ -71,10 +71,10 @@
             <!-- Card Body -->
             <div class="card-body text-center">
               {% if guest.picture %}
-                <span class="avatar avatar-xl" style="background-image: url('{{ guest.picture.url }}')"></span>
+                <span class="avatar avatar-xl" style="background-image: url('{{ guest.picture.url }}'); border-radius: 0.5rem;"></span>
               {% else %}
                 <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center" 
-                      style="font-weight: bold; width: 64px; height: 64px; font-size: 24px; line-height: 1;">
+                      style="font-weight: bold; width: 64px; height: 64px; font-size: 24px; line-height: 1; border-radius: 0.5rem;">
                   {{ guest.initials }}
                 </span>
               {% endif %}
