@@ -150,9 +150,19 @@
           </div>
           <div class="nav-item dropdown">
             <a href="#" class="nav-link d-flex lh-1 p-0 px-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
-              <img src="{% static 'profile_pics/'|add:user.username|add:'/'|add:user.profile.image %}">
-              <div class="d-none d-xl-block ps-2">
-                <div>{{ user.get_full_name|default:user.username }}</div>
+              {% if user.profile.image %}
+                <img src="{{ user.profile.image.url }}" alt="User Picture" class="rounded-circle" style="width: 32px; height: 32px;">
+              {% else %}
+                <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center rounded-circle"
+                      style="width: 32px; height: 32px; font-weight: bold; font-size: 16px;">
+                  {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+                </span>
+              {% endif %}
+
+              <div class="ps-2 d-flex flex-column justify-content-center">
+                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.username }}</div> <!-- Show on mobile -->
+                <div class="d-none d-xl-block">{{ user.get_full_name|default:user.username }}</div> <!-- Show on xl+ -->
+
                 <div class="mt-1 small text-secondary">
                   {% if user.is_superuser %}
                     Superuser
