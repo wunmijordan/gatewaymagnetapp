@@ -269,6 +269,31 @@ MOBILE RESPONSIVENESS
     .navbar-collapse .dropdown-item:hover {
         background-color: #374151 !important;
     }
+  
+    /* === Added logo centering fix on mobile === */
+    .navbar > .container-xl {
+      position: relative;
+    }
+
+    .navbar-brand.navbar-brand-autodark {
+      position: absolute !important;
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      z-index: 1000;
+    }
+
+    .navbar-nav.flex-row.order-md-last {
+      margin-left: auto;
+    }
+}
+
+/* Reset for tablet and above */
+@media (min-width: 768px) {
+    .navbar-brand.navbar-brand-autodark {
+        position: static !important;
+        transform: none !important;
+    }
 }
 
 /* -------------------------
