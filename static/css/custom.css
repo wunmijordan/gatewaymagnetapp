@@ -1,3 +1,33 @@
+/* ============================
+   Added fixes for guest card content overflow
+   ============================ */
+.row > * {
+    flex-shrink: 1 !important; /* Allow flex items to shrink */
+    min-width: 0 !important;   /* Required for flex-shrink to work properly */
+}
+
+.guest-card-content {
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    max-width: 100%;
+}
+
+.row {
+    overflow-x: hidden; /* Prevent horizontal scrollbar due to minor overflow */
+}
+
+@media (max-width: 767px) {
+    .col-6 {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+}
+
+/* ============================
+   Your original CSS below
+   ============================ */
+
 /* Example: change primary button hover color */
 .btn-primary:hover {
     background-color: #ff5733 !important; /* New hover background */
@@ -10,106 +40,105 @@
     color: white !important;           /* Keep text visible */
 }
 
-
 /* -------------------------
 HEADER BASE STYLES
 ------------------------- */
 .navbar .navbar * {
-z-index: 1000;
-background-color: #1F2937 !important;
-min-height: 3.5rem !important;
-height: 3.5rem !important;
-display: flex;
-align-items: center;
-padding-top: 0;
-padding-bottom: 0;
-position: sticky;
+    z-index: 1000;
+    background-color: #1F2937 !important;
+    min-height: 3.5rem !important;
+    height: 3.5rem !important;
+    display: flex;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+    position: sticky;
 }
 
 .navbar-brand {
-background: transparent !important;
+    background: transparent !important;
 }
 
 .navbar-brand img {
-display: block;
-height: 3.5rem;
-width: auto;
-pointer-events: none;
-margin-top: -2px;
+    display: block;
+    height: 3.5rem;
+    width: auto;
+    pointer-events: none;
+    margin-top: -2px;
 }
 
 .navbar-toggler {
-border-color: rgba(255, 255, 255, 0.3);
-height: 2.5rem;
-width: 2.5rem;
-padding: 0.25rem;
-display: flex;
-align-items: center;
-justify-content: center;
+    border-color: rgba(255, 255, 255, 0.3);
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .navbar-toggler-icon {
-background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255, 0.9%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255, 0.9%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 .navbar .avatar.avatar-sm {
-height: 2.2rem;
-width: 2.2rem;
-margin-top: 0;
+    height: 2.2rem;
+    width: 2.2rem;
+    margin-top: 0;
 }
 
 /* -------------------------
 DROPDOWN MENU ANIMATION
 ------------------------- */
 .dropdown-menu {
-border-radius: 0.4rem;
-opacity: 0;
-transform: translateY(10px);
-transition: all 0.25s ease-in-out;
-visibility: hidden;
-z-index: 1050;
+    border-radius: 0.4rem;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s ease-in-out;
+    visibility: hidden;
+    z-index: 1050;
 }
 
 .dropdown-menu.show {
-opacity: 1;
-transform: translateY(0);
-visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
 }
 
 .navbar .dropdown-menu {
-margin-top: 0.25rem;
+    margin-top: 0.25rem;
 }
 
 /* -------------------------
 DROPEND FIX
 ------------------------- */
 @media (min-width: 768px) {
-.navbar-nav .dropend {
-    position: relative;
-}
+    .navbar-nav .dropend {
+        position: relative;
+    }
 
-.navbar-nav .dropend .dropdown-menu {
-    position: absolute !important;
-    top: 0;
-    left: 100%;
-    margin-top: 0;
-    margin-left: 0.1rem;
-    display: none;
-    opacity: 0;
-    visibility: hidden;
-    transform: none;
-    z-index: 2000 !important;
-}
+    .navbar-nav .dropend .dropdown-menu {
+        position: absolute !important;
+        top: 0;
+        left: 100%;
+        margin-top: 0;
+        margin-left: 0.1rem;
+        display: none;
+        opacity: 0;
+        visibility: hidden;
+        transform: none;
+        z-index: 2000 !important;
+    }
 
-.navbar-nav .dropend:hover > .dropdown-menu {
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-}
+    .navbar-nav .dropend:hover > .dropdown-menu {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
 
-.dropend > .dropdown-toggle::after {
-    transform: rotate(90deg);
-}
+    .dropend > .dropdown-toggle::after {
+        transform: rotate(90deg);
+    }
 }
 
 /* Fix nested dropend inside dropdown-menu */
@@ -145,180 +174,179 @@ DROPEND FIX
   */
 }
 
-
 /* -------------------------
 DROPUP FIX
 ------------------------- */
 .dropup .dropdown-menu {
-margin-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 /* -------------------------
 MOBILE RESPONSIVENESS
 ------------------------- */
 @media (max-width: 767px) {
-.navbar-nav {
-    padding: 0.5rem 0;
-}
+    .navbar-nav {
+        padding: 0.5rem 0;
+    }
 
-.nav-link {
-    padding: 0.5rem 1rem;
-}
+    .nav-link {
+        padding: 0.5rem 1rem;
+    }
 
-.navbar {
-    height: auto !important;
-    position: relative;
-    z-index: 1050;
-    min-height: 3.5rem !important;
-}
+    .navbar {
+        height: auto !important;
+        position: relative;
+        z-index: 1050;
+        min-height: 3.5rem !important;
+    }
 
-.navbar-brand img {
-    height: 2.4rem;
-    margin-top: -2px;
-}
+    .navbar-brand img {
+        height: 2.4rem;
+        margin-top: -2px;
+    }
 
-.navbar .avatar.avatar-sm {
-    height: 1.8rem;
-    width: 2rem;
-}
+    .navbar .avatar.avatar-sm {
+        height: 1.8rem;
+        width: 2rem;
+    }
 
-.navbar-toggler {
-    height: 2rem;
-    width: 2.2rem;
-}
+    .navbar-toggler {
+        height: 2rem;
+        width: 2.2rem;
+    }
 
-.navbar-collapse.collapse {
-    transition: height 0.35s ease;
-    overflow: visible;
-    position: relative;
-    z-index: 1060;
-    background-color: #1F2937 !important;
-    color: #fff !important;
-}
+    .navbar-collapse.collapse {
+        transition: height 0.35s ease;
+        overflow: visible;
+        position: relative;
+        z-index: 1060;
+        background-color: #1F2937 !important;
+        color: #fff !important;
+    }
 
-.navbar-collapse .dropdown-menu {
-    transform: none;
-    visibility: visible;
-    display: none;
-    z-index: 1070 !important;
-    position: static;
-    background-color: #1F2937 !important;
-    color: #fff !important;
-    border: none;
-}
+    .navbar-collapse .dropdown-menu {
+        transform: none;
+        visibility: visible;
+        display: none;
+        z-index: 1070 !important;
+        position: static;
+        background-color: #1F2937 !important;
+        color: #fff !important;
+        border: none;
+    }
 
-.navbar-collapse .dropdown-menu.show {
-    display: block;
-}
+    .navbar-collapse .dropdown-menu.show {
+        display: block;
+    }
 
-.navbar-collapse .dropdown-menu .dropdown-menu {
-    background-color: #1F2937 !important;
-    border: none;
-}
+    .navbar-collapse .dropdown-menu .dropdown-menu {
+        background-color: #1F2937 !important;
+        border: none;
+    }
 
-.navbar-collapse .dropdown-item {
-    color: #fff !important;
-}
+    .navbar-collapse .dropdown-item {
+        color: #fff !important;
+    }
 
-.navbar-collapse .dropdown-item:hover {
-    background-color: #374151 !important;
-}
+    .navbar-collapse .dropdown-item:hover {
+        background-color: #374151 !important;
+    }
 }
 
 /* -------------------------
 PAGE STYLES
 ------------------------- */
 .page {
-display: flex;
-flex-direction: column;
-position: relative;
-min-height: 10%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 10%;
 }
 
 /* Fix guest card footer overflow on mobile */
 .card .d-flex.w-100 {
-flex-wrap: nowrap;
-overflow: visible; /* Allow dropdowns to spill */
-padding-top: 0.5rem;
-margin-top: auto;
-min-height: 3rem;
+    flex-wrap: nowrap;
+    overflow: visible; /* Allow dropdowns to spill */
+    padding-top: 0.5rem;
+    margin-top: auto;
+    min-height: 3rem;
 }
 
 .card .card-btn {
-flex: 1 1 50%;
-padding: 0.5rem;
-font-size: 0.875rem;
-display: flex;
-align-items: center;
-justify-content: center;
-white-space: nowrap;
+    flex: 1 1 50%;
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .card .card-btn svg {
-flex-shrink: 0;
+    flex-shrink: 0;
 }
 
 .card .card-btn svg.icon {
-width: 18px;
-height: 18px;
+    width: 18px;
+    height: 18px;
 }
 
 .card {
-overflow: visible !important;
+    overflow: visible !important;
 }
 
 .dropdown-menu {
-z-index: 1050 !important; /* ensures it appears above card */
+    z-index: 1050 !important; /* ensures it appears above card */
 }
 
 /* For mobile: 2 cards per row */
 @media (max-width: 767px) {
-.row.row-cards > [class*='col-'] {
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
-}
+    .row.row-cards > [class*='col-'] {
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
 
-.card {
-    max-width: 100%;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
+    .card {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
 
-.card-body {
-    flex: 1 1 auto;
-}
+    .card-body {
+        flex: 1 1 auto;
+    }
 }
 
 .icon.rotate {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease-in-out;
+    transform: rotate(180deg);
+    transition: transform 0.3s ease-in-out;
 }
 
 #advanced-table .table thead th:nth-child(2), /* Note */
 #advanced-table .table tbody td:nth-child(2) {
-  width: 45%; /* Reduced from ~40% */
+    width: 45%; /* Reduced from ~40% */
 }
 
 #advanced-table .table thead th:nth-child(3), /* Status */
 #advanced-table .table tbody td:nth-child(3) {
-  width: 18%; /* Increased */
+    width: 18%; /* Increased */
 }
 
 #advanced-table .table thead th:nth-child(4), /* Service */
 #advanced-table .table tbody td:nth-child(4) {
-  width: 15%; /* Increased */
+    width: 15%; /* Increased */
 }
 
 #advanced-table .table thead th:nth-child(5), /* Review */
 #advanced-table .table tbody td:nth-child(5) {
-  width: 7.5%; /* Reduced from ~15% */
+    width: 7.5%; /* Reduced from ~15% */
 }
 
 /* Date column keeps previous width */
 #advanced-table .table thead th:nth-child(1), /* Date */
 #advanced-table .table tbody td:nth-child(1) {
-  width: 12%;
+    width: 12%;
 }
 
 /* Ensure no wrap for smaller fields */
@@ -328,69 +356,67 @@ z-index: 1050 !important; /* ensures it appears above card */
 #advanced-table .table tbody td:nth-child(4),
 #advanced-table .table thead th:nth-child(5),
 #advanced-table .table tbody td:nth-child(5) {
-  white-space: nowrap;
+    white-space: nowrap;
 }
 
 /* For the note cell, allow wrapping */
 .note-cell {
-  white-space: normal;
+    white-space: normal;
 }
 
 /* Center and unmute table headers */
 #advanced-table .table thead th {
-  text-align: center;
-  color: var(--bs-body-color); /* Bootstrap default body text color */
-  font-weight: 600; /* Optional: make headers stand out */
+    text-align: center;
+    color: var(--bs-body-color); /* Bootstrap default body text color */
+    font-weight: 600; /* Optional: make headers stand out */
 }
 
 /* Center all table cells except Note column (2nd column) */
 #advanced-table .table tbody td:not(.note-cell) {
-  text-align: center;
-  vertical-align: middle;
+    text-align: center;
+    vertical-align: middle;
 }
 
 /* Scoped to this table container */
 #channel-of-visit-table th:first-child,
 #channel-of-visit-table td:first-child {
     white-space: nowrap; /* Prevent wrapping */
-    width: 40%;          /* Give enough width */
+    width: 40%; /* Give enough width */
 }
-
 
 /* Note column remains left-aligned and muted */
 .note-cell {
-  text-align: left;
-  color: #6c757d; /* Bootstrap text-muted color */
-  white-space: normal;
+    text-align: left;
+    color: #6c757d; /* Bootstrap text-muted color */
+    white-space: normal;
 }
 
 /* Card footer: flex container */
 .card-footer.d-flex {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 /* "No reports" message: take full width and center */
 .card-footer .text-center.text-muted {
-  flex-grow: 1;
-  text-align: center;
+    flex-grow: 1;
+    text-align: center;
 }
 
 /* Pagination styling */
 .card-footer .pagination {
-  margin: 0;
-  /* Default align right */
-  margin-left: auto;
+    margin: 0;
+    /* Default align right */
+    margin-left: auto;
 }
 
 /* When no reports, hide paginator */
 .card-footer:has(.text-center.text-muted) .pagination {
-  display: none;
+    display: none;
 }
 
 /* When there are reports, show paginator */
 .card-footer:not(:has(.text-center.text-muted)) .pagination {
-  display: flex;
+    display: flex;
 }
-

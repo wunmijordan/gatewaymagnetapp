@@ -457,7 +457,7 @@ def guest_list_view(request):
     ).order_by('-date_of_visit')
 
     # Pagination
-    paginator = Paginator(queryset, 9)
+    paginator = Paginator(queryset, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
