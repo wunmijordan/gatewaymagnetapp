@@ -5,32 +5,32 @@
 {% block content %}
 
 <div class="page-wrapper">
-
   <div class="page-header d-print-none" aria-label="Page Header">
     <div class="container-xl">
-      <div class="row g-2 align-items-center">
-        <div class="col">
-          <h3 class="page-title">
-            <div class="text-white mt-1">
-              {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
-                <small class="text-warning">You are viewing {{ start }}-{{ end }} of {{ total }} Guest(s)</small>
-              {% endwith %}
-            </div>
+      <div class="row g-2 align-items-center justify-content-center">
+
+        <!-- Page Title: full width on mobile, left-aligned on desktop -->
+        <div class="col-12 col-md-auto text-center text-md-start">
+          <h3 class="page-title text-white mt-1">
+            {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+              <small class="text-warning">You are viewing {{ start }}-{{ end }} of {{ total }} Guest(s)</small>
+            {% endwith %}
           </h3>
         </div>
-    
-        <div class="col-auto ms-auto d-print-none">
-          <div class="d-flex">   
+
+        <!-- Search & Reset: full width on mobile, right-aligned on desktop -->
+        <div class="col-12 col-md-auto d-print-none text-center text-md-end">
+          <div class="d-flex justify-content-center justify-content-md-end gap-2 flex-wrap">
             <!-- Search Form -->
-            <form method="get" class="d-flex" style="gap: 6px;">
+            <form method="get" class="d-flex gap-2 flex-wrap justify-content-center justify-content-md-end" style="max-width: 320px;">
               <input type="hidden" name="user" value="{{ request.GET.user }}">
               <input type="hidden" name="service" value="{{ request.GET.service }}">
-              <input type="search" name="q" class="form-control d-flex flex-wrap gap-2 align-items-center justify-content-end" style="width: 160px;" placeholder="Search guests..." value="{{ request.GET.q }}">
-              <button type="submit" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 align-items-center justify-content-end"><i class="bi bi-search"></i></button>
+              <input type="search" name="q" class="form-control" style="min-width: 160px;" placeholder="Search guests..." value="{{ request.GET.q }}">
+              <button type="submit" class="btn btn-sm btn-outline"><i class="bi bi-search"></i></button>
             </form>
-          
+
             <!-- Reset Button -->
-            <a href="{% url 'guest_list' %}" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 ms-2 align-items-center justify-content-end">
+            <a href="{% url 'guest_list' %}" class="btn btn-sm btn-outline">
               Reset
             </a>
           </div>
@@ -39,6 +39,7 @@
       </div>
     </div>
   </div>
+
 
   <div class="page-body">
     <div class="container-xl">
