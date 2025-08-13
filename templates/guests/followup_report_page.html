@@ -2,6 +2,7 @@
 {% load guest_extras %}
 {% block title %}Guest Report{% endblock %}
 {% load widget_tweaks %}
+{% load form_tags %}
 
 
 {% block content %}
@@ -146,19 +147,17 @@
                 <div class="space-y">
                   <div class="row row-cols-2 g-4">
                     <div class="input-icon">
-                      <!-- This input will hold the ISO value sent to backend -->
-                      <input type="hidden" id="date_of_visit" name="date_of_visit" value="{{ field.value|default_if_none:'' }}">
-
-                      <!-- This input is only for display with Flatpickr -->
-                      <input type="text" id="date_of_visit_display" class="form-control bg-grey text-white border-0 datepicker" placeholder="DD/MM/YYYY" autocomplete="off">
                       <span class="input-icon-addon me-3 text-white">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="38"  height="38"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar-week">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
-                          <path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M7 14h.013" /><path d="M10.01 14h.005" />
-                          <path d="M13.01 14h.005" /><path d="M16.015 14h.005" /><path d="M13.015 17h.005" />
-                          <path d="M7.01 17h.005" /><path d="M10.01 17h.005" />
-                        </svg>
-                      </span>     
+                      </span> 
+                      <input 
+                        type="date" 
+                        id="date_of_visit" 
+                        name="date_of_visit" 
+                        class="form-control bg-grey text-white border-0" 
+                        value="{{ field.value|default_if_none:'' }}"
+                        autocomplete="off"
+                      >
+                          
                     </div>
                     <div class="col-md-9 d-flex align-items-center">
                       <label class="form-check me-3 mb-0">

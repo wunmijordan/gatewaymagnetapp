@@ -1,0 +1,39 @@
+{# templates/accounts/partials/user_table.html #}
+{% for user in page_obj %}
+<tr>
+    <td>
+        {% if user.profile.image %}
+            <img src="{{ user.profile.image.url }}" width="30" class="rounded-circle me-2">
+        {% endif %}
+        <a href="{% url 'edit_user' user.pk %}" class="text-decoration-none">
+            {{ user.profile.full_name }}
+        </a>
+    </td>
+    <td>{{ user.email }}</td>
+    <td>{{ user.profile.phone_number }}</td>
+    <td>
+        {% for group in user.groups.all %}
+            {{ group.name }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+            None
+        {% endfor %}
+    </td>
+    <td>{{ user.is_staff|yesno:"Yes,No" }}</td>
+    <td>{{ user.is_superuser|yesno:"Yes,No" }}</td>
+</tr>
+{% endfor %}
+
+
+<tr>
+    <td colspan="6">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+                <a hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#user-table">&laquo; Prev</a>
+            {% endif %}
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            {% if page_obj.has_next %}
+                <a hx-get="?page={{ page_obj.next_page_number }}" hx-target="#user-table">Next &raquo;</a>
+            {% endif %}
+        </div>
+    </td>
+</tr>

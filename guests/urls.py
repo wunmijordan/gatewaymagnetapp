@@ -12,10 +12,13 @@ urlpatterns = [
     path('guest/create/', views.create_guest, name='create_guest'),
     path('guest/<int:pk>/edit/', views.edit_guest, name='edit_guest'),
 
+    # Guest detail by custom_id
+    path('guest/<str:custom_id>/', views.guest_detail_view, name='guest_detail'),
+
     # Status updates
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),
     path('guest/<int:guest_id>/status/<str:status_key>/', views.update_status_view, name='update_status'),
-    path('guests/<int:guest_id>/reassign/', views.reassign_guest, name='reassign_guest'),
+    path('guest/<int:guest_id>/reassign/', views.reassign_guest, name='reassign_guest'),
 
     # Import/Export
     path('export-csv/', views.export_csv, name='export_csv'),

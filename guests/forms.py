@@ -15,9 +15,19 @@ class GuestEntryForm(forms.ModelForm):
         help_text="Date of Birth."
     )
 
+    date_of_visit = forms.DateField(
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'autocomplete': 'off',
+        }),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],  # support input formats for validation
+        required=False,
+    )
+
     class Meta:
         model = GuestEntry
-        exclude = ['created_by', 'assigned_to', 'status']
+        exclude = ['created_by', 'assigned_to', 'status', 'customer_id']
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -34,7 +44,7 @@ class GuestEntryForm(forms.ModelForm):
             'gender': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manager'}),
             'home_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
-            'date_of_visit': forms.DateInput(attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
+            'date_of_visit': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
             'purpose_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'channel_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'service_attended': forms.Select(attrs={'class': 'form-select'}),
@@ -82,6 +92,12 @@ class GuestEntryForm(forms.ModelForm):
             'referrer_phone_number': 'Referrer\'s Phone Number.',
             'message': 'Additional Notes.',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Force the date field initial value format to ISO for the input
+        if self.instance and self.instance.date_of_visit:
+            self.fields['date_of_visit'].initial = self.instance.date_of_visit.strftime('%Y-%m-%d')
 
     def clean_phone_number(self):
         phone = self.cleaned_data.get('phone_number')

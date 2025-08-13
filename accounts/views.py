@@ -1,7 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import user_passes_test, login_required
-from .forms import CustomUserCreationForm
-from django.contrib.auth.models import Group
+from .forms import CustomUserCreationForm, UserEditForm, ProfileForm, UserForm
+from django.contrib.auth.models import Group, User
 from django.utils import timezone
 from datetime import datetime
 import pytz
@@ -9,10 +9,15 @@ from django.utils.timezone import localtime, now
 from django.contrib.auth.views import LoginView
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse_lazy
+from django.contrib.auth import get_user_model
+from django.core.paginator import Paginator
+from django.contrib import messages
+
+
+ 
 
 class CustomLoginForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
@@ -96,3 +101,64 @@ def create_user_view(request):
     return render(request, 'accounts/create_user.html', {
         'form': form
     })
+
+
+
+
+
+User = get_user_model()
+def is_superuser(user):
+    return user.is_superuser
+
+@user_passes_test(lambda u: u.is_superuser)
+def user_list(request):
+    query = request.GET.get("q", "")
+    users = User.objects.all().order_by("username")
+    if query:
+        users = users.filter(username__icontains=query)
+
+    paginator = Paginator(users, 10)  # 10 per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # If this is an HTMX request, return only the table body
+    if request.htmx:
+        return render(request, "accounts/partials/user_table.html", {"page_obj": page_obj})
+
+    return render(request, "accounts/user_list.html", {"page_obj": page_obj})
+
+@login_required
+@user_passes_test(is_superuser)
+def edit_user(request, pk,):
+    user = User.objects.get(pk=pk)
+    profile = user.profile
+
+    if request.method == 'POST':
+        user_form = UserForm(request.POST, instance=user)  # email, is_active, etc.
+        profile_form = ProfileForm(request.POST, request.FILES, instance=profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            return redirect('user_list')
+    else:
+        user_form = UserForm(instance=user)
+        profile_form = ProfileForm(instance=profile)
+
+    return render(request, 'accounts/edit_user.html', {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'user': user
+    })
+
+@login_required
+@user_passes_test(is_superuser)
+def delete_user(request, pk):
+    user_obj = get_object_or_404(User, pk=pk)
+
+    if request.method == "POST":
+        user_obj.delete()
+        messages.success(request, "User deleted successfully.")
+        return redirect('user_list')
+
+    return render(request, 'accounts/confirm_user_delete.html', {'user': user_obj})

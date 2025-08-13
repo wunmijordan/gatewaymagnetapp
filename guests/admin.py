@@ -1,17 +1,23 @@
 from django.contrib import admin
-from .models import GuestEntry
-from .models import FollowUpReport
+from .models import GuestEntry, FollowUpReport, SocialMediaEntry
 
+
+class SocialMediaEntryInline(admin.TabularInline):
+    model = SocialMediaEntry
+    extra = 1  # Always show one empty form
+    min_num = 0
+    can_delete = True
 
 @admin.register(GuestEntry)
 class GuestEntryAdmin(admin.ModelAdmin):
     list_display = (
-        'full_name', 'date_of_visit', 'service_attended',
+        'full_name', 'custom_id', 'date_of_visit', 'service_attended',
         'status', 'created_by', 'assigned_to'
     )
     list_filter = ('status', 'service_attended', 'created_by')
     search_fields = ('full_name', 'phone_number', 'email', 'referrer_name')
     raw_id_fields = ('created_by',)
+    inlines = [SocialMediaEntryInline]
 
     fieldsets = (
         (None, {
@@ -24,6 +30,10 @@ class GuestEntryAdmin(admin.ModelAdmin):
             )
         }),
     )
+
+
+
+
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

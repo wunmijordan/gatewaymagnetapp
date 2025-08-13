@@ -2,16 +2,16 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from .models import GuestEntry, FollowUpReport
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
+from .models import GuestEntry, FollowUpReport, SocialMediaEntry
 from .forms import GuestEntryForm, FollowUpReportForm
 import csv
 import io
 from django.utils.dateparse import parse_date
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate, login
 from django.core.paginator import Paginator
 from django.contrib.auth.models import Group
-from django.db.models import Q
+from django.db.models import Q, Count, Max, F
 from django.utils.http import urlencode
 import openpyxl
 from openpyxl.utils import get_column_letter
@@ -21,9 +21,7 @@ from django.utils import timezone
 from django.utils.timezone import localtime, now, localdate
 import pytz
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
-from django.template.loader import render_to_string
-from django.db.models import Count, Max, F
-from django.template.loader import get_template
+from django.template.loader import render_to_string, get_template
 import weasyprint
 #from .utils import get_week_start_end
 from guests.models import GuestEntry
@@ -38,36 +36,44 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 import os
 from django.db import IntegrityError
+from django.middleware.csrf import get_token
+from urllib.parse import urlencode
+
+
 
 
 
 
 User = get_user_model()
 
-#def is_admin_group(user):
-#    return user.is_authenticated and user.groups.filter(name='admin').exists()
 
-@login_required
-@user_passes_test(lambda u: is_admin_group)
-def reassign_guest(request, guest_id):
-    guest = get_object_or_404(GuestEntry, pk=guest_id)
 
-    if request.method == "POST":
-        assigned_to_id = request.POST.get("assigned_to")
-        if assigned_to_id:
-            try:
-                assigned_user = User.objects.get(pk=assigned_to_id)
-                guest.assigned_to = assigned_user
-                guest.save()
-                messages.success(request, f"{guest.full_name} reassigned to {assigned_user.get_full_name() or assigned_user.username}.")
-            except User.DoesNotExist:
-                messages.error(request, "Selected user does not exist.")
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        remember_me = request.POST.get('remember_me')  # Checkbox value
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+
+            if remember_me:
+                # Session will expire in 30 days
+                request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                # Session expires when browser closes
+                request.session.set_expiry(0)
+
+            return redirect('dashboard')
         else:
-            guest.assigned_to = None
-            guest.save()
-            messages.info(request, f"{guest.full_name} is now unassigned.")
+            context = {'form': LoginForm(request.POST)}
+            return render(request, 'login.html', context)
 
-    return redirect('guest_list')
+    else:
+        context = {'form': LoginForm()}
+        return render(request, 'login.html', context)
+
 
 
 
@@ -395,120 +401,250 @@ def channel_breakdown(request):
 
 @login_required
 def guest_list_view(request):
-    """
-    Guest List view with role-based access:
-    - Regular users see only their created or assigned guests.
-    - Admins see all guests, can filter by creator, assign guests.
-    - Guests reassigned to someone else disappear from original user’s Guest List view.
-    """
-    tz = pytz.timezone('Africa/Lagos')
-    now_in_wat = localtime(now(), timezone=tz)
-    day_name = now_in_wat.strftime('%A')
-    time_str = now_in_wat.strftime('%I:%M %p')
-    today_str = now_in_wat.strftime('%Y-%m-%d')
-    is_staff_group = request.user.groups.filter(name='Admin').exists()
+  user = request.user
+  is_admin_group = user.is_superuser or user.groups.filter(name='Admin').exists()
 
-    show_welcome_modal = request.session.get('last_welcome_popup') != today_str
-    if show_welcome_modal:
-        request.session['last_welcome_popup'] = today_str
+  # Base queryset depending on user role
+  if is_admin_group:
+    queryset = GuestEntry.objects.all()
+  else:
+    queryset = GuestEntry.objects.filter(
+      Q(created_by=user, assigned_to__isnull=True) | Q(assigned_to=user)
+    )
+
+  # Filters from GET params
+  search_query = request.GET.get('q', '').strip()
+  status_filter = request.GET.get('status', '')
+  channel_filter = request.GET.get('channel', '')
+  purpose_filter = request.GET.get('purpose', '')
+  service_filter = request.GET.get('service', '')
+  user_filter = request.GET.get('user', '')
+  date_of_visit_filter = request.GET.get('date_of_visit', '')
+
+  # Apply search across multiple fields (full-text search simulation)
+  if search_query:
+    queryset = queryset.filter(
+      Q(full_name__icontains=search_query) |
+      Q(phone_number__icontains=search_query) |
+      Q(email__icontains=search_query) |
+      Q(referrer_name__icontains=search_query) |
+      Q(service_attended__icontains=search_query) |
+      Q(status__icontains=search_query) |
+      Q(channel_of_visit__icontains=search_query) |
+      Q(purpose_of_visit__icontains=search_query) |
+      Q(created_by__first_name__icontains=search_query) |
+      Q(created_by__last_name__icontains=search_query) |
+      Q(assigned_to__first_name__icontains=search_query) |
+      Q(assigned_to__last_name__icontains=search_query)
+    )
+
+  # Apply specific filters
+  if status_filter:
+    queryset = queryset.filter(status__iexact=status_filter)
+  if channel_filter:
+    queryset = queryset.filter(channel_of_visit__iexact=channel_filter)
+  if purpose_filter:
+    queryset = queryset.filter(purpose_of_visit__iexact=purpose_filter)
+  if service_filter:
+    queryset = queryset.filter(service_attended__iexact=service_filter)
+  if user_filter:
+    queryset = queryset.filter(Q(created_by__id=user_filter) | Q(assigned_to__id=user_filter))
+  if date_of_visit_filter:
+    queryset = queryset.filter(date_of_visit=date_of_visit_filter)
+
+  # Annotate reports
+  queryset = queryset.annotate(
+    report_count=Count('reports'),
+    last_reported=Max('reports__report_date')
+  ).order_by('-custom_id')  # latest guest on top
+
+  # Pagination
+  paginator = Paginator(queryset, 12)
+  page_number = request.GET.get('page', 1)
+  page_obj = paginator.get_page(page_number)
+
+  # Dropdown options for filters
+  channels = GuestEntry.objects.values_list('channel_of_visit', flat=True).distinct().order_by('channel_of_visit')
+  statuses = GuestEntry.STATUS_CHOICES
+  purposes = GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit')
+  services = GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended')
+
+  # Users dropdown for reassignment
+  users_qs = User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:100]
+
+  # Preserve all GET params except 'page' for pagination links
+  query_params = request.GET.copy()
+  if 'page' in query_params:
+    query_params.pop('page')
+  query_string = query_params.urlencode()
+
+  context = {
+    'page_obj': page_obj,
+    'is_admin_group': is_admin_group,
+    'users': users_qs,
+    'search_query': search_query,
+    'status_filter': status_filter,
+    'channel_filter': channel_filter,
+    'purpose_filter': purpose_filter,
+    'service_filter': service_filter,
+    'user_filter': user_filter,
+    'date_of_visit': date_of_visit_filter,
+    'show_filters': True,
+    'channels': channels,
+    'statuses': [status[0] for status in statuses],
+    'purposes': purposes,
+    'services': services,
+    'query_string': query_string,
+  }
+
+  return render(request, 'guests/guest_list.html', context)
+
+
+
+
+
+
+User = get_user_model()
+
+@login_required
+def guest_detail_view(request, custom_id):
+    """
+    Returns rendered HTML for guest details,
+    to be loaded directly into a Bootstrap modal.
+    Bulletproof: handles missing social media, reports, and reassignment users.
+    """
+
+    # Define social media icons
+    social_media_icons = {
+        'linkedin': '''
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+            class="icon icon-tabler icon-tabler-brand-linkedin" style="color:#0A66C2;">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M8 11v5" />
+            <path d="M8 8v.01" />
+            <path d="M12 16v-5" />
+            <path d="M16 16v-3a2 2 0 1 0 -4 0" />
+            <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z" />
+        </svg>
+        ''',
+        'whatsapp': ''' 
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+            class="icon icon-tabler icon-tabler-brand-whatsapp" style="color:#25D366;">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+            <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+        </svg>
+        ''',
+        'instagram': '''
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="icon icon-tabler icon-tabler-brand-instagram" style="color:#E4405F;">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <rect x="4" y="4" width="16" height="16" rx="4" />
+            <circle cx="12" cy="12" r="3" />
+            <line x1="16.5" y1="7.5" x2="16.5" y2="7.501" />
+        </svg>
+        ''',
+        'twitter': '''
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="icon icon-tabler icon-tabler-brand-twitter" style="color:#1DA1F2;">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M22 4.01c-1 .49-1.98.689-3 .99c-1.121-1.265-2.783-1.335-4.38-.737
+                    c-1.16 0-2.34.522-3.18 1.36c-1.208-.055-2.287-.616-3.07-1.52
+                    c-.422.722-.666 1.561-.666 2.475c0 1.71.87 3.213 2.188 4.096
+                    c-.807-.026-1.566-.247-2.229-.616c-.054 1.047.729 2.042 1.95 2.24
+                    c-.693.188-1.452.232-2.224.084c.626 1.956 2.444 3.377 4.6 3.417
+                    c-1.68 1.318-3.809 2.105-6.102 2.105c-.395 0-.779-.023-1.158-.067
+                    c2.179 1.397 4.768 2.213 7.557 2.213c9.054 0 14-7.496 14-13.986
+                    c0-.21 0-.423-.015-.633c.962-.689 1.8-1.56 2.46-2.548l-.047-.02z"/>
+        </svg>
+        ''',
+        'tiktok': '''
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            class="icon icon-tabler icon-tabler-brand-tiktok" style="color:#000000;">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M9 19c-4 0-5-4-5-7a8 8 0 0 1 14-6v4" />
+            <path d="M16 18.5a4.5 4.5 0 0 1-6.5-4" />
+        </svg>
+        ''',
+    }
 
     user = request.user
-    is_admin_group = user.groups.filter(name="Admin").exists() or user.is_superuser
+    is_admin_group = user.groups.filter(name='Admin').exists()
+    guest = get_object_or_404(GuestEntry, custom_id=custom_id)
 
-    # Get filters
-    filter_user_id = request.GET.get('user')
-    search_query = request.GET.get('q')
-    channel = request.GET.get('channel')
-    status = request.GET.get('status')
-    purpose = request.GET.get('purpose')
-    service = request.GET.get('service')
+    # Access control: allow only superusers/admins or creator/assigned user
+    if not (user.is_superuser or is_admin_group):
+        if not (guest.created_by == user or guest.assigned_to == user):
+            return HttpResponse("Unauthorized", status=403)
 
-    # Base queryset
-    if is_admin_group:
-        queryset = GuestEntry.objects.all()
-        if filter_user_id and filter_user_id.isdigit():
-            queryset = queryset.filter(created_by__id=filter_user_id)
-    else:
-        queryset = GuestEntry.objects.filter(
-            Q(created_by=user, assigned_to__isnull=True) |
-            Q(assigned_to=user)
-        )
+    # Only admins and superusers get full user list for reassignment
+    users = get_user_model().objects.all() if user.is_superuser or is_admin_group else []
 
-    # Apply filters
-    if channel:
-        queryset = queryset.filter(channel_of_visit__iexact=channel)
-    if status:
-        queryset = queryset.filter(status__iexact=status)
-    if purpose:
-        queryset = queryset.filter(purpose_of_visit__iexact=purpose)
-    if service:
-        queryset = queryset.filter(service_attended__iexact=service)
-    if search_query:
-        queryset = queryset.filter(
-            Q(full_name__icontains=search_query) |
-            Q(phone_number__icontains=search_query) |
-            Q(email__icontains=search_query) |
-            Q(referrer_name__icontains=search_query)
-        )
+    # Fetch all social media accounts linked to this guest
+    social_media_handles = guest.social_media_accounts.all()  # queryset, can be empty
 
-    queryset = queryset.annotate(
-        report_count=Count('reports'),
-        last_reported=Max('reports__report_date')
-    ).order_by('-date_of_visit')
+    # Fetch all reports
+    reports = guest.reports.all().order_by('-report_date') if hasattr(guest, 'reports') else []
 
-    # Pagination
-    paginator = Paginator(queryset, 12)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    # Create form instance for display (readonly)
+    form = GuestEntryForm(instance=guest)
 
-    # Add show_assigned_badge flag
-    for guest in page_obj:
-        guest.show_assigned_badge = (
-            guest.assigned_to == user and guest.created_by != user
-        )
-
-    # Badge Rank Logic
-    entry_count = queryset.count()
-    badge = {
-        "level": "Novice", "class": "bg-gradient-muted text-white",
-        "bootstrap_icon": "bi bi-emoji-smile-fill fs-1",
-        "message": f"Hi, {user.get_full_name()}!"
-    }
-    if entry_count >= 60:
-        badge["level"] = "Expert"
-    elif entry_count >= 30:
-        badge["level"] = "Professional"
-    elif entry_count >= 10:
-        badge["level"] = "Apprentice"
-
-    # Update message accordingly
-    badge["message"] = f"Welcome back, {user.get_full_name()}!" if badge["level"] != "Novice" else badge["message"]
-
-    # Context
-    context = {
-        'show_filters': True,
-        'guests': page_obj,
-        'page_obj': page_obj,
-        'badge': badge,
-        'entry_count': entry_count,
-        'filter_user_id': int(filter_user_id) if filter_user_id and filter_user_id.isdigit() else None,
-        'filter_service': service,
-        'search_query': search_query,
-        'export_query_string': urlencode({k: v for k, v in request.GET.items() if k != 'page'}),
+    html = render_to_string('guests/guest_detail_modal.html', {
+        'guest': guest,
+        'social_media_icons': social_media_icons,
+        'social_media_handles': social_media_handles,
+        'reports': reports,
+        'users': users,
         'is_admin_group': is_admin_group,
-        'is_staff_group': user.groups.filter(name='Admin').exists(),
-        'logged_in_user': user,
-        'show_welcome_modal': show_welcome_modal,
-        'day_name': day_name,
-        'time_str': time_str,
-        'channels': ['Billboard (Grammar School)', 'Billboard (Kosoko)', 'Facebook', 'Flyer', 'Instagram', 'Referral', 'Self', 'Visit', 'YouTube'],
-        'statuses': ['Planted', 'Planted Elsewhere', 'Relocated', 'Work in Progress'],
-        'purposes': ['Home Church', 'Occasional Visit', 'One-Time Visit', 'Special Programme Visit'],
-        'services': ['Black Ball', 'Breakthrough Campaign', 'Breakthrough Festival', 'Code Red. Revival', 'Cross Over', 'Deep Dive', 'Family Hangout', 'Forecasting', 'Life Masterclass', 'Love Lounge', 'Midweek Recharge', 'Outreach', 'Quantum Leap', 'Recalibrate Marathon', 'Singles Connect', 'Supernatural Encounter'],
-        'users': get_user_model().objects.filter(is_staff=False) if is_admin_group else None
-    }
+        'form': form,
+        'view_only': True,
+    }, request=request)
 
-    return render(request, 'guests/guest_list.html', context)
+    return HttpResponse(html)
+
+
+
+
+
+
+
+
+
+
+
+
+def is_admin_or_superuser(user):
+    return user.is_superuser or user.groups.filter(name='Admin').exists()
+
+@login_required
+@user_passes_test(is_admin_or_superuser)
+def reassign_guest(request, guest_id):
+    if request.method == 'POST':
+        guest = get_object_or_404(GuestEntry, id=guest_id)
+        assigned_to_id = request.POST.get('assigned_to')
+
+        if assigned_to_id:
+            try:
+                assigned_user = User.objects.get(id=assigned_to_id, is_active=True)
+                guest.assigned_to = assigned_user
+                guest.save()
+                messages.success(request, f"Guest {guest.full_name} reassigned to {assigned_user.get_full_name() or assigned_user.username}.")
+            except User.DoesNotExist:
+                messages.error(request, "Selected user does not exist or is inactive.")
+        else:
+            # Clear assignment if no user selected
+            guest.assigned_to = None
+            guest.save()
+            messages.success(request, f"Assignment cleared for guest {guest.full_name}.")
+
+    return redirect('guest_list')  # Adjust this redirect to your guest list page name
+
+
 
 
 
@@ -526,24 +662,83 @@ def can_edit_guest(user, guest):
 def can_reassign(user):
     return user.is_superuser or is_admin_group(user)
 
+
+
+
 @login_required
 def create_guest(request):
-    form = GuestEntryForm(request.POST or None, request.FILES or None)
-
     if request.method == 'POST':
-        if form.is_valid():
+        form = GuestEntryForm(request.POST, request.FILES)
+        
+        # Get lists of social media fields from POST (JS sends arrays)
+        social_media_types = request.POST.getlist('social_media_type[]')
+        social_media_handles = request.POST.getlist('social_media_handle[]')
+
+        social_media_entries = []
+        errors = []
+
+        # Validate social media entries manually
+        for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
+            platform = platform.strip()
+            handle = handle.strip()
+            if platform and handle:
+                if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
+                    errors.append(f"Invalid social media platform at entry {i+1}.")
+                elif len(handle) > 255:
+                    errors.append(f"Handle too long at entry {i+1}.")
+                else:
+                    social_media_entries.append({'platform': platform, 'handle': handle})
+            elif platform or handle:
+                errors.append(f"Both platform and handle must be provided at entry {i+1}.")
+
+        if form.is_valid() and not errors:
             guest = form.save(commit=False)
             guest.created_by = request.user
             guest.save()
+
+            # Save social media entries
+            for entry in social_media_entries:
+                SocialMediaEntry.objects.create(
+                    guest=guest,
+                    platform=entry['platform'],
+                    handle=entry['handle']
+                )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'guest': {
+                        'id': guest.id,
+                        'name': guest.full_name,
+                        'date_of_visit': guest.date_of_visit.strftime('%Y-%m-%d'),
+                        'status': guest.status,
+                        'photo_url': guest.picture.url if guest.picture else '',
+                    }
+                })
+
             if 'save_add_another' in request.POST:
                 return redirect('create_guest')
             return redirect('guest_list')
 
-    return render(request, 'guests/guest_form.html', {
-        'form': form,
-        'edit_mode': False,
-        'show_delete': False,
-    })
+        else:
+            context = {
+                'form': form,
+                'social_media_errors': errors,
+                'edit_mode': False,
+                'show_delete': False,
+            }
+            return render(request, 'guests/guest_form.html', context)
+
+    else:
+        form = GuestEntryForm()
+        return render(request, 'guests/guest_form.html', {
+            'form': form,
+            'edit_mode': False,
+            'show_delete': False,
+        })
+
+
+
 
 @login_required
 def edit_guest(request, pk):
@@ -687,8 +882,6 @@ def import_guests_csv(request):
 
 
 
-import csv
-from django.http import HttpResponse
 
 def download_csv_template(request):
     response = HttpResponse(content_type='text/csv')

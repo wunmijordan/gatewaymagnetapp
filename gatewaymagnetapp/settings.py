@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_htmx',
 
     # Your apps
     'guests',
@@ -56,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django_htmx.middleware.HtmxMiddleware",
 ]
 
 if DEBUG:
@@ -193,7 +195,7 @@ SESSION_SAVE_EVERY_REQUEST = False
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # PWA Configuration (minimal, no caching)
-PWA_APP_NAME = 'Gateway Magnet App'
+PWA_APP_NAME = 'Gateway Nation Magnet App'
 PWA_APP_SHORT_NAME = 'Magnet'
 PWA_APP_DESCRIPTION = "Guest Management System for Gateway Nation"
 PWA_APP_THEME_COLOR = '#2e303e'

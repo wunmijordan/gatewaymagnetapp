@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% load guest_extras %}
+{% load static %}
 {% block title %}Guest List - Gateway Magnet{% endblock %}
 
 {% block content %}
-
 <div class="page-wrapper">
 
   <div class="page-header d-print-none" aria-label="Page Header">
@@ -11,46 +11,57 @@
       <div class="row g-2 align-items-center">
         <div class="col">
           <h3 class="page-title">
-            <div class="text-white mt-1">
+            <div id="guest-counter" class="text-white mt-1">
               {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
                 <small class="text-warning">You are viewing {{ start }}-{{ end }} of {{ total }} Guest(s)</small>
               {% endwith %}
             </div>
           </h3>
         </div>
-    
+
         <div class="col-auto ms-auto d-print-none">
-          <div class="d-flex">   
+          <div class="d-flex">           
             <!-- Search Form -->
+            
+
             <form method="get" class="d-flex" style="gap: 6px;">
-              <input type="hidden" name="user" value="{{ request.GET.user }}">
-              <input type="hidden" name="service" value="{{ request.GET.service }}">
-              <input type="search" name="q" class="form-control d-flex flex-wrap gap-2 align-items-center justify-content-end" style="width: 160px;" placeholder="Search guests..." value="{{ request.GET.q }}">
-              <button type="submit" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 align-items-center justify-content-end"><i class="bi bi-search"></i></button>
+              <input type="search" name="q" class="form-control" style="width: 120px;"
+                placeholder="Search Here" value="{{ request.GET.q|default_if_none:'' }}">
+              <button type="submit" class="btn btn-sm btn-outline">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-loader-3">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 12a9 9 0 0 0 9 9a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9" />
+                  <path d="M17 12a5 5 0 1 0 -5 5" />
+                </svg>
+              </button>
             </form>
-          
+
             <!-- Reset Button -->
             <a href="{% url 'guest_list' %}" class="btn btn-sm btn-outline d-flex flex-wrap gap-2 ms-2 align-items-center justify-content-end">
-              Reset
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-x">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M18 6l-12 12" />
+                <path d="M6 6l12 12" />
+              </svg>
             </a>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
   <div class="page-body">
-    <div class="container-xl">
+    <div class="container-xl" id="guest-list-container" id="guestList">
       <div class="row row-cards g-3">
         {% for guest in page_obj %}
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-md-4" data-custom-id="{{ guest.custom_id }}">
           <div class="card flex-fill h-100">
-            
-            <!-- Card Header -->
-            <div class="card-header border-0 pb-0 d-flex justify-content-end">
+
+            <!-- Card Header with custom ID left and dropdown right -->
+            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center">
+              <div class="text-muted text-warning fs-3 fw-bold" style="font-family: monospace;">
+                {{ guest.custom_id }}
+              </div>
               <div class="dropdown">
-                <a href="#" class="text-white" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a href="#" class="text-purple" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="5" r="1" />
                     <circle cx="12" cy="12" r="1" />
@@ -59,8 +70,7 @@
                 </a>
                 <div class="dropdown-menu dropdown-menu-end p-1">
                   <a class="dropdown-item py-1 text-grey" href="{% url 'edit_guest' guest.id %}">Edit</a>
-                  <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" 
-                    href="{% url 'followup_report_page' guest.id %}">
+                  <a class="dropdown-item py-1 d-flex justify-content-between align-items-center" href="{% url 'followup_report_page' guest.id %}">
                     Report
                     <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
                   </a>
@@ -70,21 +80,53 @@
 
             <!-- Card Body -->
             <div class="card-body text-center">
-              {% if guest.picture %}
-                <span class="avatar avatar-xl" style="background-image: url('{{ guest.picture.url }}'); border-radius: 0.5rem;"></span>
-              {% else %}
-                <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center" 
-                      style="font-weight: bold; width: 64px; height: 64px; font-size: 24px; line-height: 1; border-radius: 0.5rem;">
-                  {{ guest.initials }}
-                </span>
-              {% endif %}
+              <!-- Guest Avatar / Picture with Preview Modal Trigger -->
+              <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#previewModal{{ guest.id }}">
+                {% if guest.picture %}
+                  <span class="avatar avatar-xl rounded" 
+                        style="background-image: url('{{ guest.picture.url }}'); display:inline-block; width:64px; height:64px; border-radius:0.5rem; background-size:cover; background-position:center;">
+                  </span>
+                {% else %}
+                  <span class="avatar avatar-xl bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                        style="width:64px; height:64px; font-weight:bold; font-size:24px; line-height:1; border-radius:0.5rem;">
+                    {{ guest.initials }}
+                  </span>
+                {% endif %}
+              </a>
 
-              <h3 class="m-0 mb-1">{{ guest.full_name }}</h3>
-              <div class="text-secondary">Service Attended: {{ guest.service_attended }}</div>
+              <!-- Preview Modal -->
+              <div class="modal fade" id="previewModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content bg-dark border-light text-white">
+                    <div class="modal-body text-center p-4">
+                      {% if guest.picture %}
+                        <img src="{{ guest.picture.url }}" class="img-fluid rounded shadow" alt="{{ guest.full_name }}">
+                      {% else %}
+                        <div class="bg-grey rounded p-5 d-inline-block">
+                          <span class="fw-bold display-4">{{ guest.initials }}</span>
+                        </div>
+                      {% endif %}
+                      <p class="mt-3 mb-0 fw-bold">{{ guest.full_name }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Guest name clickable to detail page -->
+              <h3 class="m-0 mb-3 fs-2">
+                <a href="#" 
+                  class="guest-name-link" 
+                  data-detail-url="{% url 'guest_detail' guest.custom_id %}">
+                  {{ guest.full_name }}
+                </a>
+              </h3>
+
+              <div class="text-grey" style="font-family: monospace;"> {{ guest.date_of_visit }}</div>
+              <div class="text-secondary"> {{ guest.service_attended }}</div>
 
               <!-- Badges -->
               <div class="mt-3">
-                {% if is_staff_group or request.user.is_superuser %}
+                {% if request.user.is_superuser or is_admin_group %}
                   {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
                     <span class="badge bg-warning-lt">Assigned to: {{ guest.assigned_to.get_full_name|default:guest.assigned_to.username }}</span>
                   {% endif %}
@@ -95,24 +137,10 @@
                   {% endif %}
                 {% endif %}
 
-                <!-- Reassign Form -->
-                {% if is_staff_group or request.user.is_superuser %}
-                  <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
-                    {% csrf_token %}
-                    <select name="assigned_to" class="form-select form-select-sm">
-                      <option value="">-- Assign to user --</option>
-                      {% for u in users %}
-                        <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-sm">Reassign</button>
-                  </form>
-                {% endif %}
-
                 <!-- Last Reported -->
-                <div class="text-sm mt-2">
-                  <strong>Last Reported:</strong>
-                  {{ guest.last_reported|default:"Never" }}
+                <div class="text-sm mt-3">
+                  <i>Last Reported:
+                    {{ guest.last_reported|default:"Never" }}</i>
                 </div>
               </div>
             </div>
@@ -125,10 +153,10 @@
               </a>
 
               <div class="dropdown flex-fill text-center">
-                <a href="#" 
-                  class="card-btn dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}" 
-                  data-bs-toggle="dropdown" 
-                  data-bs-display="static" 
+                <a href="#"
+                  class="card-btn dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}"
+                  data-bs-toggle="dropdown"
+                  data-bs-display="static"
                   aria-expanded="false">
                   {{ guest.status|default:"Select Status" }}
                 </a>
@@ -152,7 +180,19 @@
         {% endfor %}
       </div>
 
-      <!--Pagination-->
+      {# Capture all GET params except page for pagination links #}
+      {% with request.GET.urlencode as full_query %}
+        {% if full_query %}
+          {% with full_query|cut:"page={{ page_obj.number }}"|cut:"&&" as query_string %}
+            {# use query_string here #}
+          {% endwith %}
+        {% else %}
+          {% with "" as query_string %}
+            {# use query_string here #}
+          {% endwith %}
+        {% endif %}
+      {% endwith %}
+
       <div class="d-flex mt-4">
         <ul class="pagination ms-auto">
 
@@ -160,10 +200,8 @@
           {% if page_obj.has_previous %}
             <li class="page-item">
               <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Previous">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-                    class="icon icon-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                   <path d="M15 6l-6 6l6 6"></path>
                 </svg>
               </a>
@@ -171,10 +209,8 @@
           {% else %}
             <li class="page-item disabled">
               <span class="page-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-                    class="icon icon-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                   <path d="M15 6l-6 6l6 6"></path>
                 </svg>
               </span>
@@ -200,10 +236,8 @@
           {% if page_obj.has_next %}
             <li class="page-item">
               <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string }}{% endif %}" aria-label="Next">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-                    class="icon icon-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                   <path d="M9 6l6 6l-6 6"></path>
                 </svg>
               </a>
@@ -211,10 +245,8 @@
           {% else %}
             <li class="page-item disabled">
               <span class="page-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
-                    viewBox="0 0 24 24" fill="none" stroke="currentColor" 
-                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-                    class="icon icon-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                   <path d="M9 6l6 6l-6 6"></path>
                 </svg>
               </span>
@@ -245,11 +277,27 @@
 
 
 
+<div class="modal fade" id="guestDetailModal" tabindex="-1" aria-labelledby="guestDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white">
+      <div class="modal-header">
+        <h5 class="modal-title" id="guestDetailModalLabel">Guest Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- AJAX will inject content here -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
 </div>
+
+
+
+
+
+
+
 {% endblock %}
-
-
-
-
-
-    
