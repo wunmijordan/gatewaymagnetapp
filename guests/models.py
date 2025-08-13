@@ -70,6 +70,7 @@ class GuestEntry(models.Model):
         ('Life Masterclass', 'Life Masterclass'),
         ('Love Lounge', 'Love Lounge'),
         ('Midweek Recharge', 'Midweek Recharge'),
+        ('Midyear Praise Party', 'Midyear Praise Party'),
         ('Outreach', 'Outreach'),
         ('Praise Party', 'Praise Party'),
         ('Quantum Leap', 'Quantum Leap'),
