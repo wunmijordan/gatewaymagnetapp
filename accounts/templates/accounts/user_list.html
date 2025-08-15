@@ -1,48 +1,189 @@
-{# templates/accounts/user_list.html #}
 {% extends "base.html" %}
 {% load static %}
 
 {% block content %}
 <div class="container-xl mt-4">
-    <div class="card">
-      <a href="{% url 'create_user' %}" class="dropdown-item text-warning">
-        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-plus">
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" /><path d="M19 16v6" />
-          <path d="M6 21v-2a4 4 0 0 1 4 -4h4" />
-        </svg>
-        Add User
-      </a>
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h3>User Management</h3>
-            <input type="text" class="form-control w-auto" placeholder="Search..."
-                   hx-get="{% url 'user_list' %}" hx-trigger="keyup changed delay:500ms"
-                   hx-target="#user-table" name="q">
+
+  <!-- Add User Button -->
+  <div class="mb-3 text-end">
+    <a href="{% url 'create_user' %}" class="btn btn-warning">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon me-1">
+        <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0-8 0"/>
+        <path d="M16 19h6"/>
+        <path d="M19 16v6"/>
+        <path d="M6 21v-2a4 4 0 0 1 4-4h4"/>
+      </svg>
+      Add User
+    </a>
+  </div>
+
+  <!-- Search Input -->
+  <div class="mb-3">
+    <input type="text" class="form-control w-auto" placeholder="Search..."
+           hx-get="{% url 'user_list' %}" hx-trigger="keyup changed delay:500ms"
+           hx-target="#user-cards" name="q">
+  </div>
+
+  <!-- User Cards -->
+  <div class="row row-cards g-3" id="user-cards">
+    {% for user in page_obj %}
+    <div class="col-6 col-md-4" data-user-id="{{ user.id }}">
+      <div class="card flex-fill h-100">
+
+        <!-- Card Header Dropdown -->
+        <div class="card-header border-0 pb-0 d-flex justify-content-end align-items-center">
+          <div class="dropdown">
+            <a href="#" class="text-purple" data-bs-toggle="dropdown">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end p-1">
+              <a class="dropdown-item py-1 text-grey" href="{% url 'edit_user' user.pk %}">Edit</a>
+            </div>
+          </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table card-table table-vcenter">
-                <thead>
-                    <tr>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>Staff</th>
-                        <th>Superuser</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="user-table">
-                    {% include "accounts/partials/user_table.html" %}
-                </tbody>
-            </table>
+
+
+
+
+
+        <!-- Card Body -->
+        <div class="card-body text-center">
+          <a href="#" data-bs-toggle="modal" data-bs-target="#userDetailModal{{ user.id }}">
+            {% if user.profile.image %}
+              <span class="avatar avatar-xl rounded" style="background-image: url('{{ user.profile.image.url }}'); display:inline-block; width:64px; height:64px; border-radius:0.5rem; background-size:cover; background-position:center;"></span>
+            {% else %}
+              <span class="avatar rounded bg-grey text-white d-flex d-inline-flex align-items-center justify-content-center"
+                    style="width:64px; height:64px; font-weight:bold; font-size:12px; line-height:1; border-radius:50%;">
+                {{ user.profile.get_initials }}
+              </span>
+            {% endif %}
+          </a>
+
+          <h4 class="mt-2">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#userDetailModal{{ user.id }}" class="text-decoration-none">
+              {{ user.profile.full_name }}
+            </a>
+          </h4>
+
+          <!-- Roles Badges -->
+          <div class="mt-2">
+            {% if user.is_superuser %}
+              <span class="badge bg-danger-lt">Superuser</span>
+            {% elif user.is_staff %}
+              <span class="badge bg-warning-lt">Admin</span>
+            {% elif user.groups.all %}
+              {% for group in user.groups.all %}
+                <span class="badge bg-secondary-lt">{{ group.name }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="badge bg-secondary-lt">Team Member</span>
+            {% endif %}
+          </div>
+
+          <div class="text-muted mt-1">
+            Guests Managed: {{ user.profile.guest_count|default:"0" }}
+          </div>
         </div>
+
+        <!-- Card Actions -->
+        <div class="d-flex w-100 mt-auto">
+          {% if user.profile.phone_number %}
+          <a href="tel:{{ user.profile.phone_number }}" class="card-btn text-success flex-fill text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor" fill="none" class="icon me-2"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"></path></svg>
+            Call
+          </a>
+          {% endif %}
+          {% if user.email %}
+          <a href="mailto:{{ user.email }}" class="card-btn text-primary flex-fill text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" stroke="currentColor" fill="none" class="icon me-2"><path d="M4 4h16v16H4z"/><path d="M4 4l8 8l8-8"/></svg>
+            Email
+          </a>
+          {% endif %}
+        </div>
+      </div>
     </div>
-</div>
 
-<!-- Modal -->
-<div class="modal fade" id="modal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content" id="modal-body"></div>
+    <!-- User Detail Modal -->
+    <div class="modal fade" id="userDetailModal{{ user.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-light text-white">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ user.profile.full_name }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            {% if user.profile.image %}
+              <img src="{{ user.profile.image.url }}" class="img-fluid rounded-circle mb-3" style="width:120px; height:120px; object-fit:cover;">
+            {% else %}
+              <span class="avatar avatar-xxl bg-grey text-white d-inline-flex align-items-center justify-content-center mb-3" style="width:120px; height:120px; font-weight:bold; font-size:36px; border-radius:50%;">
+                {{ user.profile.get_initials }}
+              </span>
+            {% endif %}
+
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Phone:</strong> {{ user.profile.phone_number|default:"N/A" }}</p>
+            <p>
+              <strong>Roles:</strong>
+              {% if user.is_superuser %}
+                Superuser
+              {% elif user.is_staff %}
+                Admin
+              {% elif user.groups.all %}
+                {% for group in user.groups.all %}
+                  {{ group.name }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              {% else %}
+                Team Member
+              {% endif %}
+            </p>
+            <p><strong>Guests Managed:</strong> {{ user.guest_count|default:"0" }}</p>
+          </div>
+          <div class="modal-footer">
+            <a href="{% url 'edit_user' user.pk %}" class="btn btn-warning">Edit User</a>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col text-center text-muted">No users found.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  <div class="d-flex mt-4">
+    <ul class="pagination ms-auto">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">&laquo;</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% else %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">&raquo;</a>
+        </li>
+      {% else %}
+        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+      {% endif %}
+    </ul>
   </div>
 </div>
 {% endblock %}

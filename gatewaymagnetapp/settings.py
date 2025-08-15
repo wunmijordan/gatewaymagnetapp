@@ -25,23 +25,24 @@ ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.s
 
 # Installed apps
 INSTALLED_APPS = [
-    # Third-party apps
-    'cloudinary',
-    'cloudinary_storage',
-    'widget_tweaks',
+  # Third-party apps
+  'cloudinary',
+  'cloudinary_storage',
+  'widget_tweaks',
 
-    # Django default apps
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django_htmx',
+  # Django default apps
+  'django.contrib.admin',
+  'django.contrib.auth',
+  'django.contrib.contenttypes',
+  'django.contrib.sessions',
+  'django.contrib.messages',
+  'django.contrib.staticfiles',
+  'django_htmx',
 
-    # Your apps
-    'guests',
-    'accounts',
+  # Your apps
+  'guests.apps.GuestsConfig',
+  'accounts.apps.AccountsConfig',
+  'notifications.apps.NotificationsConfig',
 ]
 
 if DEBUG:

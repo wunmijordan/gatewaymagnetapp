@@ -458,8 +458,11 @@ def guest_list_view(request):
     last_reported=Max('reports__report_date')
   ).order_by('-custom_id')  # latest guest on top
 
-  # Pagination
-  paginator = Paginator(queryset, 12)
+  # Determine per-page limit based on view type
+  view_type = request.GET.get('view', 'cards')  # default is card view
+  per_page = 50 if view_type == 'list' else 12
+
+  paginator = Paginator(queryset, per_page)
   page_number = request.GET.get('page', 1)
   page_obj = paginator.get_page(page_number)
 
@@ -480,6 +483,7 @@ def guest_list_view(request):
 
   context = {
     'page_obj': page_obj,
+    'view_type': view_type,
     'is_admin_group': is_admin_group,
     'users': users_qs,
     'search_query': search_query,
@@ -742,57 +746,87 @@ def create_guest(request):
 
 @login_required
 def edit_guest(request, pk):
-    guest = get_object_or_404(GuestEntry, pk=pk)
-    user = request.user
+  guest = get_object_or_404(GuestEntry, pk=pk)
+  user = request.user
 
-    if not can_edit_guest(user, guest):
-        return redirect('guest_list')
+  if not can_edit_guest(user, guest):
+    return redirect('guest_list')
 
-    # Reassignment and user list (if allowed)
-    reassign_allowed = can_reassign(user)
-    all_users = get_user_model().objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
+  reassign_allowed = can_reassign(user)
+  all_users = get_user_model().objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
 
-    if request.method == 'POST':
-        # Handle Delete
-        if 'delete_guest' in request.POST:
-            if user == guest.created_by or user == guest.assigned_to or user.is_superuser or is_admin_group(user):
-                guest.delete()
-            return redirect('guest_list')
+  # Fetch existing social media entries
+  social_media_entries = guest.social_media_accounts.all()
 
-        # Handle Edit
-        form = GuestEntryForm(request.POST, request.FILES, instance=guest)
-        if form.is_valid():
-            updated_guest = form.save(commit=False)
+  if request.method == 'POST':
+    if 'delete_guest' in request.POST:
+      if user == guest.created_by or user == guest.assigned_to or user.is_superuser or is_admin_group(user):
+        guest.delete()
+      return redirect('guest_list')
 
-            # Reassign if permitted
-            if reassign_allowed and 'assigned_to' in request.POST:
-                assigned_id = request.POST.get('assigned_to')
-                if assigned_id:
-                    assigned_user = get_user_model().objects.filter(pk=assigned_id).first()
-                    if assigned_user:
-                        updated_guest.assigned_to = assigned_user
+    form = GuestEntryForm(request.POST, request.FILES, instance=guest)
 
-            # Clear picture if checked
-            if 'clear_picture' in request.POST and guest.picture:
-                guest.picture.delete(save=False)
-                updated_guest.picture = None
+    # Get updated social media lists
+    social_media_types = request.POST.getlist('social_media_type[]')
+    social_media_handles = request.POST.getlist('social_media_handle[]')
 
-            updated_guest.save()
+    social_media_data = []
+    errors = []
 
-            if 'save_add_another' in request.POST:
-                return redirect('create_guest')
-            return redirect('guest_list')
-    else:
-        form = GuestEntryForm(instance=guest)
+    for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
+      platform = platform.strip()
+      handle = handle.strip()
+      if platform and handle:
+        if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
+          errors.append(f"Invalid social media platform at entry {i+1}.")
+        elif len(handle) > 255:
+          errors.append(f"Handle too long at entry {i+1}.")
+        else:
+          social_media_data.append({'platform': platform, 'handle': handle})
+      elif platform or handle:
+        errors.append(f"Both platform and handle must be provided at entry {i+1}.")
 
-    return render(request, 'guests/guest_form.html', {
-        'form': form,
-        'guest': guest,
-        'edit_mode': True,
-        'can_reassign': reassign_allowed,
-        'all_users': all_users,
-        'show_delete': True,
-    })
+    if form.is_valid() and not errors:
+      updated_guest = form.save(commit=False)
+
+      if reassign_allowed and 'assigned_to' in request.POST:
+        assigned_id = request.POST.get('assigned_to')
+        if assigned_id:
+          assigned_user = get_user_model().objects.filter(pk=assigned_id).first()
+          if assigned_user:
+            updated_guest.assigned_to = assigned_user
+
+      if 'clear_picture' in request.POST and guest.picture:
+        guest.picture.delete(save=False)
+        updated_guest.picture = None
+
+      updated_guest.save()
+
+      # Replace old social media entries
+      guest.social_media_accounts.all().delete()
+      for entry in social_media_data:
+        SocialMediaEntry.objects.create(
+          guest=guest,
+          platform=entry['platform'],
+          handle=entry['handle']
+        )
+
+      if 'save_add_another' in request.POST:
+        return redirect('create_guest')
+      return redirect('guest_list')
+
+  else:
+    form = GuestEntryForm(instance=guest)
+
+  return render(request, 'guests/guest_form.html', {
+    'form': form,
+    'guest': guest,
+    'edit_mode': True,
+    'can_reassign': reassign_allowed,
+    'all_users': all_users,
+    'show_delete': True,
+    'social_media_entries': social_media_entries,  # Pass to template
+  })
 
 
 

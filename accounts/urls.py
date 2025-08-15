@@ -2,7 +2,8 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
-from .views import CustomLoginView
+from .views import CustomLoginView, SuperuserPasswordChangeView
+
 
 
 urlpatterns = [
@@ -12,4 +13,6 @@ urlpatterns = [
     path("users/", views.user_list, name="user_list"),
     path("users/<int:pk>/edit/", views.edit_user, name="edit_user"),
     path("users/<int:pk>/delete/", views.delete_user, name="delete_user"),
+    path('admin/password_change/<int:pk>/', SuperuserPasswordChangeView.as_view(), name='admin_password_change'),
+    path('users/<int:user_id>/change-password/', views.change_user_password, name='change_user_password'),
 ]

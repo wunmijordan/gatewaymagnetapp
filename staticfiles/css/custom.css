@@ -54,6 +54,7 @@
   color: white !important;               /* Keep text visible */
 }
 
+
 /* ============================
    4. Header base styles
    ============================ */
@@ -424,3 +425,6 @@
 .card-footer:not(:has(.text-center.text-muted)) .pagination {
   display: flex;
 }
+
+
+

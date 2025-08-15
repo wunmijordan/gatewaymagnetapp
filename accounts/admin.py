@@ -20,7 +20,7 @@ class UserAdmin(BaseUserAdmin):
         return obj.profile.full_name if hasattr(obj, 'profile') else ''
     full_name.short_description = 'Full Name'
 
-    list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active')
+    list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active', 'is_superuser')
     list_select_related = ('profile',)  # optimize queries
 
     def get_inline_instances(self, request, obj=None):

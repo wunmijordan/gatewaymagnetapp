@@ -1,39 +1,108 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
 {% block title %}Create User{% endblock %}
 
 {% block content %}
-<div class="page-wrapper pt-5 mt-5">
-  <div class="page-header d-print-none mb-3">
-    <div class="container-xl">
-      <form method="post" enctype="multipart/form-data" class="card card-md bg-dark text-white border border-secondary">
-        {% csrf_token %}
-        <div class="card-body">
-          <h2 class="card-title text-center mb-4">Create New User</h2>
+<div class="page page-center">
+  <div class="container container-tight py-4">
 
-          {% if form.errors %}
-            <div class="alert alert-danger">
-              Please fix the errors below.
+    <!-- Create User Card -->
+    <div class="card card-md bg-dark text-white border border-secondary">
+      <div class="card-body text-center">
+
+        <!-- Hidden file input -->
+        <input type="file" name="profile_picture" id="avatar-input" class="d-none" accept="image/*">
+
+        <!-- Clickable Avatar -->
+        <span id="avatar-preview"
+              class="avatar avatar-xl rounded bg-secondary d-inline-flex align-items-center justify-content-center cursor-pointer"
+              style="width:96px; height:96px; font-size:32px; font-weight:bold;">
+          +
+        </span>
+
+        <h3 class="mt-3">Create New User</h3>
+
+        <!-- Create Form -->
+        <form method="post" enctype="multipart/form-data" class="mt-3 text-start">
+          {% csrf_token %}
+
+          <!-- User Fields -->
+          {% for field in form %}
+            {% if field.name != "profile_picture" %}
+              <div class="mb-3">
+                <label class="form-label">{{ field.label }}</label>
+                {% with ph="placeholder:"|add:field.label %}
+                {{ field|add_class:"form-control bg-dark text-white border-secondary"|attr:ph }}
+                {% endwith %}                
+                {% if field.errors %}
+                  <div class="text-danger small">{{ field.errors|striptags }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+
+
+
+          <!-- Password Fields for Superuser -->
+          {% if request.user.is_superuser %}
+            <hr class="border-secondary">
+            <h5 class="mb-3">Set Password</h5>
+            <div class="mb-3">
+              <label class="form-label" for="id_password1">Password</label>
+              <input type="password" name="password1" id="id_password1"
+                     class="form-control bg-dark text-white border-secondary">
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="id_password2">Confirm Password</label>
+              <input type="password" name="password2" id="id_password2"
+                     class="form-control bg-dark text-white border-secondary">
             </div>
           {% endif %}
 
-          {% for field in form %}
-            <div class="mb-3">
-              <label class="form-label">{{ field.label }}</label>
-              {{ field }}
-              {% if field.errors %}
-                <div class="text-danger small">{{ field.errors.0 }}</div>
-              {% endif %}
-            </div>
-          {% endfor %}
-
-          <div class="form-footer">
-            <button type="submit" class="btn btn-primary w-100">
+          <!-- Buttons -->
+          <div class="form-footer mt-4">
+            <button type="submit" class="btn btn-success w-100">
               <i class="ti ti-user-plus me-1"></i> Create User
             </button>
+            <a href="{% url 'user_list' %}" class="btn btn-secondary w-100 mt-2">Back</a>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
+
   </div>
-</div>  
+</div>
+
+<!-- Avatar click & live preview script -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const avatarPreview = document.getElementById("avatar-preview");
+  const avatarInput = document.getElementById("avatar-input");
+
+  // Click avatar to open file picker
+  avatarPreview.addEventListener("click", function () {
+    avatarInput.click();
+  });
+
+  // Show live preview
+  avatarInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        avatarPreview.style.backgroundImage = `url('${e.target.result}')`;
+        avatarPreview.style.backgroundSize = "cover";
+        avatarPreview.style.backgroundPosition = "center";
+        avatarPreview.textContent = "";
+      };
+      reader.readAsDataURL(file);
+    } else {
+      avatarPreview.style.backgroundImage = "";
+      avatarPreview.textContent = "+";
+    }
+  });
+});
+</script>
 {% endblock %}

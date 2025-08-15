@@ -25,3 +25,8 @@ class Profile(models.Model):
         if self.user and self.user.username:
             return self.user.username[0].upper()
         return "?"
+
+    @property
+    def guest_count(self):
+        from guests.models import GuestEntry
+        return GuestEntry.objects.filter(created_by=self.user).count()

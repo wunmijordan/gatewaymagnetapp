@@ -202,6 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
     twitter: 'https://twitter.com/',
     tiktok: 'https://www.tiktok.com/@',
   };
+
   const socialMediaIcons = {
     linkedin: '<i class="bi bi-linkedin"></i>',
     whatsapp: '<i class="bi bi-whatsapp"></i>',
@@ -209,57 +210,105 @@ document.addEventListener('DOMContentLoaded', () => {
     twitter: '<i class="bi bi-twitter"></i>',
     tiktok: '<i class="bi bi-tiktok"></i>',
   };
+
   const container = document.getElementById('socialMediaFieldsContainer');
   const addButton = document.getElementById('addSocialMediaField');
   const form = document.querySelector('form');
+
   if (container && addButton) {
-    addButton.style.display = 'none';
+
+    function updateDropdownLogo(field) {
+      const typeInput = field.querySelector('input[name="social_media_type[]"]');
+      const dropdownBtn = field.querySelector('button.socialMediaDropdown');
+      if (typeInput && typeInput.value) {
+        const option = field.querySelector(`.dropdown-item[data-type="${typeInput.value}"]`);
+        if (option) {
+          dropdownBtn.innerHTML = option.getAttribute('data-icon') + '<span class="visually-hidden">Toggle Dropdown</span>';
+        }
+      }
+    }
+
+    function toggleAddButton() {
+      const allFields = container.querySelectorAll('.social-media-field');
+      let anySelected = false;
+      allFields.forEach(f => {
+        const typeInput = f.querySelector('input[name="social_media_type[]"]');
+        if (typeInput && typeInput.value) anySelected = true;
+      });
+      addButton.style.display = anySelected ? 'inline-block' : 'none';
+    }
+
+    // Initialize existing fields
+    const existingFields = container.querySelectorAll('.social-media-field');
+    existingFields.forEach(field => {
+      updateDropdownLogo(field);
+    });
+    toggleAddButton();
+
+    // Add new field dynamically
     addButton.addEventListener('click', () => {
       const firstChild = container.firstElementChild;
       if (!firstChild) return;
       const newField = firstChild.cloneNode(true);
+
       const handleInput = newField.querySelector('input[name="social_media_handle[]"]');
       const typeInput = newField.querySelector('input[name="social_media_type[]"]');
       const dropdownBtn = newField.querySelector('button.socialMediaDropdown');
-      if (handleInput) { handleInput.value=''; handleInput.placeholder='Enter handle/link'; }
-      if (typeInput) typeInput.value='';
+
+      if (handleInput) { handleInput.value = ''; handleInput.placeholder = 'Enter handle/link'; }
+      if (typeInput) typeInput.value = '';
       if (dropdownBtn) {
-        dropdownBtn.innerHTML=`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M12 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M12 7l0 4" /><path d="M6.7 17.8l2.8 -2" /><path d="M17.3 17.8l-2.8 -2" /></svg><span class="visually-hidden">Toggle Dropdown</span>`;
+        dropdownBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M12 14m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M12 7l0 4" /><path d="M6.7 17.8l2.8 -2" /><path d="M17.3 17.8l-2.8 -2" /></svg><span class="visually-hidden">Toggle Dropdown</span>`;
       }
+
       container.appendChild(newField);
+      toggleAddButton();
     });
+
+    // Handle dropdown selection
     container.addEventListener('click', e => {
       const optionEl = e.target.closest('.social-media-option');
       if (!optionEl) return;
       e.preventDefault();
+
       const selectedType = optionEl.getAttribute('data-type') || '';
       const selectedIconSVG = optionEl.getAttribute('data-icon') || '';
       const fieldGroup = optionEl.closest('.social-media-field');
       const typeInput = fieldGroup.querySelector('input[name="social_media_type[]"]');
       const handleInput = fieldGroup.querySelector('input[name="social_media_handle[]"]');
       const dropdownBtn = fieldGroup.querySelector('button.socialMediaDropdown');
-      if (typeInput) typeInput.value=selectedType;
-      if (dropdownBtn) dropdownBtn.innerHTML=selectedIconSVG+'<span class="visually-hidden">Toggle Dropdown</span>';
+
+      if (typeInput) typeInput.value = selectedType;
+      if (dropdownBtn) dropdownBtn.innerHTML = selectedIconSVG + '<span class="visually-hidden">Toggle Dropdown</span>';
+
       if (handleInput) {
         let handle = handleInput.value.trim();
-        for (const [type,url] of Object.entries(baseUrls)) if(handle.startsWith(url)) handle=handle.slice(url.length);
+        for (const [type,url] of Object.entries(baseUrls)) {
+          if (handle.startsWith(url)) handle = handle.slice(url.length);
+        }
         handleInput.value = handle;
         handleInput.placeholder = selectedType && baseUrls[selectedType] ? baseUrls[selectedType] : 'Enter handle/link';
         handleInput.focus();
       }
-      addButton.style.display = selectedType ? 'inline-block' : 'none';
+
+      toggleAddButton();
     });
-    if(form) {
+
+    // Form submit updates full URLs
+    if (form) {
       form.addEventListener('submit', () => {
-        const allTypeInputs=form.querySelectorAll('input[name="social_media_type[]"]');
-        const allHandleInputs=form.querySelectorAll('input[name="social_media_handle[]"]');
-        allTypeInputs.forEach((typeInput,i)=>{
-          const type=typeInput.value;
-          let handle=allHandleInputs[i].value.trim();
-          if(type && baseUrls[type] && !handle.startsWith(baseUrls[type])) allHandleInputs[i].value=baseUrls[type]+handle;
+        const allTypeInputs = form.querySelectorAll('input[name="social_media_type[]"]');
+        const allHandleInputs = form.querySelectorAll('input[name="social_media_handle[]"]');
+        allTypeInputs.forEach((typeInput, i) => {
+          const type = typeInput.value;
+          let handle = allHandleInputs[i].value.trim();
+          if (type && baseUrls[type] && !handle.startsWith(baseUrls[type])) {
+            allHandleInputs[i].value = baseUrls[type] + handle;
+          }
         });
       });
     }
+
   }
 
   /* =========================

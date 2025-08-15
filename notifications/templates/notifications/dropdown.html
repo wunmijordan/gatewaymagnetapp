@@ -1,0 +1,78 @@
+<div id="notifications-container">
+  <div class="nav-item dropdown d-none d-md-flex">
+    <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications" data-bs-auto-close="outside">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+        <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+        <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+      </svg>
+      {% if notifications_unread_count > 0 %}
+        <span class="badge bg-red">{{ notifications_unread_count }}</span>
+      {% endif %}
+    </a>
+    <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card" data-bs-popper="static">
+      <div class="card">
+        <div class="card-header d-flex">
+          <h3 class="card-title">Notifications</h3>
+          <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+        </div>
+        <div class="list-group list-group-flush list-group-hoverable">
+          {% if notifications %}
+            {% for notif in notifications %}
+              <div class="list-group-item">
+                <div class="row align-items-center">
+                  <div class="col-auto">
+                    {% if notif.is_urgent %}
+                      <span class="status-dot status-dot-animated bg-red d-block"></span>
+                    {% elif notif.is_success %}
+                      <span class="status-dot status-dot-animated bg-green d-block"></span>
+                    {% else %}
+                      <span class="status-dot d-block"></span>
+                    {% endif %}
+                  </div>
+                  <div class="col text-truncate">
+                    <a href="{{ notif.link }}" class="text-body d-block">{{ notif.title }}</a>
+                    <div class="d-block text-secondary text-truncate mt-n1">{{ notif.description }}</div>
+                  </div>
+                  <div class="col-auto">
+                    <a href="{% url 'notifications:dismiss' notif.pk %}" class="list-group-item-actions"
+                       hx-get="{% url 'notifications:dismiss' notif.pk %}" 
+                       hx-target="#notifications-container" 
+                       hx-swap="outerHTML">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted icon-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="list-group-item text-center text-secondary py-4">
+              No new notifications
+            </div>
+          {% endif %}
+        </div>
+        <div class="card-body border-top">
+          <div class="row g-2">
+            <div class="col">
+              <a href="{% url 'notifications:archive_all' %}" class="btn btn-2 w-100"
+                 hx-get="{% url 'notifications:archive_all' %}" 
+                 hx-target="#notifications-container" 
+                 hx-swap="outerHTML">
+                Archive all
+              </a>
+            </div>
+            <div class="col">
+              <a href="{% url 'notifications:mark_all_read' %}" class="btn btn-2 w-100"
+                 hx-get="{% url 'notifications:mark_all_read' %}" 
+                 hx-target="#notifications-container" 
+                 hx-swap="outerHTML">
+                Mark all as read
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

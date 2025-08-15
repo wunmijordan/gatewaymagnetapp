@@ -9,12 +9,14 @@ from django.utils.timezone import localtime, now
 from django.contrib.auth.views import LoginView
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.contrib import messages
+from django.contrib.auth.forms import SetPasswordForm
+from django.http import HttpResponse
 
 
  
@@ -117,7 +119,7 @@ def user_list(request):
     if query:
         users = users.filter(username__icontains=query)
 
-    paginator = Paginator(users, 10)  # 10 per page
+    paginator = Paginator(users, 12)  # 12 per page
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -162,3 +164,41 @@ def delete_user(request, pk):
         return redirect('user_list')
 
     return render(request, 'accounts/confirm_user_delete.html', {'user': user_obj})
+
+
+
+User = get_user_model()
+
+class SuperuserPasswordChangeView(PasswordChangeView):
+  template_name = 'registration/password_change_form.html'
+
+  def get_user(self):
+    if self.request.user.is_superuser:
+      return get_object_or_404(User, pk=self.kwargs['pk'])
+    return self.request.user
+
+  def get_success_url(self):
+    return reverse_lazy('user_edit', kwargs={'pk': self.object.pk})
+
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def change_user_password(request, user_id):
+  user_obj = get_object_or_404(User, pk=user_id)
+
+  if request.method == 'POST':
+    form = SetPasswordForm(user_obj, request.POST)
+    if form.is_valid():
+      form.save()
+      messages.success(request, f"Password updated for {user_obj.username}.")
+      return render(request, 'accounts/change_user_password_success.html', {
+        'user_obj': user_obj
+      })
+  else:
+    form = SetPasswordForm(user_obj)
+
+  return render(request, 'accounts/change_user_password.html', {
+    'form': form,
+    'user_obj': user_obj
+  })
