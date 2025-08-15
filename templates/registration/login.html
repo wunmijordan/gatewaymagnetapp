@@ -47,10 +47,11 @@
         <div class="card-body text-center">
 
           <!-- Logo inside the card, replacing the heading -->
-          <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand navbar-brand-autodark mb-0 d-inline-block">
-            <img src="{% static 'images/church_logo.png' %}" alt="Logo" style="width: 120px; height: 120px;">
-          </a>
-
+          <div class="card-logo">
+            <a href="{% url 'dashboard' %}" aria-label="Gateway Nation">
+              <img src="{% static 'images/church_logo.png' %}" alt="Logo" style="width: 120px; height: 120px;">
+            </a>
+          </div>
           <form method="post">
             {% csrf_token %}
 
@@ -98,6 +99,8 @@
             </div>
           </form>
         </div>
+
+
         <div class="text-center text-secondary mb-6 mt-0">
           Any trouble signing in? <a href="tel:+2349011099449" tabindex="-1">Contact Admin</a>
         </div>

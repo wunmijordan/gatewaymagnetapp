@@ -117,9 +117,9 @@
                         {{ guest.initials }}
                       </span>
                     {% endif %}
-                    <a href="#" class="guest-name-link text-white fw-bold" 
+                    <a href="#" class="guest-name-link text-warning fs-3 fw-bold" 
                       data-detail-url="{% url 'guest_detail' guest.custom_id %}">
-                      {{ guest.full_name }}
+                      <small>{{ guest.title }}</small> {{ guest.full_name }}
                     </a>
                   </div>
                 </td>
@@ -312,11 +312,11 @@
                 </div>
 
                 <!-- Guest name clickable to detail page -->
-                <h3 class="m-0 mb-2 mt-2 fs-2">
+                <h3 class="m-0 mb-2 text-warning mt-2 fs-2">
                   <a href="#" 
                     class="guest-name-link" 
                     data-detail-url="{% url 'guest_detail' guest.custom_id %}">
-                    {{ guest.full_name }}
+                    <small>{{ guest.title }}</small> {{ guest.full_name }}
                   </a>
                 </h3>
 
