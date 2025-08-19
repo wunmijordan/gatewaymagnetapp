@@ -1,11 +1,9 @@
 {% extends 'base.html' %}
 {% load guest_extras %}
-{% block title %}Guest List - Gateway Magnet{% endblock %}
 
 {% block content %}
 
-    
-    
+
 <div class="page-wrapper">
   <!-- BEGIN PAGE HEADER -->
   <div class="page-header d-print-none" aria-label="Page header">
@@ -19,7 +17,6 @@
         <!-- Page title actions -->
         <div class="col-auto ms-auto d-print-none">
           <div class="btn-list">
-            
             <div>
               <!-- Single Button for Regular Users -->
               <a href="{% url 'create_guest' %}" class="btn btn-gray d-none d-sm-inline-block">
@@ -44,8 +41,6 @@
     </div>
   </div>
   <!-- END PAGE HEADER -->
-
-  
   <div class="page-body">
     <div class="container-xl">
       <div class="row row-deck row-cards">
@@ -616,27 +611,6 @@
                 </div>
               </div>
 
-              <!-- Average Entry
-              <div>
-                <div class="d-flex justify-content-between">
-                  <span class="text-secondary">
-                    Average Guest Entries per Month 
-                    <span class="text-muted">({{ summary_data.avg_year }})</span>
-                  </span>
-                  <span class="fw-bold">
-                    {{ summary_data.avg_count }}
-                    <span class="text-muted">• {{ summary_data.avg_percent }}%</span>
-                  </span>
-                </div>
-                <div class="progress progress-sm mt-1" title="{{ summary_data.avg_percent }}%">
-                  <div class="progress-bar bg-info" style="width: {{ summary_data.avg_percent }}%" 
-                      data-bs-toggle="tooltip" data-bs-placement="top" 
-                      title="{{ summary_data.avg_percent }}%">
-                  </div>
-                </div>
-              </div>
-              -->
-
             </div>
           </div>
         </div>
@@ -709,9 +683,59 @@
   </div>
 </div>
 
-
-
 {% endblock %}
 
 
-          
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

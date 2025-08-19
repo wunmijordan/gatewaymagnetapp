@@ -38,8 +38,12 @@ import os
 from django.db import IntegrityError
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
-
-
+from django.conf import settings
+# Google Drive imports
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
 
 
@@ -279,6 +283,7 @@ def dashboard_view(request):
         "one_time_visit_percentage": one_time_visit_percentage,
         "special_programme_count": special_programme_count,
         "special_programme_percentage": special_programme_percentage,
+        "page_title": "Dashboard"
     }
     return render(request, "guests/dashboard.html", context)
 
@@ -398,110 +403,241 @@ def channel_breakdown(request):
 
 
 
+User = get_user_model()
+
+def is_admin_or_superuser(user):
+    return user.is_superuser or user.is_staff
+
 
 @login_required
 def guest_list_view(request):
-  user = request.user
-  is_admin_group = user.is_superuser or user.groups.filter(name='Admin').exists()
+    user = request.user
+    is_admin_group = is_admin_or_superuser(user)
 
-  # Base queryset depending on user role
-  if is_admin_group:
-    queryset = GuestEntry.objects.all()
-  else:
-    queryset = GuestEntry.objects.filter(
-      Q(created_by=user, assigned_to__isnull=True) | Q(assigned_to=user)
-    )
+    # Filters from GET params
+    search_query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+    channel_filter = request.GET.get('channel', '').strip()
+    purpose_filter = request.GET.get('purpose', '').strip()
+    service_filter = request.GET.get('service', '').strip()
+    user_filter = request.GET.get('user_filter', '').strip()
+    date_of_visit_filter = request.GET.get('date_of_visit', '').strip()
 
-  # Filters from GET params
-  search_query = request.GET.get('q', '').strip()
-  status_filter = request.GET.get('status', '')
-  channel_filter = request.GET.get('channel', '')
-  purpose_filter = request.GET.get('purpose', '')
-  service_filter = request.GET.get('service', '')
-  user_filter = request.GET.get('user', '')
-  date_of_visit_filter = request.GET.get('date_of_visit', '')
+    # Base queryset
+    if is_admin_group:
+        queryset = GuestEntry.objects.all()
+        if user_filter:
+            queryset = queryset.filter(Q(created_by__id=user_filter) | Q(assigned_to__id=user_filter))
+    else:
+        queryset = GuestEntry.objects.filter(
+            Q(created_by=user, assigned_to__isnull=True) | Q(assigned_to=user)
+        )
 
-  # Apply search across multiple fields (full-text search simulation)
-  if search_query:
-    queryset = queryset.filter(
-      Q(full_name__icontains=search_query) |
-      Q(phone_number__icontains=search_query) |
-      Q(email__icontains=search_query) |
-      Q(referrer_name__icontains=search_query) |
-      Q(service_attended__icontains=search_query) |
-      Q(status__icontains=search_query) |
-      Q(channel_of_visit__icontains=search_query) |
-      Q(purpose_of_visit__icontains=search_query) |
-      Q(created_by__first_name__icontains=search_query) |
-      Q(created_by__last_name__icontains=search_query) |
-      Q(assigned_to__first_name__icontains=search_query) |
-      Q(assigned_to__last_name__icontains=search_query)
-    )
+    # Search filter
+    if search_query:
+        queryset = queryset.filter(
+            Q(full_name__icontains=search_query) |
+            Q(phone_number__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(referrer_name__icontains=search_query) |
+            Q(service_attended__icontains=search_query) |
+            Q(status__icontains=search_query) |
+            Q(channel_of_visit__icontains=search_query) |
+            Q(purpose_of_visit__icontains=search_query) |
+            Q(created_by__first_name__icontains=search_query) |
+            Q(created_by__last_name__icontains=search_query) |
+            Q(assigned_to__first_name__icontains=search_query) |
+            Q(assigned_to__last_name__icontains=search_query)
+        )
 
-  # Apply specific filters
-  if status_filter:
-    queryset = queryset.filter(status__iexact=status_filter)
-  if channel_filter:
-    queryset = queryset.filter(channel_of_visit__iexact=channel_filter)
-  if purpose_filter:
-    queryset = queryset.filter(purpose_of_visit__iexact=purpose_filter)
-  if service_filter:
-    queryset = queryset.filter(service_attended__iexact=service_filter)
-  if user_filter:
-    queryset = queryset.filter(Q(created_by__id=user_filter) | Q(assigned_to__id=user_filter))
-  if date_of_visit_filter:
-    queryset = queryset.filter(date_of_visit=date_of_visit_filter)
+    # Other filters
+    if status_filter:
+        queryset = queryset.filter(status__iexact=status_filter)
+    if channel_filter:
+        queryset = queryset.filter(channel_of_visit__iexact=channel_filter)
+    if purpose_filter:
+        queryset = queryset.filter(purpose_of_visit__iexact=purpose_filter)
+    if service_filter:
+        queryset = queryset.filter(service_attended__iexact=service_filter)
+    if date_of_visit_filter:
+        queryset = queryset.filter(date_of_visit=date_of_visit_filter)
 
-  # Annotate reports
-  queryset = queryset.annotate(
-    report_count=Count('reports'),
-    last_reported=Max('reports__report_date')
-  ).order_by('-custom_id')  # latest guest on top
+    # Annotate reports
+    queryset = queryset.annotate(
+        report_count=Count('reports'),
+        last_reported=Max('reports__report_date')
+    ).order_by('-custom_id')
 
-  # Determine per-page limit based on view type
-  view_type = request.GET.get('view', 'cards')  # default is card view
-  per_page = 50 if view_type == 'list' else 12
+    # Pagination
+    view_type = request.GET.get('view', 'cards')
+    per_page = 50 if view_type == 'list' else 12
+    paginator = Paginator(queryset, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
 
-  paginator = Paginator(queryset, per_page)
-  page_number = request.GET.get('page', 1)
-  page_obj = paginator.get_page(page_number)
+    # Context
+    context = {
+        'page_obj': page_obj,
+        'view_type': view_type,
+        'is_admin_group': is_admin_group,
+        'users': User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:100],
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'channel_filter': channel_filter,
+        'purpose_filter': purpose_filter,
+        'service_filter': service_filter,
+        'user_filter': user_filter,
+        'date_of_visit': date_of_visit_filter,
+        'show_filters': True,
+        'channels': GuestEntry.objects.values_list('channel_of_visit', flat=True).distinct().order_by('channel_of_visit'),
+        'statuses': [s[0] for s in GuestEntry.STATUS_CHOICES],
+        'purposes': GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit'),
+        'services': GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended'),
+        'query_string': request.GET.urlencode(),
+        'page_title': 'Guests',
+    }
 
-  # Dropdown options for filters
-  channels = GuestEntry.objects.values_list('channel_of_visit', flat=True).distinct().order_by('channel_of_visit')
-  statuses = GuestEntry.STATUS_CHOICES
-  purposes = GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit')
-  services = GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended')
+    return render(request, 'guests/guest_list.html', context)
 
-  # Users dropdown for reassignment
-  users_qs = User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:100]
 
-  # Preserve all GET params except 'page' for pagination links
-  query_params = request.GET.copy()
-  if 'page' in query_params:
-    query_params.pop('page')
-  query_string = query_params.urlencode()
 
-  context = {
-    'page_obj': page_obj,
-    'view_type': view_type,
-    'is_admin_group': is_admin_group,
-    'users': users_qs,
-    'search_query': search_query,
-    'status_filter': status_filter,
-    'channel_filter': channel_filter,
-    'purpose_filter': purpose_filter,
-    'service_filter': service_filter,
-    'user_filter': user_filter,
-    'date_of_visit': date_of_visit_filter,
-    'show_filters': True,
-    'channels': channels,
-    'statuses': [status[0] for status in statuses],
-    'purposes': purposes,
-    'services': services,
-    'query_string': query_string,
-  }
 
-  return render(request, 'guests/guest_list.html', context)
+@login_required
+def create_guest(request):
+    is_admin_group = is_admin_or_superuser(request.user)
+
+    if request.method == 'POST':
+        form = GuestEntryForm(request.POST, request.FILES)
+        social_media_types = request.POST.getlist('social_media_type[]')
+        social_media_handles = request.POST.getlist('social_media_handle[]')
+        social_media_entries = []
+        errors = []
+
+        # Validate social media entries
+        for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
+            platform = platform.strip()
+            handle = handle.strip()
+            if platform and handle:
+                if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
+                    errors.append(f"Invalid social media platform at entry {i+1}.")
+                elif len(handle) > 255:
+                    errors.append(f"Handle too long at entry {i+1}.")
+                else:
+                    social_media_entries.append({'platform': platform, 'handle': handle})
+            elif platform or handle:
+                errors.append(f"Both platform and handle must be provided at entry {i+1}.")
+
+        if form.is_valid() and not errors:
+            guest = form.save(commit=False)
+            guest.created_by = request.user
+            guest.save()
+
+            # Save social media
+            for entry in social_media_entries:
+                SocialMediaEntry.objects.create(guest=guest, **entry)
+
+            # Handle redirect based on button clicked
+            if 'save_add_another' in request.POST:
+                return redirect('create_guest')  # stay on the form
+            else:  # default Save button
+                return redirect('guest_list')  # regular user guest list
+
+        # If form invalid
+        return render(request, 'guests/guest_form.html', {
+            'form': form,
+            'social_media_errors': errors,
+            'edit_mode': False
+        })
+
+    else:
+        form = GuestEntryForm()
+        return render(request, 'guests/guest_form.html', {
+            'form': form,
+            'edit_mode': False,
+            'page_title': 'Guests',
+        })
+
+
+
+
+@login_required
+def edit_guest(request, pk):
+    guest = get_object_or_404(GuestEntry, pk=pk)
+    user = request.user
+    is_admin_group = is_admin_or_superuser(user)
+
+    # Permissions
+    if not (is_admin_group or guest.created_by == user or guest.assigned_to == user):
+        messages.error(request, "You do not have permission to edit this guest.")
+        return redirect('guest_list')
+
+    reassign_allowed = is_admin_group
+    all_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
+    social_media_entries = guest.social_media_accounts.all()
+
+    if request.method == "POST":
+        if "delete_guest" in request.POST:
+            guest.delete()
+            return redirect('guest_list')  # <-- Redirect after deletion
+
+        form = GuestEntryForm(request.POST, request.FILES, instance=guest)
+        social_media_types = request.POST.getlist('social_media_type[]')
+        social_media_handles = request.POST.getlist('social_media_handle[]')
+        social_media_data = []
+        errors = []
+
+        for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
+            platform = platform.strip()
+            handle = handle.strip()
+            if platform and handle:
+                if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
+                    errors.append(f"Invalid social media platform at entry {i+1}.")
+                elif len(handle) > 255:
+                    errors.append(f"Handle too long at entry {i+1}.")
+                else:
+                    social_media_data.append({'platform': platform, 'handle': handle})
+            elif platform or handle:
+                errors.append(f"Both platform and handle must be provided at entry {i+1}.")
+
+        if form.is_valid() and not errors:
+            updated_guest = form.save(commit=False)
+            
+            # Handle reassignment
+            if reassign_allowed and 'assigned_to' in request.POST:
+                assigned_id = request.POST.get('assigned_to')
+                updated_guest.assigned_to = User.objects.filter(pk=assigned_id).first() if assigned_id else None
+
+            # Clear picture if requested
+            if 'clear_picture' in request.POST and guest.picture:
+                guest.picture.delete(save=False)
+                updated_guest.picture = None
+
+            updated_guest.save()
+
+            # Replace social media entries
+            guest.social_media_accounts.all().delete()
+            for entry in social_media_data:
+                SocialMediaEntry.objects.create(guest=guest, **entry)
+
+            # Redirect based on button clicked
+            if 'save_add_another' in request.POST:
+                return redirect('create_guest')  # Stay on new guest form
+            else:  # default Save button
+                return redirect('guest_list')
+
+    else:
+        form = GuestEntryForm(instance=guest)
+
+    return render(request, 'guests/guest_form.html', {
+        'form': form,
+        'guest': guest,
+        'edit_mode': True,
+        'can_reassign': reassign_allowed,
+        'all_users': all_users,
+        'show_delete': True,
+        'social_media_entries': social_media_entries,
+        'page_title': 'Guests',
+    })
+
 
 
 
@@ -607,6 +743,7 @@ def guest_detail_view(request, custom_id):
         'is_admin_group': is_admin_group,
         'form': form,
         'view_only': True,
+        'page_title': f'Guest Detail - {guest.full_name}',
     }, request=request)
 
     return HttpResponse(html)
@@ -617,216 +754,49 @@ def guest_detail_view(request, custom_id):
 
 
 
-
-
-
-
-
+# -------------------------
+# Centralized permission helpers
+# -------------------------
 def is_admin_or_superuser(user):
+    """True if user is superuser or belongs to Admin group."""
     return user.is_superuser or user.groups.filter(name='Admin').exists()
 
+def can_edit_guest(user, guest):
+    """True if user can edit this guest."""
+    return user == guest.created_by or user == guest.assigned_to or is_admin_or_superuser(user)
+
+def can_reassign(user):
+    """True if user can reassign guests (admins/superusers only)."""
+    return is_admin_or_superuser(user)
+
+
+# -------------------------
+# Reassign guest
+# -------------------------
 @login_required
 @user_passes_test(is_admin_or_superuser)
 def reassign_guest(request, guest_id):
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+
     if request.method == 'POST':
-        guest = get_object_or_404(GuestEntry, id=guest_id)
         assigned_to_id = request.POST.get('assigned_to')
 
         if assigned_to_id:
-            try:
-                assigned_user = User.objects.get(id=assigned_to_id, is_active=True)
+            assigned_user = User.objects.filter(id=assigned_to_id, is_active=True).first()
+            if assigned_user:
                 guest.assigned_to = assigned_user
                 guest.save()
                 messages.success(request, f"Guest {guest.full_name} reassigned to {assigned_user.get_full_name() or assigned_user.username}.")
-            except User.DoesNotExist:
+            else:
                 messages.error(request, "Selected user does not exist or is inactive.")
         else:
-            # Clear assignment if no user selected
             guest.assigned_to = None
             guest.save()
             messages.success(request, f"Assignment cleared for guest {guest.full_name}.")
 
-    return redirect('guest_list')  # Adjust this redirect to your guest list page name
-
-
-
-
-
-def is_admin_group(user):
-    return user.groups.filter(name='Admin').exists()
-
-def can_edit_guest(user, guest):
-    return (
-        user == guest.created_by or
-        user == guest.assigned_to or
-        user.is_superuser or
-        is_admin_group(user)
-    )
-
-def can_reassign(user):
-    return user.is_superuser or is_admin_group(user)
-
-
-
-
-@login_required
-def create_guest(request):
-    if request.method == 'POST':
-        form = GuestEntryForm(request.POST, request.FILES)
-        
-        # Get lists of social media fields from POST (JS sends arrays)
-        social_media_types = request.POST.getlist('social_media_type[]')
-        social_media_handles = request.POST.getlist('social_media_handle[]')
-
-        social_media_entries = []
-        errors = []
-
-        # Validate social media entries manually
-        for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
-            platform = platform.strip()
-            handle = handle.strip()
-            if platform and handle:
-                if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
-                    errors.append(f"Invalid social media platform at entry {i+1}.")
-                elif len(handle) > 255:
-                    errors.append(f"Handle too long at entry {i+1}.")
-                else:
-                    social_media_entries.append({'platform': platform, 'handle': handle})
-            elif platform or handle:
-                errors.append(f"Both platform and handle must be provided at entry {i+1}.")
-
-        if form.is_valid() and not errors:
-            guest = form.save(commit=False)
-            guest.created_by = request.user
-            guest.save()
-
-            # Save social media entries
-            for entry in social_media_entries:
-                SocialMediaEntry.objects.create(
-                    guest=guest,
-                    platform=entry['platform'],
-                    handle=entry['handle']
-                )
-
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({
-                    'success': True,
-                    'guest': {
-                        'id': guest.id,
-                        'name': guest.full_name,
-                        'date_of_visit': guest.date_of_visit.strftime('%Y-%m-%d'),
-                        'status': guest.status,
-                        'photo_url': guest.picture.url if guest.picture else '',
-                    }
-                })
-
-            if 'save_add_another' in request.POST:
-                return redirect('create_guest')
-            return redirect('guest_list')
-
-        else:
-            context = {
-                'form': form,
-                'social_media_errors': errors,
-                'edit_mode': False,
-                'show_delete': False,
-            }
-            return render(request, 'guests/guest_form.html', context)
-
-    else:
-        form = GuestEntryForm()
-        return render(request, 'guests/guest_form.html', {
-            'form': form,
-            'edit_mode': False,
-            'show_delete': False,
-        })
-
-
-
-
-@login_required
-def edit_guest(request, pk):
-  guest = get_object_or_404(GuestEntry, pk=pk)
-  user = request.user
-
-  if not can_edit_guest(user, guest):
+    # Redirect admins back to admin dashboard
     return redirect('guest_list')
 
-  reassign_allowed = can_reassign(user)
-  all_users = get_user_model().objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
-
-  # Fetch existing social media entries
-  social_media_entries = guest.social_media_accounts.all()
-
-  if request.method == 'POST':
-    if 'delete_guest' in request.POST:
-      if user == guest.created_by or user == guest.assigned_to or user.is_superuser or is_admin_group(user):
-        guest.delete()
-      return redirect('guest_list')
-
-    form = GuestEntryForm(request.POST, request.FILES, instance=guest)
-
-    # Get updated social media lists
-    social_media_types = request.POST.getlist('social_media_type[]')
-    social_media_handles = request.POST.getlist('social_media_handle[]')
-
-    social_media_data = []
-    errors = []
-
-    for i, (platform, handle) in enumerate(zip(social_media_types, social_media_handles)):
-      platform = platform.strip()
-      handle = handle.strip()
-      if platform and handle:
-        if platform not in dict(SocialMediaEntry.SOCIAL_MEDIA_CHOICES):
-          errors.append(f"Invalid social media platform at entry {i+1}.")
-        elif len(handle) > 255:
-          errors.append(f"Handle too long at entry {i+1}.")
-        else:
-          social_media_data.append({'platform': platform, 'handle': handle})
-      elif platform or handle:
-        errors.append(f"Both platform and handle must be provided at entry {i+1}.")
-
-    if form.is_valid() and not errors:
-      updated_guest = form.save(commit=False)
-
-      if reassign_allowed and 'assigned_to' in request.POST:
-        assigned_id = request.POST.get('assigned_to')
-        if assigned_id:
-          assigned_user = get_user_model().objects.filter(pk=assigned_id).first()
-          if assigned_user:
-            updated_guest.assigned_to = assigned_user
-
-      if 'clear_picture' in request.POST and guest.picture:
-        guest.picture.delete(save=False)
-        updated_guest.picture = None
-
-      updated_guest.save()
-
-      # Replace old social media entries
-      guest.social_media_accounts.all().delete()
-      for entry in social_media_data:
-        SocialMediaEntry.objects.create(
-          guest=guest,
-          platform=entry['platform'],
-          handle=entry['handle']
-        )
-
-      if 'save_add_another' in request.POST:
-        return redirect('create_guest')
-      return redirect('guest_list')
-
-  else:
-    form = GuestEntryForm(instance=guest)
-
-  return render(request, 'guests/guest_form.html', {
-    'form': form,
-    'guest': guest,
-    'edit_mode': True,
-    'can_reassign': reassign_allowed,
-    'all_users': all_users,
-    'show_delete': True,
-    'social_media_entries': social_media_entries,  # Pass to template
-  })
 
 
 
@@ -1045,6 +1015,34 @@ def update_status_view(request, guest_id, status_key):
     return redirect('guest_list')
 
 
+
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+
+def get_drive_service():
+    """Authenticate and return a Google Drive service client"""
+    creds = None
+    token_path = os.path.join(settings.BASE_DIR, "token.json")
+    credentials_path = os.path.join(settings.BASE_DIR, "credentials.json")
+
+    # Load saved credentials
+    if os.path.exists(token_path):
+        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
+
+    # If no creds or expired → refresh/login
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+            creds = flow.run_local_server(port=0)
+        with open(token_path, "w") as token:
+            token.write(creds.to_json())
+
+    return build("drive", "v3", credentials=creds)
+
+
 @login_required
 def export_guests_excel(request):
     is_admin_group = request.user.groups.filter(name="Admin").exists() or request.user.is_superuser
@@ -1068,6 +1066,7 @@ def export_guests_excel(request):
             Q(referrer_name__icontains=search_query)
         )
 
+    # Create workbook
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Guest Entries"
@@ -1082,8 +1081,7 @@ def export_guests_excel(request):
     ]
     ws.append(headers)
 
-    # Populate data rows
-    guests = GuestEntry.objects.all()
+    # Populate rows
     for guest in guests:
         ws.append([
             f"{guest.title} {guest.full_name}",
@@ -1104,10 +1102,33 @@ def export_guests_excel(request):
             guest.created_by.get_full_name() if guest.created_by else '',
         ])
 
+    # Check if "to=drive" was requested
+    if request.GET.get("to") == "drive":
+        temp_path = os.path.join(settings.BASE_DIR, "guest_entries.xlsx")
+        wb.save(temp_path)
+
+        service = get_drive_service()
+        file_metadata = {
+            'name': 'guest_entries.xlsx',
+            'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        }
+        media = MediaFileUpload(temp_path, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+        uploaded_file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+
+        file_link = uploaded_file.get('webViewLink')
+        return HttpResponse(f"✅ Uploaded to Google Drive: <a href='{file_link}' target='_blank'>{file_link}</a>")
+
+    # Default → download as Excel
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=guest_entries.xlsx'
     wb.save(response)
     return response
+
 
 
 

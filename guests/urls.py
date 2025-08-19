@@ -24,7 +24,7 @@ urlpatterns = [
     path('export-csv/', views.export_csv, name='export_csv'),
     path("import/", views.import_guests_csv, name="import_guests_csv"),
     path("download-template/", views.download_csv_template, name="download_csv_template"),
-    path('export/excel/', views.export_guests_excel, name='export_excel'),
+    path('export/excel/', views.export_guests_excel, name='export_guests_excel'),
     path('import/excel/', views.import_guests_excel, name='import_excel'),
     path('export/pdf/', views.export_guests_pdf, name='export_guests_pdf'),
 

@@ -29,6 +29,8 @@ urlpatterns = [
     path('', include('guests.urls')),  # Only include once
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('accounts.urls')),
+    path("notifications/", include("notifications.urls", namespace="notifications")),
+
     
     # Post-login redirection
     path('post-login/', post_login_redirect, name='post_login_redirect'),

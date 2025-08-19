@@ -1,53 +1,74 @@
 from django.contrib import admin
-from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import Profile
 from django.utils.html import format_html
+from .models import CustomUser, UserSocialMedia
+from .forms import CustomUserCreationForm, CustomUserChangeForm
 
-class ProfileInline(admin.StackedInline):
-    model = Profile
-    can_delete = False
-    verbose_name_plural = 'Profile'
-    fk_name = 'user'
-    fields = ('full_name', 'phone_number', 'image')  # show full_name instead of first/last
-    readonly_fields = ()  # make empty tuple if you want it editable
 
-class UserAdmin(BaseUserAdmin):
-    inlines = (ProfileInline,)
+class UserSocialMediaInline(admin.TabularInline):
+    model = UserSocialMedia
+    extra = 1
 
-    # optionally display full_name in user list view
-    def full_name(self, obj):
-        return obj.profile.full_name if hasattr(obj, 'profile') else ''
-    full_name.short_description = 'Full Name'
 
-    list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active', 'is_superuser')
-    list_select_related = ('profile',)  # optimize queries
+@admin.register(CustomUser)
+class CustomUserAdmin(BaseUserAdmin):
+    add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
+    list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'image_display')
+    ordering = ('username',)
+    inlines = [UserSocialMediaInline]
+    readonly_fields = ('image_display',)
+    filter_horizontal = ('groups', 'user_permissions')
 
-    def get_inline_instances(self, request, obj=None):
-        if not obj:
-            return []
-        return super().get_inline_instances(request, obj)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal Info', {'fields': (
+            'full_name', 'email', 'phone_number', 'image',
+            'title', 'marital_status', 'department', 'address', 'date_of_birth'
+        )}),
+        ('Permissions', {'fields': (
+            'is_active', 'is_staff', 'is_superuser',
+            'groups', 'user_permissions'
+        )}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
 
-admin.site.unregister(User)
-admin.site.register(User, UserAdmin)
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': (
+                'username', 'email', 'full_name', 'phone_number', 'image',
+                'password', 'confirm_password',
+                'is_active', 'is_staff', 'is_superuser',
+                'groups', 'user_permissions',
+                'title', 'marital_status', 'department', 'address', 'date_of_birth',
+            ),
+        }),
+    )
 
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'full_name', 'image_display')
-    search_fields = ('user__username', 'full_name')  # search by full_name
+    def get_form(self, request, obj=None, **kwargs):
+        """
+        Provide current_user to the form so permissions logic works.
+        """
+        if obj is None:
+            kwargs['form'] = self.add_form
+        else:
+            kwargs['form'] = self.form
 
-    @admin.display(description='Full Name')
-    def full_name(self, obj):
-        return obj.full_name
+        form_class = super().get_form(request, obj, **kwargs)
 
-    @admin.display(description='Image')
+        class WrappedForm(form_class):
+            def __init__(self_inner, *args, **kw):
+                # Pass current_user safely if form expects it
+                if 'current_user' in kw:
+                    kw.pop('current_user')
+                super().__init__(*args, **kw)
+
+        return WrappedForm
+
+    # ✅ Image preview
     def image_display(self, obj):
-        try:
-            if obj.image and obj.image.url:
-                return format_html(
-                    '<img src="{}" width="40" height="40" style="border-radius:50%"/>',
-                    obj.image.url
-                )
-        except Exception:
-            pass
+        if obj.image and hasattr(obj.image, 'url'):
+            return format_html('<img src="{}" width="40" height="40" style="border-radius:50%" />', obj.image.url)
         return "-"
+    image_display.short_description = "Profile Picture"

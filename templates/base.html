@@ -31,7 +31,10 @@
 
   {% block extra_css %}{% endblock %}
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
+  <!-- BEGIN GLOBAL THEME SCRIPT -->
+  <script src="./dist/js/tabler-theme.min.js?1752697825" integrity="sha384-SoDJmj40r6f9Rfxi6Fq+bNS8ofhlZMyxHk9dq9Y8e1M17PZGkBRN/XUpx8swn0i5"></script>
+  <!-- END GLOBAL THEME SCRIPT -->
 
   <div class="page">
     <header class="navbar navbar-expand-md d-print-none">
@@ -43,14 +46,19 @@
         <!-- END NAVBAR TOGGLER -->
         <!-- BEGIN NAVBAR LOGO -->
         <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
-          <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-flex align-items-center">
-            <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="60" height="60" class="me-2">
-          </a>
+          {% if request.user.is_superuser or request.user.is_staff %}
+            <a href="{% url 'accounts:admin_dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-flex align-items-center">
+              <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            </a>
+          {% else %}
+            <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-flex align-items-center">
+              <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            </a>
+          {% endif %}
         </div>
         <!-- END NAVBAR LOGO -->
         <div class="navbar-nav flex-row order-md-last">
           <div class="d-none d-md-flex">
-
             <div class="nav-item">
               <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Enable dark mode" data-bs-original-title="Enable dark mode">
                 <!-- Download SVG icon from http://tabler.io/icons/icon/moon -->
@@ -95,49 +103,32 @@
                     <div class="row g-0">
                       <div class="col-4">
                         <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Google-Drive--Streamline-Svg-Logos" height="24" width="24">
-                            <desc>
-                              Google Drive Streamline Icon: https://streamlinehq.com
-                            </desc>
-                            <path fill="#0066da" d="m2.02664 19.49685 1.036385 1.7901c0.215325 0.376875 0.524875 0.672975 0.8883 0.888325 1.040875 -1.321275 1.76545 -2.3352 2.173675 -3.041825 0.414275 -0.717075 0.9235 -1.838675 1.52765 -3.364825 -1.6281 -0.214275 -2.861875 -0.321425 -3.701325 -0.321425 -0.805575 0 -2.03935 0.10715 -3.701325 0.321425 0 0.41725 0.107675 0.834475 0.323025 1.21135l1.453615 2.516875Z" stroke-width="0.25"></path>
-                            <path fill="#ea4335" d="M20.0487 22.175275c0.363425 -0.21535 0.672975 -0.51145 0.8883 -0.888325l0.430725 -0.74025 2.05925 -3.566725C23.642325 16.6031 23.75 16.185875 23.75 15.768625c-1.671575 -0.214275 -2.903125 -0.321425 -3.694575 -0.321425 -0.850575 0 -2.0821 0.10715 -3.694575 0.321425 0.597 1.5345 1.099475 2.656125 1.50745 3.364825 0.41155 0.714975 1.13835 1.728925 2.1804 3.041825Z" stroke-width="0.25"></path>
-                            <path fill="#00832d" d="M12.00005 8.231375c1.20435 -1.45455 2.03435 -2.576175 2.489975 -3.364825 0.366875 -0.63505 0.77065 -1.648975 1.211325 -3.04181 -0.3634 -0.21535 -0.78065 -0.3230225 -1.211325 -0.3230225H9.51005c-0.4307 0 -0.847925 0.1211325 -1.21135 0.3230225 0.560525 1.597435 1.03615 2.73431 1.4269 3.410635 0.431775 0.747375 1.189925 1.74605 2.27445 2.996Z" stroke-width="0.25"></path>
-                            <path fill="#2684fc" d="M16.347225 15.768625h-8.69475L3.951175 22.17525c0.3634 0.21535 0.78065 0.323025 1.21135 0.323025h13.674675c0.4307 0 0.84795 -0.121125 1.21135 -0.323025L16.347225 15.768625Z" stroke-width="0.25"></path>
-                            <path fill="#00ac47" d="M12 8.2314 8.2987 1.824745c-0.3634 0.2153475 -0.673 0.5114425 -0.888325 0.88833L0.573025 14.557275C0.357675 14.93415 0.25 15.3514 0.25 15.768625h7.40265L12 8.2314Z" stroke-width="0.25"></path>
-                            <path fill="#ffba00" d="M20.0083 8.635175 16.589625 2.713075c-0.215325 -0.3768875 -0.5249 -0.6729825 -0.888325 -0.88833L12 8.2314l4.34735 7.537225h7.3892c0 -0.417225 -0.107675 -0.834475 -0.323025 -1.21135L20.0083 8.635175Z" stroke-width="0.25"></path>
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#FFBA00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-google-drive">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 10l-6 10l-3 -5l6 -10z" /><path d="M9 15h12l-3 5h-12" />
+                            <path d="M15 15l-6 -10h6l6 10z" />
                           </svg>
                           <span class="h5">Google Drive</span>
                         </a>
                       </div>
                       <div class="col-4">
                         <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" id="Google-Meet--Streamline-Svg-Logos" height="24" width="24">
-                            <desc>
-                              Google Meet Streamline Icon: https://streamlinehq.com
-                            </desc>
-                            <path fill="#00832d" d="m13.544075 12 2.2909 2.61865 3.080875 1.9686 0.535875 -4.5707 -0.535875 -4.4676 -3.13985 1.729275L13.544075 12Z" stroke-width="0.25"></path>
-                            <path fill="#0066da" d="M0.2501225 16.161825V20.05675c0 0.88935 0.7218175 1.61135 1.6113475 1.61135H5.756375l0.806525 -2.942825 -0.806525 -2.56345 -2.67215 -0.806525 -2.8341025 0.806525Z" stroke-width="0.25"></path>
-                            <path fill="#e94235" d="M5.75625 2.3319025 0.25 7.838175l2.83425 0.80465 2.672 -0.80465 0.791875 -2.5285L5.75625 2.3319025Z" stroke-width="0.25"></path>
-                            <path fill="#2684fc" d="M0.2501225 16.163625H5.756375V7.8381H0.2501225v8.325525Z" stroke-width="0.25"></path>
-                            <path fill="#00ac47" d="m22.43315 4.6633 -3.517375 2.88575v9.038125l3.53205 2.896975c0.5287 0.414175 1.30215 0.03665 1.30215 -0.6354V5.28575c0 -0.67955 -0.79185 -1.0552 -1.316825 -0.62245Z" stroke-width="0.25"></path>
-                            <path fill="#00ac47" d="M13.544 12v4.161825H5.756225v5.506275h11.548225c0.889525 0 1.61135 -0.722 1.61135 -1.61135V16.58725L13.544 12Z" stroke-width="0.25"></path>
-                            <path fill="#ffba00" d="M17.30445 2.3319025H5.756225V7.838175H13.544V12l5.3718 -4.451075V3.94325c0 -0.889525 -0.721825 -1.6113475 -1.61135 -1.6113475Z" stroke-width="0.25"></path>
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
+                            <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
+                            <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
                           </svg>
-                          <span class="h5">Google Meet</span>
+                          <span class="h5">GMail</span>
                         </a>
                       </div>
                       <div class="col-4">
                         <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
-                          <style>
-                            .whatsapp-icon {
-                              color: #25D366; /* Google Drive green or any hex color */
-                            }
-                          </style>
-                          <svg class="whatsapp-icon" xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
                             <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
                           </svg>
-                          <span class="h5">Google Meet</span>
+                          <span class="h5">WhatsApp</span>
                         </a>
                       </div>
                     </div>
@@ -146,33 +137,97 @@
               </div>
             </div>
           </div>
+
+
+          {% if request.user.is_superuser %}
+            <div class="nav-item dropdown d-flex align-items-center">
+              <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+                <!-- Tabler bell icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                  <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                </svg>
+                {% if unread_count %}
+                  <span class="badge bg-red text-light" id="notif-badge">{{ unread_count }}</span>
+                {% endif %}
+              </a>
+
+              <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card">
+                <div class="card">
+                  <div class="card-header d-flex">
+                    <h3 class="card-title">Notifications</h3>
+                    <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                  </div>
+
+                  <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                    {% for notif in unread_notifications %}
+                    <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                        </div>
+                        <div class="col text-truncate">
+                          <a href="{{ notif.link }}" class="text-body d-block notif-link">{{ notif.title }}</a>
+                          <div class="d-block text-secondary text-truncate mt-n1">{{ notif.description|truncatechars:100 }}</div>
+                        </div>
+                        <div class="col-auto">
+                          <a href="#" class="list-group-item-actions notif-star">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                              class="icon text-light icon-2">
+                              <path
+                                d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item">No new notifications</div>
+                    {% endfor %}
+                  </div>
+
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <a href="#" class="btn btn-2 w-100" id="archive-all-btn"> Archive all </a>
+                      </div>
+                      <div class="col">
+                        <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark all as read </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+
           <div class="nav-item dropdown">
             <a href="#" class="nav-link d-flex lh-1 p-0 px-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
-              {% if user.profile.image %}
-                <img src="{{ user.profile.image.url }}" class="avatar avatar-sm" 
+              {% if user.image %}
+                <img src="{{ user.image.url }}" class="avatar avatar-sm" 
                     style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
               {% else %}
                 <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
                       style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
-                  {{ user.get_full_name|default:user.username|slice:":2"|upper }}
+                  {{ user.initials }}
                 </span>
               {% endif %}
 
               <div class="ps-2 d-flex flex-column justify-content-center">
-                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.username }}</div> <!-- Show on mobile -->
-                <div class="d-none d-xl-block">{{ user.get_full_name|default:user.username }}</div> <!-- Show on xl+ -->
+                <div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div> <!-- Show on mobile -->
+                <div class="d-none d-xl-block">{{ user.get_full_name|default:user.full_name }}</div> <!-- Show on xl+ -->
 
-                <div class="mt-1 small text-secondary">
+                <div class="mt-1 fs-6 text-secondary">
                   {% if user.is_superuser %}
-                    Superuser
+                    <span class="bg-warning-lt">Superuser</span>
+                  {% elif user.groups.all.0.name == "Admin" %}
+                    <span class="bg-green-lt">Admin</span>
+                  {% elif user.groups.all.0.name == "Team Member" %}
+                    <span class="bg-azure-lt">Team Member</span>
                   {% else %}
-                    {% with user.groups.all|first as first_group %}
-                      {% if first_group %}
-                        {{ first_group.name }}
-                      {% else %}
-                        Sign-in
-                      {% endif %}
-                    {% endwith %}
+                    <span class="badge bg-gray-lt">Sign-In</span>
                   {% endif %}
                 </div>
               </div>
@@ -201,17 +256,44 @@
           <!-- BEGIN NAVBAR MENU -->
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link text-white" href="{% url 'dashboard' %}">
-                <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
-                    <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
-                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
-                    <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
-                  </svg>
-                </span>
-                <span class="nav-link-title"> Dashboard </span>
-              </a>
+              {% if request.user.is_superuser or request.user.is_staff %}
+                <a class="nav-link text-white" href="{% url 'accounts:admin_dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Dashboard </span>
+                </a>
+              {% else %}
+                <a class="nav-link text-white" href="{% url 'dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Dashboard </span>
+                </a>
+              {% endif %}
             </li>
+            {% if request.user.is_superuser or request.user.is_staff %}
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{% url 'accounts:user_list' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
+                      <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" />
+                      <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Manage Team </span>
+                </a>
+              </li>
+            {% endif %}
             <li class="nav-item">
               <a class="nav-link text-white" href="{% url 'guest_list' %}">
                 <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
@@ -224,48 +306,62 @@
               </a>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle text-white" href="#navbar-records" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <a class="nav-link dropdown text-white" href="#navbar-share" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/checkbox -->
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-2">
-                    <path d="M12 5l0 14"></path>
-                    <path d="M5 12l14 0"></path>
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-share">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M8.7 10.7l6.6 -3.4" /><path d="M8.7 13.3l6.6 3.4" />
                   </svg>
                 </span>
-                <span class="nav-link-title"> Records </span>
+                <span class="nav-link-title"> Share </span>
               </a>
               <div class="dropdown-menu">
-                <a href="{% url 'create_guest' %}" class="dropdown-item text-success">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
+                <a class="dropdown-item" href="{% url 'export_guests_excel' %}?to=drive">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#FFBA00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-google-drive">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 10l-6 10l-3 -5l6 -10z" /><path d="M9 15h12l-3 5h-12" />
+                    <path d="M15 15l-6 -10h6l6 10z" />
                   </svg>
-                  Add Guest
-                  <span class="badge badge-sm bg-danger-lt ms-auto"> Go </span>
+                  Google Drive
+                </a>
+                <a class="dropdown-item"
+                  href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|urlencode:'/?to=drive' }}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
+                    <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
+                    <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
+                  </svg>
+                  Mail
+                </a>
+                <a class="dropdown-item"
+                  target="_blank"
+                  href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|urlencode:'/?to=drive' }}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+                    <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+                  </svg>
+                  WhatsApp
                 </a>
                 {% if request.user.is_superuser %}
-                <a href="{% url 'user_list' %}" class="dropdown-item text-warning">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-circle">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
-                    <path d="M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
-                    <path d="M6.168 18.849a4 4 0 0 1 3.832 -2.849h4a4 4 0 0 1 3.834 2.855" />
-                  </svg>
-                  Users
-                </a>
+                  <form action="{% url 'import_guests_csv' %}" method="post" enctype="multipart/form-data" class="dropdown-item p-0 m-0">
+                    {% csrf_token %}
+                    <label for="csvUpload" class="d-flex align-items-center px-3 py-2 cursor-pointer mb-0" style="width:100%;">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#806885ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-import">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                        <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5m-9.5 -2h7m-3 -3l3 3l-3 3" />
+                      </svg>
+                      Import CSV
+                    </label>
+                    <input type="file" id="csvUpload" name="csv_file" accept=".csv" class="d-none" onchange="this.form.submit()">
+                  </form>
                 {% endif %}
-                </a>
-                <a class="dropdown-item" data-chart="myChart">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-export">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
-                    <path d="M11.5 21h-4.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v5m-5 6h7m-3 -3l3 3l-3 3" />
-                  </svg>
-                  Export PNG
-                </a>
               </div>
             </li> 
             {% if show_filters %}
             <li class="nav-item dropdown me-2">
-              <a class="nav-link dropdown-toggle text-white" href="#navbar-filter" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+              <a class="nav-link dropdown text-white" href="#navbar-filter" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/package -->
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-filters">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -278,7 +374,7 @@
               
               <ul class="dropdown-menu">  
                 <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                     Channel of Visit
                   </a>
                   <ul class="dropdown-menu">
@@ -288,7 +384,7 @@
                   </ul>
                 </li>
                 <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                     Guest Status
                   </a>
                   <ul class="dropdown-menu">
@@ -298,7 +394,7 @@
                   </ul>
                 </li>
                 <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                     Purpose of Visit
                   </a>
                   <ul class="dropdown-menu">
@@ -308,7 +404,7 @@
                   </ul>
                 </li>
                 <li class="dropend dropdown">
-                  <a class="dropdown-item dropdown-toggle" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
                     Service Attended
                   </a>
                   <ul class="dropdown-menu">
@@ -329,13 +425,8 @@
 
 
   <!-- Page Content -->
-  <main class="page-wrapper">
-
-    <div class="page-body">
-      <div class="container">
-        {% block content %}{% endblock %}
-      </div>
-    </div>
+  <main>
+    {% block content %}{% endblock %}
   </main>
 
   <!-- Follow-Up Report Modal -->
@@ -371,24 +462,61 @@
   </div>
 
 
-  <!-- Delete Confirmation Modal -->
+  <!-- Guest Delete Confirmation Modal -->
   <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="confirmDeleteModalLabel">
+            <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="48"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+              <path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" /><path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" />
+              <path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" /><path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47" />
+            </svg>
+            Are You Sure...</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          Are you sure you want to permanently delete this Guest's record?
+          You want to permanently delete 
+          <span class="text-red fs-2"><strong>{{ guest.full_name }}'s</strong></span> record?
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-gray" data-bs-dismiss="modal">No, Cancel</button>
 
           <!-- Submit actual delete via form -->
           <form method="post" style="display: inline;">
             {% csrf_token %}
-            <button type="submit" name="delete_guest" class="btn btn-danger">Yes, Delete</button>
+            <button type="submit" name="delete_guest" class="btn btn-danger">Yes, I'm Sure!</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- User Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="deleteUserModalLabel">
+            <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="48"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hand-stop">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5" />
+              <path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5" /><path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5" />
+              <path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47" />
+            </svg>
+            Are You Sure...</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          You want to permanently delete 
+          <span class="text-red fs-2"><strong>{{ user_obj.full_name }}'s</strong></span> record?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-gray" data-bs-dismiss="modal">No, Cancel</button>
+          <form method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" name="delete_user" class="btn btn-danger">Yes, I'm Sure!</button>
           </form>
         </div>
       </div>
@@ -477,7 +605,141 @@
       },
     };
   </script>
-  
+
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const csrfToken = "{{ csrf_token }}";
+    const notifList = document.getElementById("notif-list");
+    const navLink = document.querySelector(".nav-link"); // parent for badge
+
+    if (!notifList || !navLink) return; // safety check
+
+    let notifBadge = document.getElementById("notif-badge");
+
+    // --- Helpers ---
+    function updateBadge(count) {
+      if (count > 0) {
+        if (!notifBadge) {
+          notifBadge = document.createElement("span");
+          notifBadge.id = "notif-badge";
+          notifBadge.className = "badge bg-red";
+          navLink.appendChild(notifBadge);
+        }
+        notifBadge.textContent = count;
+      } else {
+        notifBadge?.remove();
+        notifBadge = null;
+      }
+    }
+
+    function bindNotifLinks() {
+      document.querySelectorAll(".notif-link").forEach(link => {
+        link.onclick = async function (e) {
+          e.preventDefault();
+          const parent = link.closest(".notif-item");
+          const notifId = parent.dataset.id;
+          const href = link.href;
+
+          try {
+            const res = await fetch(`/notifications/mark-read/${notifId}/`, {
+              method: "POST",
+              headers: {
+                "X-CSRFToken": csrfToken,
+                "Accept": "application/json"
+              },
+              credentials: "same-origin"
+            });
+            const data = await res.json();
+            if (data.status === "ok") parent.remove();
+            updateBadge(document.querySelectorAll(".notif-item").length);
+            window.location.href = href;
+          } catch (err) {
+            console.error("Error marking notification as read:", err);
+          }
+        };
+      });
+    }
+
+    function updateDropdown(data) {
+      // Badge
+      updateBadge(data.unread_count);
+
+      // List
+      notifList.innerHTML = "";
+      if (!data.notifications || data.notifications.length === 0) {
+        notifList.innerHTML = '<div class="list-group-item">No new notifications</div>';
+        return;
+      }
+
+      data.notifications.forEach(n => {
+        const item = document.createElement("div");
+        item.className = "list-group-item notif-item";
+        item.dataset.id = n.id;
+        item.innerHTML = `
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="status-dot status-dot-animated ${
+                n.is_urgent ? "bg-red" : n.is_success ? "bg-green" : "bg-gray"
+              } d-block"></span>
+            </div>
+            <div class="col text-truncate">
+              <a href="${n.link}" class="text-body d-block notif-link">${n.title}</a>
+              <div class="d-block text-secondary text-truncate mt-n1">${n.description}</div>
+            </div>
+          </div>
+        `;
+        notifList.appendChild(item);
+      });
+
+      // Rebind links after refresh
+      bindNotifLinks();
+    }
+
+    // --- Mark all as read ---
+    const markAllBtn = document.getElementById("mark-all-read-btn");
+    markAllBtn?.addEventListener("click", async function (e) {
+      e.preventDefault();
+      const notifIds = Array.from(document.querySelectorAll(".notif-item")).map(el => el.dataset.id);
+      if (notifIds.length === 0) return;
+
+      try {
+        const res = await fetch(`/notifications/mark-read-all/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrfToken,
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ ids: notifIds }),
+          credentials: "same-origin"
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          document.querySelectorAll(".notif-item").forEach(el => el.remove());
+          updateBadge(0);
+        }
+      } catch (err) {
+        console.error("Error marking all notifications as read:", err);
+      }
+    });
+
+    // --- Initial binding ---
+    bindNotifLinks();
+
+    // --- Auto-refresh every 5s ---
+    setInterval(async () => {
+      try {
+        const res = await fetch("/notifications/api/unread/");
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        const data = await res.json();
+        updateDropdown(data);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      }
+    }, 5000);
+  });
+  </script>  
 
   <!-- JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

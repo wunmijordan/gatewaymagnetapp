@@ -5,22 +5,30 @@
 {% get_media_prefix as MEDIA_URL %}
 
 {% block content %}
-<div class="page-wrapper guest-form-page">
-  <div class="page-header d-print-none" aria-label="Page Header">
+<div class="page-wrapper">
+  <!-- BEGIN PAGE HEADER -->
+  <div class="page-header d-print-none" aria-label="Page header">
     <div class="container-xl">
       <div class="row g-2 align-items-center">
         <div class="col">
-          <h3 class="page-title text-white">
-            <small class="text-warning">{% if guest %}Edit Guest{% else %}Add Guest{% endif %}</small>
-          </h3>
+          <!-- Dynamic Page Title -->
+          <kbd class="bg-yellow-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
         </div>
       </div>
     </div>
   </div>
 
   <div class="page-body">
-    <div class="container-xl">
-      <div class="card">
+    <div class="container py-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <h3 class="card-title">
+            {% if edit_mode %}
+              Editing Info for: <span class="text-warning fs-2">{{ guest.full_name }}</span>
+            {% else %}
+              Add New Guest
+            {% endif %} </h3>
+        </div>
         <div class="card-body">
 
           <!-- Guest Image Preview -->
@@ -218,7 +226,7 @@
                             <span class="visually-hidden">Toggle Dropdown</span>
                           </button>
 
-                          <input type="text" name="social_media_handle[]" placeholder="Enter handle/link" 
+                          <input type="text" name="social_media_handle[]" placeholder="Enter Social Media Handle"
                                 class="form-control bg-grey text-white border-0" value="{{ sm.handle }}">
 
                           <input type="hidden" name="social_media_type[]" value="{{ sm.platform }}">
@@ -296,7 +304,7 @@
                         </button>
 
                         <!-- Social media handle input -->
-                        <input type="text" name="social_media_handle[]" placeholder="Enter handle/link" 
+                        <input type="text" name="social_media_handle[]" placeholder="Enter Social Media Handle" 
                               class="form-control bg-grey text-white border-0">
 
                         <!-- Hidden input for type -->

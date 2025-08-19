@@ -78,6 +78,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                "notifications.context_processors.unread_notifications",
             ],
         },
     },
@@ -182,6 +183,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # fallback for local uploads
+
+AUTH_USER_MODEL = "accounts.CustomUser"
 
 # Authentication redirects
 LOGIN_REDIRECT_URL = '/post-login/'
