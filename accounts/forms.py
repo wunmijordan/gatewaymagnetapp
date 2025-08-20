@@ -61,7 +61,7 @@ class CustomUserCreationForm(forms.ModelForm):
                 'autocomplete': 'off'
             }),
             'marital_status': forms.Select(attrs={'class': 'form-select'}),
-            'department': forms.TextInput(attrs={'class': 'form-select', 'placeholder': 'Manager'}),
+            'department': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Crystal Sounds'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
         }
 

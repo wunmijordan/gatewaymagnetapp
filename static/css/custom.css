@@ -426,5 +426,69 @@
   display: flex;
 }
 
+/* Dropdown wrapper */
+.notif-dropdown,
+.dropdown-menu-card {
+    max-width: 300px;        /* narrower width */
+    min-width: 250px;
+    width: 100%;             /* responsive */
+}
+
+/* Inner card must not overflow */
+.notif-dropdown .card {
+    width: 100% !important;
+    min-width: 0; /* allow shrinking */
+}
+
+/* Scrollable notification list */
+.notif-dropdown .list-group,
+#notif-list {
+    max-height: 400px;       /* max height for scroll */
+    overflow-y: auto;        /* vertical scrollbar when needed */
+}
+
+/* Optional: nice scrollbar for Webkit browsers */
+#notif-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+#notif-list::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+#notif-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Truncate long text */
+.notif-dropdown .notif-item .text-truncate,
+.notif-dropdown .notif-item .notif-link.text-truncate {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Mobile adjustments */
+@media (max-width: 576px) {
+    .notif-dropdown {
+        max-width: 90vw !important;
+    }
+
+    #notif-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .notif-dropdown {
+        max-width: 90vw !important;
+    }
+}
+
+
+
 
 

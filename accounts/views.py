@@ -336,6 +336,7 @@ def user_list(request):
     Superusers see all users. Admin group sees non-superusers only.
     """
     search_query = request.GET.get('q', '')
+    queryset = CustomUser.objects.filter()
 
     # Determine accessible users
     if request.user.is_superuser:
@@ -354,14 +355,16 @@ def user_list(request):
             Q(email__icontains=search_query)
         )
 
-    # Paginate (10 per page)
-    paginator = Paginator(users.order_by('full_name'), 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # Pagination
+    view_type = request.GET.get('view', 'cards')
+    per_page = 50 if view_type == 'list' else 12
+    paginator = Paginator(queryset, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'accounts/user_list.html', {
         'users': page_obj.object_list,
         'page_obj': page_obj,
+        'view_type': view_type,
         'search_query': search_query,
         'page_title': 'Team'
     })
