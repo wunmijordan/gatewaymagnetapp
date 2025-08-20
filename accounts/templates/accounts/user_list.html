@@ -142,7 +142,7 @@
                       </span>
                     {% endif %}
                     <h3 class="m-0 mb-2 text-warning mt-2 fs-2">
-                      <small>{{ user.title }}</small> {{ user.full_name }}
+                      <small>{{ user.title|default:"" }}</small> {{ user.full_name }}
                     </h3>
                   </div>
                 </td>
@@ -261,7 +261,7 @@
 
                 <!-- User name clickable to detail page -->
                 <h3 class="m-0 mb-2 text-warning mt-2 fs-2">
-                  <small>{{ user.title }}</small> {{ user.full_name }}
+                  <small>{{ user.title|default:"" }}</small> {{ user.full_name }}
                 </h3>
 
                 <!-- Roles Badges -->

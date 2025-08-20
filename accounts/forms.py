@@ -60,7 +60,7 @@ class CustomUserCreationForm(forms.ModelForm):
                 'placeholder': 'January 01 (Ignore Year)',
                 'autocomplete': 'off'
             }),
-            'marital_status': forms.Select(attrs={'class': 'form-select'}),
+            'marital_status': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'department': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Crystal Sounds'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
         }
@@ -111,6 +111,21 @@ class CustomUserCreationForm(forms.ModelForm):
                 self.fields['group'].initial = default_group.id
             except Group.DoesNotExist:
                 pass  # safe fallback if group doesn't exist
+
+        # Fields that should allow blank without showing '---------' or 'None'
+        select_fields = ['title', 'marital_status', 'department']
+
+        for field_name in select_fields:
+            if field_name in self.fields:
+                # Replace default empty label with a real blank choice
+                choices = list(self.fields[field_name].choices)
+                if choices and choices[0][0] == '':
+                    # Replace first choice (usually '---------') with empty
+                    choices[0] = ("", "")
+                else:
+                    # If no blank exists, prepend one
+                    choices = [("", "")] + choices
+                self.fields[field_name].choices = choices
 
 
 class CustomUserChangeForm(forms.ModelForm):
@@ -174,7 +189,7 @@ class CustomUserChangeForm(forms.ModelForm):
                 'autocomplete': 'off'
             }),
             'marital_status': forms.Select(attrs={'class': 'form-select'}),
-            'department': forms.TextInput(attrs={'class': 'form-select', 'placeholder': 'Manager'}),
+            'department': forms.Select(attrs={'class': 'form-select', 'placeholder': 'Crystal Sounds'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
         }
 
@@ -222,6 +237,21 @@ class CustomUserChangeForm(forms.ModelForm):
             groups = self.instance.groups.all()
             if groups.exists():
                 self.fields['group'].initial = groups.first().id
+
+        # Fields that should allow blank without showing '---------' or 'None'
+        select_fields = ['title', 'marital_status', 'department']
+
+        for field_name in select_fields:
+            if field_name in self.fields:
+                # Replace default empty label with a real blank choice
+                choices = list(self.fields[field_name].choices)
+                if choices and choices[0][0] == '':
+                    # Replace first choice (usually '---------') with empty
+                    choices[0] = ("", "")
+                else:
+                    # If no blank exists, prepend one
+                    choices = [("", "")] + choices
+                self.fields[field_name].choices = choices
 
     def clean(self):
         cleaned_data = super().clean()

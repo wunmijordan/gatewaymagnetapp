@@ -329,6 +329,13 @@ def is_superuser_check(user):
     return user.is_superuser
 
 
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.contrib import messages
+from django.db.models import Q
+from django.shortcuts import render, redirect
+from .models import CustomUser
+
 @login_required
 def user_list(request):
     """
@@ -336,7 +343,6 @@ def user_list(request):
     Superusers see all users. Admin group sees non-superusers only.
     """
     search_query = request.GET.get('q', '')
-    queryset = CustomUser.objects.filter()
 
     # Determine accessible users
     if request.user.is_superuser:
@@ -358,7 +364,7 @@ def user_list(request):
     # Pagination
     view_type = request.GET.get('view', 'cards')
     per_page = 50 if view_type == 'list' else 12
-    paginator = Paginator(queryset, per_page)
+    paginator = Paginator(users, per_page)  # <-- paginate filtered users
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
     return render(request, 'accounts/user_list.html', {
@@ -368,6 +374,7 @@ def user_list(request):
         'search_query': search_query,
         'page_title': 'Team'
     })
+
 
 
 from django.shortcuts import render, redirect, get_object_or_404

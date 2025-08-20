@@ -19,8 +19,8 @@ class CustomUser(AbstractUser):
     ]
 
     MARITAL_STATUS_CHOICES = [
-        ('Single', 'Single'),
         ('Married', 'Married'),
+        ('Single', 'Single'),
     ]
 
     DEPARTMENT_CHOICES = [
@@ -30,7 +30,10 @@ class CustomUser(AbstractUser):
         ('Glitters', 'Glitters'),
         ('Green House', 'Green House'),
         ('Holy Police', 'Holy Police'),
+        ('Magnet', 'Magnet'),
         ('Media', 'Media'),
+        ('Minister', 'Minister'),
+        ('Pastor', 'Pastor'),
         ('Royal Guards', 'Royal Guards'),
         ('Temple Keepers', 'Temple Keepers'),
     ]
@@ -40,9 +43,9 @@ class CustomUser(AbstractUser):
     image = CloudinaryField('image', blank=True, null=True)
 
     # new fields
-    title = models.CharField(max_length=50, choices=TITLE_CHOICES, blank=True, null=True, default='Bro.')
-    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, null=True, default='Single')
-    department = models.CharField(max_length=255, choices=DEPARTMENT_CHOICES, blank=True, null=True, default='Crystal Sounds')
+    title = models.CharField(max_length=50, choices=TITLE_CHOICES, blank=True, null=True)
+    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, null=True)
+    department = models.CharField(max_length=255, choices=DEPARTMENT_CHOICES, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     date_of_birth = models.CharField(max_length=50, blank=True, null=True)
 

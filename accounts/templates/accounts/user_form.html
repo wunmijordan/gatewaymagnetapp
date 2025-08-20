@@ -37,7 +37,7 @@
           <div class="mb-4 text-center">
             <span class="avatar avatar-xl rounded" style="width: 100px; height: 100px;">
               <img id="preview-img" 
-                  src="{% if user_obj and user_obj.image %}{{ user_obj.image.url }}{% else %}{% static 'default_guest.jpg' %}{% endif %}" 
+                  src="{% if user_obj and user_obj.image %}{{ user_obj.image.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}" 
                   alt="User Profile Picture" 
                   class="rounded shadow-sm"
                   style="object-fit: cover; width: 100px; height: 100px;">

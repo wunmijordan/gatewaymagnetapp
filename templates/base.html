@@ -331,16 +331,16 @@
                 <span class="nav-link-title"> Share </span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="{% url 'export_guests_excel' %}?to=drive">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#FFBA00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-google-drive">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M12 10l-6 10l-3 -5l6 -10z" /><path d="M9 15h12l-3 5h-12" />
-                    <path d="M15 15l-6 -10h6l6 10z" />
+                <a class="dropdown-item" href="{% url 'export_guests_excel' %}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#37b307ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-excel">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
+                    <path d="M10 12l4 5" /><path d="M10 17l4 -5" />
                   </svg>
-                  Google Drive
+                  Excel
                 </a>
                 <a class="dropdown-item"
-                  href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|urlencode:'/?to=drive' }}">
+                  href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                     <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
@@ -351,7 +351,7 @@
                 </a>
                 <a class="dropdown-item"
                   target="_blank"
-                  href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|urlencode:'/?to=drive' }}">
+                  href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
                     <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
@@ -748,6 +748,19 @@
     }, 5000);
   });
   </script>
+
+  <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      for (let registration of registrations) {
+        registration.unregister().then(success => {
+          if (success) console.log('Service worker unregistered:', registration);
+        });
+      }
+    });
+  }
+  </script>
+
 
   <!-- JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

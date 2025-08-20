@@ -35,7 +35,7 @@
           <div class="mb-4 text-center">
             <span class="avatar avatar-xl rounded" style="width: 100px; height: 100px;">
               <img id="preview-img" 
-                  src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'default_guest.jpg' %}{% endif %}" 
+                  src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}" 
                   alt="Guest Picture" 
                   class="rounded shadow-sm"
                   style="object-fit: cover; width: 100px; height: 100px;">
@@ -154,6 +154,15 @@
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-tie">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 22l4 -4l-2.5 -11l.993 -2.649a1 1 0 0 0 -.936 -1.351h-3.114a1 1 0 0 0 -.936 1.351l.993 2.649l-2.5 11l4 4z" />
                             <path d="M10.5 7h3l5 5.5" />
+                          </svg>
+                        </span>
+                        {{ field|add_class:"form-select bg-grey text-white border-0" }}
+                      {% elif field.name == 'gender' %}
+                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-gender-male">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M10 14m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+                            <path d="M19 5l-5.4 5.4" /><path d="M19 5h-5" /><path d="M19 5v5" />
                           </svg>
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}

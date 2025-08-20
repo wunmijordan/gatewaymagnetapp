@@ -39,11 +39,6 @@ from django.db import IntegrityError
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
 from django.conf import settings
-# Google Drive imports
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 
 
 
@@ -1017,32 +1012,6 @@ def update_status_view(request, guest_id, status_key):
 
 
 
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
-
-
-def get_drive_service():
-    """Authenticate and return a Google Drive service client"""
-    creds = None
-    token_path = os.path.join(settings.BASE_DIR, "token.json")
-    credentials_path = os.path.join(settings.BASE_DIR, "credentials.json")
-
-    # Load saved credentials
-    if os.path.exists(token_path):
-        creds = Credentials.from_authorized_user_file(token_path, SCOPES)
-
-    # If no creds or expired → refresh/login
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open(token_path, "w") as token:
-            token.write(creds.to_json())
-
-    return build("drive", "v3", credentials=creds)
-
-
 @login_required
 def export_guests_excel(request):
     is_admin_group = request.user.groups.filter(name="Admin").exists() or request.user.is_superuser
@@ -1102,32 +1071,14 @@ def export_guests_excel(request):
             guest.created_by.get_full_name() if guest.created_by else '',
         ])
 
-    # Check if "to=drive" was requested
-    if request.GET.get("to") == "drive":
-        temp_path = os.path.join(settings.BASE_DIR, "guest_entries.xlsx")
-        wb.save(temp_path)
-
-        service = get_drive_service()
-        file_metadata = {
-            'name': 'guest_entries.xlsx',
-            'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        }
-        media = MediaFileUpload(temp_path, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-        uploaded_file = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id, webViewLink'
-        ).execute()
-
-        file_link = uploaded_file.get('webViewLink')
-        return HttpResponse(f"✅ Uploaded to Google Drive: <a href='{file_link}' target='_blank'>{file_link}</a>")
-
-    # Default → download as Excel
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    # Direct download as Excel
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
     response['Content-Disposition'] = 'attachment; filename=guest_entries.xlsx'
     wb.save(response)
     return response
+
 
 
 

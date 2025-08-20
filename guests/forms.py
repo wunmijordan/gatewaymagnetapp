@@ -27,7 +27,7 @@ class GuestEntryForm(forms.ModelForm):
 
     class Meta:
         model = GuestEntry
-        exclude = ['created_by', 'assigned_to', 'status', 'customer_id']
+        exclude = ['created_by', 'assigned_to', 'status', 'custom_id']
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -50,7 +50,7 @@ class GuestEntryForm(forms.ModelForm):
             'service_attended': forms.Select(attrs={'class': 'form-select'}),
             'referrer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sis. Jane Doe'}),
             'referrer_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
-            'followup_status': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Write any additional notes about the Guest here...'}),
         }
         
@@ -76,7 +76,7 @@ class GuestEntryForm(forms.ModelForm):
         help_texts = {
             'title': 'Title.',
             'picture': 'Profile Picture for the Guest.',
-            'gender': 'Gender',
+            'gender': 'Gender.',
             'full_name': 'Full Name.',
             'phone_number': 'Phone Number.',
             'email': 'Email Address.',
@@ -95,7 +95,27 @@ class GuestEntryForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Force the date field initial value format to ISO for the input
+
+        
+
+
+        # Fields that should allow blank without showing '---------' or 'None'
+        select_fields = ['title', 'marital_status', 'gender', 'purpose_of_visit',
+                         'channel_of_visit', 'service_attended', 'status']
+
+        for field_name in select_fields:
+            if field_name in self.fields:
+                # Replace default empty label with a real blank choice
+                choices = list(self.fields[field_name].choices)
+                if choices and choices[0][0] == '':
+                    # Replace first choice (usually '---------') with empty
+                    choices[0] = ("", "")
+                else:
+                    # If no blank exists, prepend one
+                    choices = [("", "")] + choices
+                self.fields[field_name].choices = choices
+
+        # Format initial date_of_visit to ISO
         if self.instance and self.instance.date_of_visit:
             self.fields['date_of_visit'].initial = self.instance.date_of_visit.strftime('%Y-%m-%d')
 

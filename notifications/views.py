@@ -28,3 +28,24 @@ def mark_all_read(request):
         request.user.notifications.filter(id__in=ids).update(is_read=True)
         return JsonResponse({"status": "ok"})
     return JsonResponse({"status": "error"}, status=400)
+
+
+@login_required
+def unread_notifications(request):
+    """Return unread notifications for the logged-in user"""
+    notifications = Notification.objects.filter(user=request.user, is_read=False)
+    data = {
+        "unread_count": notifications.count(),
+        "notifications": [
+            {
+                "id": n.id,
+                "title": n.title,
+                "description": n.description,
+                "link": n.link or "#",
+                "is_urgent": n.is_urgent,
+                "is_success": n.is_success,
+            }
+            for n in notifications
+        ]
+    }
+    return JsonResponse(data)

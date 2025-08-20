@@ -15,12 +15,10 @@ class GuestEntry(models.Model):
     MARITAL_STATUS_CHOICES = [
         ('Single', 'Single'), ('Married', 'Married'),
         ('Divorced', 'Divorced'), ('Widowed', 'Widowed'),
-        ('Not Stated', 'Not Stated'),
     ]
     PURPOSE_CHOICES = [
         ('Home Church', 'Home Church'), ('Occasional Visit', 'Occasional Visit'),
         ('One-Time Visit', 'One-Time Visit'), ('Special Programme Visit', 'Special Programme Visit'),
-        ('Not Stated', 'Not Stated'),
     ]
     CHANNEL_CHOICES = [
         ('Billboard (Grammar School)', 'Billboard (Grammar School)'),
@@ -28,7 +26,7 @@ class GuestEntry(models.Model):
         ('Billboard (Ojodu)', 'Billboard (Ojodu)'),
         ('Facebook', 'Facebook'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
         ('Referral', 'Referral'), ('Self', 'Self'), ('Visit', 'Visit'),
-        ('YouTube', 'YouTube'), ('Not Stated', 'Not Stated'),
+        ('YouTube', 'YouTube'),
     ]
     SERVICE_CHOICES = [
         ('Black Ball', 'Black Ball'), ('Breakthrough Campaign', 'Breakthrough Campaign'),
@@ -41,30 +39,30 @@ class GuestEntry(models.Model):
         ('Supernatural Encounter', 'Supernatural Encounter'),
     ]
     STATUS_CHOICES = [
-        ('Select Status', 'Select Status'), ('Planted', 'Planted'),
+        ('Planted', 'Planted'),
         ('Planted Elsewhere', 'Planted Elsewhere'), ('Relocated', 'Relocated'),
         ('Work in Progress', 'Work in Progress'),
     ]
 
     picture = CloudinaryField('image', blank=True, null=True)
     custom_id = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
-    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, default='Mr.')
+    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=False)
     full_name = models.CharField(max_length=100)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, default='male')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True)
     date_of_birth = models.CharField(blank=True, null=True)
-    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, default='Single')
+    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
     home_address = models.TextField(blank=True)
     occupation = models.CharField(max_length=100, blank=True)
     date_of_visit = models.DateField(default=localdate)
-    purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True, default='Home Church')
-    channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True, default='Referral')
-    service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=True, default='Love Lounge')
+    purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
+    channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
+    service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=False)
     referrer_name = models.CharField(max_length=100, blank=True)
     referrer_phone_number = models.CharField(max_length=20, blank=True)
     message = models.TextField(blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Select Status')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES)
     
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
