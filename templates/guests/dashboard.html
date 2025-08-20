@@ -54,7 +54,7 @@
             <div class="card-body">
               <div class="row gy-3">
                 <div class="col-12 col-sm d-flex flex-column">
-                  <i><span class="text-warning"> Welcome back,</span></i> <h2 class="h1"><small>{{ request.user.title }}</small> {{ request.user.full_name }}</h2>
+                  <i><span class="text-warning"> Welcome back,</span></i> <h2 class="h1"><small>{{ request.user.title|default:"" }}</small> {{ request.user.full_name }}</h2>
                   <div class="row g-5 mt-auto">
                     <div class="col-auto">
                       <div class="subheader">My Guest Entries</div>
