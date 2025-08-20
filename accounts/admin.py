@@ -1,13 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import CustomUser, UserSocialMedia
+from .models import CustomUser
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 
 
-class UserSocialMediaInline(admin.TabularInline):
-    model = UserSocialMedia
-    extra = 1
 
 
 @admin.register(CustomUser)
@@ -16,7 +13,6 @@ class CustomUserAdmin(BaseUserAdmin):
     form = CustomUserChangeForm
     list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'image_display')
     ordering = ('username',)
-    inlines = [UserSocialMediaInline]
     readonly_fields = ('image_display',)
     filter_horizontal = ('groups', 'user_permissions')
 

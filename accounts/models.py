@@ -62,22 +62,3 @@ class CustomUser(AbstractUser):
     def guest_count(self):
         return GuestEntry.objects.filter(created_by=self).count()
 
-
-class UserSocialMedia(models.Model):
-    SOCIAL_MEDIA_CHOICES = [
-        ('whatsapp', 'WhatsApp'),
-        ('instagram', 'Instagram'),
-        ('twitter', 'Twitter'),
-        ('linkedin', 'LinkedIn'),
-    ]
-
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='social_media_accounts'
-    )
-    platform = models.CharField(max_length=20, choices=SOCIAL_MEDIA_CHOICES)
-    handle = models.CharField(max_length=255)
-
-    def __str__(self):
-        return f"{self.get_platform_display()}: {self.handle}"

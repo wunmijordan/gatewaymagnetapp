@@ -395,16 +395,8 @@ def create_user(request):
         if not request.user.is_superuser:
             form.instance.is_superuser = False
 
-        social_handles = request.POST.getlist('social_media_handle[]')
-        social_types = request.POST.getlist('social_media_type[]')
-
         if form.is_valid():
             user = form.save()
-
-            # Save social media entries
-            for handle, platform in zip(social_handles, social_types):
-                if handle.strip() and platform.strip():
-                    user.social_media_accounts.create(platform=platform, handle=handle)
 
             messages.success(request, f"User {user.full_name} created successfully!")
 
@@ -481,16 +473,6 @@ def edit_user(request, user_id):
         else:
             if form.is_valid():
                 user_obj = form.save()
-
-                # Clear old social media entries
-                user_obj.social_media_accounts.all().delete()
-
-                # Save updated social media entries
-                social_handles = request.POST.getlist('social_media_handle[]')
-                social_types = request.POST.getlist('social_media_type[]')
-                for handle, platform in zip(social_handles, social_types):
-                    if handle.strip() and platform.strip():
-                        user_obj.social_media_accounts.create(platform=platform, handle=handle)
 
                 messages.success(request, f"User {user_obj.full_name} updated successfully!")
 
