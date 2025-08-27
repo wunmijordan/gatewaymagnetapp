@@ -35,7 +35,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 import os
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
 from django.conf import settings
