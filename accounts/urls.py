@@ -12,4 +12,5 @@ urlpatterns = [
     path('users/create/', views.create_user, name='create_user'),
     path('users/<int:user_id>/edit/', views.edit_user, name='edit_user'),
     path("manage-groups/", views.manage_groups, name="manage_groups"),
+    path("groups/delete/<int:group_id>/", views.delete_group, name="delete_group"),
 ]

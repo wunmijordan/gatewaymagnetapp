@@ -24,7 +24,6 @@ from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
 
 
 
-
 User = get_user_model()
 
 DAY_QUOTES = {
@@ -529,6 +528,8 @@ def edit_user(request, user_id):
     })
 
 
+
+
 @login_required
 def manage_groups(request):
     groups = Group.objects.all().order_by("name")
@@ -546,6 +547,26 @@ def manage_groups(request):
         "groups": groups,
         "form": form,
     })
+
+
+@login_required
+def delete_group(request, group_id):
+    group = get_object_or_404(Group, id=group_id)
+
+    # Prevent deletion of important groups
+    if group.name in ["Team Member", "Admin", "Message Manager", "Registrant"]:
+        messages.error(request, f"Cannot delete the '{group.name}' group.")
+        return redirect("accounts:manage_groups")
+
+    # Prevent deletion if users are assigned to the group
+    if group.user_set.exists():
+        messages.error(request, f"Cannot delete '{group.name}' because users are assigned to it.")
+        return redirect("accounts:manage_groups")
+
+    group.delete()
+    messages.success(request, f"Group '{group.name}' deleted successfully.")
+    return redirect("accounts:manage_groups")
+
 
 
 
