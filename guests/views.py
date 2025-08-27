@@ -833,11 +833,15 @@ def parse_flexible_date(date_str):
 
 
 
+User = get_user_model()
+
 def import_guests_csv(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
         decoded_file = csv_file.read().decode("utf-8").splitlines()
         reader = csv.DictReader(decoded_file)
+
+        guests_to_create = []
 
         for row in reader:
             username = row.get("assigned_to", "").strip()
@@ -851,7 +855,6 @@ def import_guests_csv(request):
                 dob = parse_flexible_date(row.get("date_of_birth"))
                 dov = parse_flexible_date(row.get("date_of_visit"))
 
-                # Use instance + save() to trigger custom_id generation
                 guest = GuestEntry(
                     full_name=row.get("full_name", "").strip(),
                     title=row.get("title", "").strip(),
@@ -873,18 +876,25 @@ def import_guests_csv(request):
                     assigned_to=user,
                 )
 
-                guest.save()  # triggers custom_id assignment
-
-                # Handle Cloudinary image
-                image_url = row.get("picture_url", "").strip()
-                if image_url:
-                    cloudinary_response = cloudinary_upload(image_url)
-                    guest.picture = cloudinary_response.get("public_id")
-                    guest.save()  # save after setting image
+                guests_to_create.append((guest, row.get("picture_url", "").strip()))
 
             except Exception as e:
-                messages.error(request, f"Error importing '{row.get('full_name')}' – {str(e)}")
+                messages.error(request, f"Error preparing '{row.get('full_name')}' – {str(e)}")
                 continue
+
+        # Save all guests in a single transaction to preserve custom_id sequence
+        with transaction.atomic():
+            for guest, image_url in guests_to_create:
+                guest.save()  # triggers custom_id assignment
+
+                # handle image individually
+                if image_url:
+                    try:
+                        cloudinary_response = cloudinary_upload(image_url)
+                        guest.picture = cloudinary_response.get("public_id")
+                        guest.save()
+                    except Exception as e:
+                        messages.warning(request, f"Image upload failed for '{guest.full_name}': {str(e)}")
 
         messages.success(request, "Guest list imported successfully.")
         return redirect("guest_list")
