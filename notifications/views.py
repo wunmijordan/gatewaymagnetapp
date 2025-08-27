@@ -49,3 +49,43 @@ def unread_notifications(request):
         ]
     }
     return JsonResponse(data)
+
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .forms import UserSettingsForm
+
+@login_required
+def user_settings(request):
+    settings = request.user.settings
+
+    if request.method == "POST":
+        form = UserSettingsForm(request.POST, instance=settings)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+    # For GET, we don't need to return anything; modal is already in base.html
+    return JsonResponse({"success": True})
+
+
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from .models import UserSettings
+
+@login_required
+@require_POST
+def update_user_settings(request):
+    sound = request.POST.get("notification_sound", "chime1")
+    vibration = request.POST.get("vibration_enabled") == "on"
+
+    settings, _ = UserSettings.objects.get_or_create(user=request.user)
+    settings.notification_sound = sound
+    settings.vibration_enabled = vibration
+    settings.save()
+
+    return JsonResponse({"status": "ok", "sound": sound, "vibration": vibration})

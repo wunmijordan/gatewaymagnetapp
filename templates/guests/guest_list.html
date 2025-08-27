@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load guest_extras %}
 {% load static %}
+{% load group_tags %}
 {% block title %}Guest List - Gateway Magnet{% endblock %}
 
 {% block content %}
@@ -38,24 +39,26 @@
                 </svg>
               </a>
             </div>
-            <div>
-              <!-- Single Button for Regular Users -->
-              <a href="{% url 'create_guest' %}" class="btn btn-gray d-none d-sm-inline-block">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
-                </svg>
-                Add New Guest
-              </a>
+            {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:"Registrant" %}
+              <div>
+                <!-- Single Button for Regular Users -->
+                <a href="{% url 'create_guest' %}" class="btn btn-gray d-none d-sm-inline-block">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
+                  </svg>
+                  Add New Guest
+                </a>
 
-              <!-- Mobile Button -->
-              <a href="{% url 'create_guest' %}" class="btn btn-gray d-sm-none btn-icon" aria-label="Add guest">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                  <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
-                </svg>
-              </a>
-            </div>
+                <!-- Mobile Button -->
+                <a href="{% url 'create_guest' %}" class="btn btn-gray d-sm-none btn-icon" aria-label="Add guest">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-plus">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                    <path d="M3 21v-2a4 4 0 0 1 4 -4h4c.96 0 1.84 .338 2.53 .901" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M16 19h6" /><path d="M19 16v6" />
+                  </svg>
+                </a>
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -117,7 +120,7 @@
                   <th>Service</th>
                   <th>Socials</th>
                   <th>Status</th>
-                  <th>{% if request.user.is_superuser or request.user.is_staff %}Created/Assigned{% else %}Assigned{% endif %}</th>
+                  <th>{% if request.user.is_superuser or request.user.is_staff %}Assigned{% else %}Assigned{% endif %}</th>
                   <th>Last Report</th>
                   <th>Actions</th>
                 </tr>
@@ -202,38 +205,25 @@
                   {% endfor %}
                 </td>
 
-                <td><span class="text-{{ guest.get_status_color }}">{{ guest.status|default:"Select Status" }}</span></td>
+                <td><span class="text-{{ guest.get_status_color }}">{{ guest.status|default:"" }}</span></td>
                 <td>
-                  {% if request.user.is_superuser or is_admin_group %}
-                    {% if guest.created_by %}
-                      <span class="badge bg-success-lt">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-clipboard">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
-                          <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
-                        </svg>
-                        {{ guest.created_by.get_full_name|default:guest.created_by.username }}
+                  <!-- Assigned User Avatar (bottom-right corner) -->
+                  {% if guest.assigned_to %}
+                    {% if guest.assigned_to.image %}
+                      <span class="avatar avatar-sm rounded"
+                            style="width: 32px; height: 32px; border: 2px solid #fff; background-size: cover; background-position: center;
+                                  background-image: url('{{ guest.assigned_to.image.url }}');">
                       </span>
                     {% else %}
-                      {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
-                        <span class="badge bg-warning-lt">
-                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-switch-horizontal">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 3l4 4l-4 4" /><path d="M10 7l10 0" />
-                            <path d="M8 13l-4 4l4 4" /><path d="M4 17l9 0" />
-                          </svg>
-                          {{ guest.assigned_to.get_full_name|default:guest.assigned_to.username }}
-                        </span>
-                      {% endif %}
-                    {% endif %}
-                  {% else %}
-                    {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
-                      <span class="badge bg-danger-lt">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-switch-horizontal">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 3l4 4l-4 4" /><path d="M10 7l10 0" />
-                          <path d="M8 13l-4 4l4 4" /><path d="M4 17l9 0" />
-                        </svg>
+                      <span class="avatar avatar-sm bg-grey text-white fw-bold d-inline-flex align-items-center justify-content-center"
+                            style="width: 32px; height: 32px; border: 2px font-size:12px;">
+                        {{ guest.assigned_to.initials }}
                       </span>
                     {% endif %}
                   {% endif %}
+
+
+                
                 </td>
                 <td>{{ guest.last_reported|default:"Never" }}</td>
 
@@ -297,12 +287,18 @@
                       Report
                       <span class="badge bg-grey text-warning ms-2">{{ guest.reports.count }}</span>
                     </a>
+                    <!-- Trigger Single Guest Message Modal -->
+                    {% if request.user.is_superuser %}
+                      <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#guestMessageModal{{ guest.id }}">
+                        Send Message
+                      </a>
+                    {% endif %}
                   </div>
                 </div>
               </div>
 
               <!-- Card Body -->
-              <div class="card-body text-center">
+              <div class="card-body text-center position-relative">
                 <!-- Guest Avatar / Picture with Preview Modal Trigger -->
                 <a href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#previewModal{{ guest.id }}">
                   {% if guest.picture %}
@@ -401,33 +397,32 @@
                 <!-- Badges -->
                 <div class="mt-2">
                   {% if request.user.is_superuser or is_admin_group %}
-                    {% if guest.created_by %}
-                      <span class="badge bg-success-lt">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-clipboard">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
-                          <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
-                        </svg>
-                        {{ guest.created_by.get_full_name|default:guest.created_by.username }}
-                      </span>
-                    {% else %}
-                      {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
-                        <span class="badge bg-warning-lt">
-                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-switch-horizontal">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 3l4 4l-4 4" /><path d="M10 7l10 0" />
-                            <path d="M8 13l-4 4l4 4" /><path d="M4 17l9 0" />
+                    {% if guest.assigned_to %}
+                      {% if guest.assigned_to == request.user %}
+                        <span class="badge bg-success-lt">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-replace-user">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 11v-3c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-6m0 0l3 3m-3 -3l3 -3" />
+                            <path d="M3 13.013v3c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586h6m0 0l-3 -3m3 3l-3 3" /><path d="M16 16.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M4 4.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M21 21.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
+                            <path d="M9 9.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
                           </svg>
-                          {{ guest.assigned_to.get_full_name|default:guest.assigned_to.username }}
+                        </span>
+                      {% else %}
+                        <span class="badge bg-success-lt">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-replace-user">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 11v-3c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-6m0 0l3 3m-3 -3l3 -3" />
+                            <path d="M3 13.013v3c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586h6m0 0l-3 -3m3 3l-3 3" /><path d="M16 16.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M4 4.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M21 21.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
+                            <path d="M9 9.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
+                          </svg>
+                          {{ guest.assigned_to.title|default:"" }} {{ guest.assigned_to.full_name }}
                         </span>
                       {% endif %}
                     {% endif %}
                   {% else %}
-                    {% if guest.assigned_to and guest.assigned_to != guest.created_by %}
-                      <span class="badge bg-danger-lt">
-                        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-switch-horizontal">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M16 3l4 4l-4 4" /><path d="M10 7l10 0" />
-                          <path d="M8 13l-4 4l4 4" /><path d="M4 17l9 0" />
-                        </svg>
-                      </span>
+                    {% if guest.assigned_to %}
                     {% endif %}
                   {% endif %}
 
@@ -437,6 +432,26 @@
                       {{ guest.last_reported|default:"Never" }}</i>
                   </div>
                 </div>
+
+                <!-- Assigned User Avatar (bottom-right corner) -->
+                {% if guest.assigned_to %}
+                  {% if guest.assigned_to.image %}
+                    <span class="avatar avatar-sm rounded position-absolute"
+                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 2px solid #fff; background-size: cover; background-position: center;
+                                background-image: url('{{ guest.assigned_to.image.url }}');">
+                    </span>
+                  {% else %}
+                    <span class="avatar avatar-sm bg-grey text-white fw-bold d-inline-flex align-items-center justify-content-center position-absolute"
+                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 2px font-size:12px;">
+                      {{ guest.assigned_to.initials }}
+                    </span>
+                  {% endif %}
+                {% endif %}
+
+
+                
+
+
               </div>
 
               <!-- Card Actions -->
@@ -448,7 +463,7 @@
 
                 <div class="dropdown flex-fill text-center">
                   <a href="#"
-                    class="card-btn dropdown-toggle text-uppercase fw-bold text-{{ guest.get_status_color }}"
+                    class="card-btn dropup text-uppercase fw-bold text-{{ guest.get_status_color }}"
                     data-bs-toggle="dropdown"
                     data-bs-display="static"
                     aria-expanded="false">
@@ -559,7 +574,7 @@
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content bg-dark border-light text-white">
             <div class="modal-body text-center">
-              <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{{ MEDIA_URL }}guest_pictures/default_guest.jpg{% endif %}"
+              <img src="{% if guest and guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}"
                   class="img-fluid rounded shadow">
               <p class="mt-3 mb-0 fw-bold">{{ guest.full_name }}</p>
             </div>
@@ -596,7 +611,56 @@
 
 
 
+<!-- Single Guest Modal -->
+{% for guest in page_obj %}
+  <div class="modal fade" id="guestMessageModal{{ guest.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Send Message to {{ guest.full_name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form method="post" action="{% url 'send_guest_message' guest.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="recipient_id" value="{{ guest.id }}">
+            
+            <div class="mb-3">
+              <label>Subject</label>
+              <input type="text" name="subject" class="form-control" placeholder="Subject (optional)">
+            </div>
+
+            <div class="mb-3">
+              <label>Message Body</label>
+              <textarea name="body" rows="5" class="form-control" required></textarea>
+            </div>
+
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary">Send Message</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
+
+
+
+
 
 
 
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
   'cloudinary',
   'cloudinary_storage',
   'widget_tweaks',
+  'channels',
 
   # Django default apps
   'django.contrib.admin',
@@ -38,11 +39,13 @@ INSTALLED_APPS = [
   'django.contrib.messages',
   'django.contrib.staticfiles',
   'django_htmx',
+  'django.contrib.humanize',
 
   # Your apps
   'guests.apps.GuestsConfig',
   'accounts.apps.AccountsConfig',
   'notifications.apps.NotificationsConfig',
+  'messaging.apps.MessagingConfig',
 ]
 
 if DEBUG:
@@ -59,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "django_htmx.middleware.HtmxMiddleware",
+    'notifications.middleware.CurrentUserMiddleware',
 ]
 
 if DEBUG:
@@ -78,13 +82,31 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                "notifications.context_processors.unread_notifications",
+                'notifications.context_processors.unread_notifications',
+                'notifications.context_processors.user_settings',
+                'messaging.context_processors.bulk_message_form',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'gatewaymagnetapp.wsgi.application'
+
+ASGI_APPLICATION = "gatewaymagnetapp.asgi.application"
+
+# Use Redis for channel layer (requires Redis running)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [{
+                "host": os.getenv("REDIS_HOST", "127.0.0.1"),
+                "port": int(os.getenv("REDIS_PORT", 6379)),
+                "password": os.getenv("REDIS_PASSWORD", ""),
+            }],
+        },
+    },
+}
 
 # Database
 if ENVIRONMENT == 'production':

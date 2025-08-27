@@ -27,7 +27,7 @@ class GuestEntryForm(forms.ModelForm):
 
     class Meta:
         model = GuestEntry
-        exclude = ['created_by', 'assigned_to', 'status', 'custom_id']
+        exclude = ['assigned_to', 'status', 'custom_id']
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -44,7 +44,7 @@ class GuestEntryForm(forms.ModelForm):
             'gender': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manager'}),
             'home_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
-            'date_of_visit': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control', 'required': 'required'}),
+            'date_of_visit': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}),
             'purpose_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'channel_of_visit': forms.Select(attrs={'class': 'form-select'}),
             'service_attended': forms.Select(attrs={'class': 'form-select'}),

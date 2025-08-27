@@ -1,138 +1,154 @@
 {% load static %}
 {% load dict_extras %}
 
+{% block content %}
+<div class="page-wrapper">
+  <!-- BEGIN PAGE HEADER -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
 
-<div class="mb-4 text-center">
-  <span class="avatar avatar-xl rounded" style="width: 100px; height: 100px;">
-    <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{% static 'default_guest.jpg' %}{% endif %}" 
-         alt="Guest Picture" 
-         class="rounded shadow-sm" 
-         style="object-fit: cover; width: 100px; height: 100px;">
-  </span>
-</div>
-
-<form>
-  <div class="row g-3">
-    {% for field in form.visible_fields %}
-      {% if field.name not in 'social_media_type social_media_handle' %}
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="{{ field.id_for_label }}" class="form-label text-white">{{ field.label }}</label>
-            <div class="input-group input-group-flat">
-              {% if field.name == 'picture' %}
-                <input type="file" class="form-control bg-grey text-white border-0" disabled>
-              {% elif field.field.widget.input_type in 'select selectmultiple' %}
-                <select class="form-select bg-grey text-white border-0" disabled aria-disabled="true" tabindex="-1" aria-hidden="true">
-                  {% for val, text in field.field.choices %}
-                    <option value="{{ val }}" {% if field.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ text }}</option>
-                  {% endfor %}
-                </select>
-              {% elif field.field.widget.input_type == "textarea" %}
-                <textarea class="form-control bg-grey text-white border-0" rows="3" readonly tabindex="-1" aria-readonly="true">{{ field.value }}</textarea>
-              {% else %}
-                <input type="{{ field.field.widget.input_type }}" 
-                       class="form-control bg-grey text-white border-0" 
-                       value="{% if field.name == 'date_of_visit' and field.value %}{{ field.value|date:'Y-m-d' }}{% else %}{{ field.value }}{% endif %}" 
-                       readonly tabindex="-1" aria-readonly="true">
-              {% endif %}
-            </div>
+          <div class="mb-4 text-center">
+            <span class="avatar avatar-xl rounded" style="width: 100px; height: 100px;">
+              <img src="{% if guest.picture %}{{ guest.picture.url }}{% else %}{% static 'images/default_image.jpg' %}{% endif %}" 
+                  alt="Guest Picture" 
+                  class="rounded shadow-sm" 
+                  style="object-fit: cover; width: 100px; height: 100px;">
+            </span>
           </div>
-        </div>
-      {% endif %}
-    {% endfor %}
 
-    <!-- Social Media Display -->
-    <div class="col-md-6 d-flex flex-column" id="socialMediaFieldsContainer">
-      <div class="form-group w-100">
-        <label class="form-label text-white text-start">Social Media</label>
-
-        {% if social_media_handles.exists %}
-          <div class="d-flex flex-wrap justify-content-start mt-2">
-            {% for sm in social_media_handles %}
-              {% with platform=sm.platform|lower %}
-                {% if platform %}
-                  <div class="social-media-field d-flex align-items-center justify-content-center mx-1 my-1 p-2 bg-dark rounded">
-                    <a href="{{ sm.handle }}" target="_blank" rel="noopener noreferrer" style="color:inherit; font-size:2rem;">
-                      {{ social_media_icons|get_item:platform|safe }}
-                    </a>
+          <form>
+            <div class="row g-3">
+              {% for field in form.visible_fields %}
+                {% if field.name not in 'social_media_type social_media_handle' %}
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="{{ field.id_for_label }}" class="form-label text-white">{{ field.label }}</label>
+                      <div class="input-group input-group-flat">
+                        {% if field.name == 'picture' %}
+                          <input type="file" class="form-control bg-grey text-white border-0" disabled>
+                        {% elif field.field.widget.input_type in 'select selectmultiple' %}
+                          <select class="form-select bg-grey text-white border-0" disabled aria-disabled="true" tabindex="-1" aria-hidden="true">
+                            {% for val, text in field.field.choices %}
+                              <option value="{{ val }}" {% if field.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ text }}</option>
+                            {% endfor %}
+                          </select>
+                        {% elif field.field.widget.input_type == "textarea" %}
+                          <textarea class="form-control bg-grey text-white border-0" rows="3" readonly tabindex="-1" aria-readonly="true">{{ field.value }}</textarea>
+                        {% else %}
+                          <input type="{{ field.field.widget.input_type }}" 
+                                class="form-control bg-grey text-white border-0" 
+                                value="{% if field.name == 'date_of_visit' and field.value %}{{ field.value|date:'Y-m-d' }}{% else %}{{ field.value }}{% endif %}" 
+                                readonly tabindex="-1" aria-readonly="true">
+                        {% endif %}
+                      </div>
+                    </div>
                   </div>
                 {% endif %}
-              {% endwith %}
-            {% endfor %}
+              {% endfor %}
+
+              <!-- Social Media Display -->
+              <div class="col-md-6 d-flex flex-column" id="socialMediaFieldsContainer">
+                <div class="form-group w-100">
+                  <label class="form-label text-white text-start">Social Media</label>
+
+                  {% if social_media_handles.exists %}
+                    <div class="d-flex flex-wrap justify-content-start mt-2">
+                      {% for sm in social_media_handles %}
+                        {% with platform=sm.platform|lower %}
+                          {% if platform %}
+                            <div class="social-media-field d-flex align-items-center justify-content-center mx-1 my-1 p-2 bg-dark rounded">
+                              <a href="{{ sm.handle }}" target="_blank" rel="noopener noreferrer" style="color:inherit; font-size:2rem;">
+                                {{ social_media_icons|get_item:platform|safe }}
+                              </a>
+                            </div>
+                          {% endif %}
+                        {% endwith %}
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <div class="social-media-field mx-2 my-1">
+                      <input type="text" class="form-control bg-grey text-white border-0 text-center"
+                            value="No social media" readonly tabindex="-1" aria-readonly="true" />
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </form>
+
+          <div><hr></div>
+
+          <div>
+            <h3 class="table-title text-center">Report(s)</h3>
+            <div id="advanced-table">
+              <div class="table-responsive">
+                <table class="table table-vcenter table-selectable table-striped table-hover table-bordered mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Note</th>
+                      <th>Status</th>
+                      <th>Service Attendance</th>
+                    </tr>
+                  </thead>
+
+                  <tbody class="table-tbody">
+                    {% for report in reports %}
+                      <tr data-report-id="{{ report.id }}">
+                        <td><strong>{{ report.report_date }}</strong></td>
+                        <td class="note-cell text-secondary">{{ report.note }}</td>
+                        <td>
+                          <span class="badge
+                            {% if report.guest.status == 'planted' %}bg-success-lt
+                            {% elif report.guest.status == 'planted_elsewhere' %}bg-danger-lt
+                            {% elif report.guest.status == 'relocated' %}bg-primary-lt
+                            {% elif report.guest.status == 'work_in_progress' %}bg-warning-lt
+                            {% else %}bg-grey-lt{% endif %}">
+                            {{ report.guest.get_status_display }}
+                          </span>
+                        </td>
+                        <td>
+                          <div class="badges-list">
+                            {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
+                            {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
+                          </div>
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <div class="flex-grow-1 text-center text-muted">
+                        No Follow-up Reports Yet!
+                      </div> 
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        {% else %}
-          <div class="social-media-field mx-2 my-1">
-            <input type="text" class="form-control bg-grey text-white border-0 text-center"
-                  value="No social media" readonly tabindex="-1" aria-readonly="true" />
+
+          <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
+            {% if request.user.is_superuser or is_admin_group %}
+              <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
+                {% csrf_token %}
+                <select name="assigned_to" class="form-select" required>
+                  <option value="">Select User</option>
+                  {% for u in users %}
+                    <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
+                      {{ u.title|default:"" }} {{ u.full_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-green">Assign</button>
+              </form>
+            {% endif %}
           </div>
-        {% endif %}
+        </div>
       </div>
     </div>
   </div>
-</form>
-
-<div><hr></div>
-
-<div>
-  <h3 class="table-title text-center">Report(s)</h3>
-  <div id="advanced-table">
-    <div class="table-responsive">
-      <table class="table table-vcenter table-selectable table-striped table-hover table-bordered mb-0">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Note</th>
-            <th>Status</th>
-            <th>Service Attendance</th>
-          </tr>
-        </thead>
-
-        <tbody class="table-tbody">
-          {% for report in reports %}
-            <tr data-report-id="{{ report.id }}">
-              <td><strong>{{ report.report_date }}</strong></td>
-              <td class="note-cell text-secondary">{{ report.note }}</td>
-              <td>
-                <span class="badge
-                  {% if report.guest.status == 'planted' %}bg-success-lt
-                  {% elif report.guest.status == 'planted_elsewhere' %}bg-danger-lt
-                  {% elif report.guest.status == 'relocated' %}bg-primary-lt
-                  {% elif report.guest.status == 'work_in_progress' %}bg-warning-lt
-                  {% else %}bg-grey-lt{% endif %}">
-                  {{ report.guest.get_status_display }}
-                </span>
-              </td>
-              <td>
-                <div class="badges-list">
-                  {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
-                  {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
-                </div>
-              </td>
-            </tr>
-          {% empty %}
-            <div class="flex-grow-1 text-center text-muted">
-              No Follow-up Reports Yet!
-            </div> 
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
+  
 </div>
 
-<div class="mt-4 d-flex align-items-center justify-content-center gap-2">
-  {% if request.user.is_superuser or is_admin_group %}
-    <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
-      {% csrf_token %}
-      <select name="assigned_to" class="form-select" required>
-        <option value="">Select User</option>
-        {% for u in users %}
-          <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
-            {{ u.get_full_name|default:u.username }}
-          </option>
-        {% endfor %}
-      </select>
-      <button type="submit" class="btn btn-green">Reassign</button>
-    </form>
-  {% endif %}
-</div>
+
+{% endblock %}

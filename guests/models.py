@@ -6,106 +6,100 @@ from cloudinary.models import CloudinaryField
 
 
 class GuestEntry(models.Model):
-    TITLE_CHOICES = [
-        ('Chief', 'Chief'), ('Dr.', 'Dr.'), ('Engr.', 'Engr.'),
-        ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.'), ('Ms.', 'Ms.'),
-        ('Pastor', 'Pastor'), ('Prof.', 'Prof.'),
-    ]
-    GENDER_CHOICES = [('male', 'Male'), ('female', 'Female')]
-    MARITAL_STATUS_CHOICES = [
-        ('Single', 'Single'), ('Married', 'Married'),
-        ('Divorced', 'Divorced'), ('Widowed', 'Widowed'),
-    ]
-    PURPOSE_CHOICES = [
-        ('Home Church', 'Home Church'), ('Occasional Visit', 'Occasional Visit'),
-        ('One-Time Visit', 'One-Time Visit'), ('Special Programme Visit', 'Special Programme Visit'),
-    ]
-    CHANNEL_CHOICES = [
-        ('Billboard (Grammar School)', 'Billboard (Grammar School)'),
-        ('Billboard (Kosoko)', 'Billboard (Kosoko)'),
-        ('Billboard (Ojodu)', 'Billboard (Ojodu)'),
-        ('Facebook', 'Facebook'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
-        ('Referral', 'Referral'), ('Self', 'Self'), ('Visit', 'Visit'),
-        ('YouTube', 'YouTube'),
-    ]
-    SERVICE_CHOICES = [
-        ('Black Ball', 'Black Ball'), ('Breakthrough Campaign', 'Breakthrough Campaign'),
-        ('Breakthrough Festival', 'Breakthrough Festival'), ('Code Red. Revival', 'Code Red. Revival'),
-        ('Cross Over', 'Cross Over'), ('Deep Dive', 'Deep Dive'), ('Family Hangout', 'Family Hangout'),
-        ('Forecasting', 'Forecasting'), ('Life Masterclass', 'Life Masterclass'), ('Love Lounge', 'Love Lounge'),
-        ('Midweek Recharge', 'Midweek Recharge'), ('Midyear Praise Party', 'Midyear Praise Party'),
-        ('Outreach', 'Outreach'), ('Praise Party', 'Praise Party'), ('Quantum Leap', 'Quantum Leap'),
-        ('Recalibrate Marathon', 'Recalibrate Marathon'), ('Singles Connect', 'Singles Connect'),
-        ('Supernatural Encounter', 'Supernatural Encounter'),
-    ]
-    STATUS_CHOICES = [
-        ('Planted', 'Planted'),
-        ('Planted Elsewhere', 'Planted Elsewhere'), ('Relocated', 'Relocated'),
-        ('Work in Progress', 'Work in Progress'),
-    ]
+  TITLE_CHOICES = [
+    ('Chief', 'Chief'), ('Dr.', 'Dr.'), ('Engr.', 'Engr.'),
+    ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.'), ('Ms.', 'Ms.'),
+    ('Pastor', 'Pastor'), ('Prof.', 'Prof.'),
+  ]
+  GENDER_CHOICES = [('male', 'Male'), ('female', 'Female')]
+  MARITAL_STATUS_CHOICES = [
+    ('Single', 'Single'), ('Married', 'Married'),
+    ('Divorced', 'Divorced'), ('Widowed', 'Widowed'),
+  ]
+  PURPOSE_CHOICES = [
+    ('Home Church', 'Home Church'), ('Occasional Visit', 'Occasional Visit'),
+    ('One-Time Visit', 'One-Time Visit'), ('Special Programme Visit', 'Special Programme Visit'),
+  ]
+  CHANNEL_CHOICES = [
+    ('Billboard (Grammar School)', 'Billboard (Grammar School)'),
+    ('Billboard (Kosoko)', 'Billboard (Kosoko)'),
+    ('Billboard (Ojodu)', 'Billboard (Ojodu)'),
+    ('Facebook', 'Facebook'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
+    ('Referral', 'Referral'), ('Self', 'Self'), ('Visit', 'Visit'),
+    ('YouTube', 'YouTube'),
+  ]
+  SERVICE_CHOICES = [
+    ('Black Ball', 'Black Ball'), ('Breakthrough Campaign', 'Breakthrough Campaign'),
+    ('Breakthrough Festival', 'Breakthrough Festival'), ('Code Red. Revival', 'Code Red. Revival'),
+    ('Cross Over', 'Cross Over'), ('Deep Dive', 'Deep Dive'), ('Family Hangout', 'Family Hangout'),
+    ('Forecasting', 'Forecasting'), ('Life Masterclass', 'Life Masterclass'), ('Love Lounge', 'Love Lounge'),
+    ('Midweek Recharge', 'Midweek Recharge'), ('Midyear Praise Party', 'Midyear Praise Party'),
+    ('Outreach', 'Outreach'), ('Praise Party', 'Praise Party'), ('Quantum Leap', 'Quantum Leap'),
+    ('Recalibrate Marathon', 'Recalibrate Marathon'), ('Singles Connect', 'Singles Connect'),
+    ('Supernatural Encounter', 'Supernatural Encounter'),
+  ]
+  STATUS_CHOICES = [
+    ('Planted', 'Planted'),
+    ('Planted Elsewhere', 'Planted Elsewhere'), ('Relocated', 'Relocated'),
+    ('Work in Progress', 'Work in Progress'),
+  ]
 
-    picture = CloudinaryField('image', blank=True, null=True)
-    custom_id = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
-    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=False)
-    full_name = models.CharField(max_length=100)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True)
-    date_of_birth = models.CharField(blank=True, null=True)
-    marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
-    home_address = models.TextField(blank=True)
-    occupation = models.CharField(max_length=100, blank=True)
-    date_of_visit = models.DateField(default=localdate)
-    purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
-    channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
-    service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=False)
-    referrer_name = models.CharField(max_length=100, blank=True)
-    referrer_phone_number = models.CharField(max_length=20, blank=True)
-    message = models.TextField(blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES)
-    
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='created_guests'
-    )
-    assigned_to = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        null=True, blank=True,
-        on_delete=models.SET_NULL,
-        related_name='assigned_guests'
-    )
+  picture = CloudinaryField('image', blank=True, null=True)
+  custom_id = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
+  title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True)
+  full_name = models.CharField(max_length=100)
+  gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True)
+  phone_number = models.CharField(max_length=20, blank=True, null=True)
+  email = models.EmailField(blank=True)
+  date_of_birth = models.CharField(blank=True, null=True)
+  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
+  home_address = models.TextField(blank=True)
+  occupation = models.CharField(max_length=100, blank=True)
+  date_of_visit = models.DateField(blank=True, null=True)
+  purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
+  channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
+  service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=True)
+  referrer_name = models.CharField(max_length=100, blank=True)
+  referrer_phone_number = models.CharField(max_length=20, blank=True)
+  message = models.TextField(blank=True)
+  status = models.CharField(max_length=30, choices=STATUS_CHOICES)
 
-    def save(self, *args, **kwargs):
-        if not self.custom_id:
-            prefix = 'GNG'
-            last_guest = GuestEntry.objects.filter(custom_id__startswith=prefix).order_by('-custom_id').first()
-            if last_guest and last_guest.custom_id:
-                last_num = int(re.sub(r'^\D+', '', last_guest.custom_id))
-                new_num = last_num + 1
-            else:
-                new_num = 1
-            self.custom_id = f'{prefix}{new_num:06d}'
-        super().save(*args, **kwargs)
+  assigned_to = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    null=True, blank=True,
+    on_delete=models.SET_NULL,
+    related_name='assigned_guests'
+  )
 
-    @property
-    def initials(self):
-        if self.full_name:
-            return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
-        return 'G'
+  def save(self, *args, **kwargs):
+    if not self.custom_id:
+      prefix = 'GNG'
+      last_guest = GuestEntry.objects.filter(custom_id__startswith=prefix).order_by('-custom_id').first()
+      if last_guest and last_guest.custom_id:
+        last_num = int(re.sub(r'^\D+', '', last_guest.custom_id))
+        new_num = last_num + 1
+      else:
+        new_num = 1
+      self.custom_id = f'{prefix}{new_num:06d}'
+    super().save(*args, **kwargs)
 
-    def get_status_color(self):
-        return {
-            'Planted': 'success',
-            'Planted Elsewhere': 'danger',
-            'Relocated': 'primary',
-            'Work in Progress': 'warning',
-            'Select Status': 'secondary',
-        }.get(self.status, 'secondary')
+  @property
+  def initials(self):
+    if self.full_name:
+      return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
+    return 'G'
 
-    def __str__(self):
-        return f"{self.custom_id} - {self.full_name}"
+  def get_status_color(self):
+    return {
+      'Planted': 'success',
+      'Planted Elsewhere': 'danger',
+      'Relocated': 'primary',
+      'Work in Progress': 'warning',
+      'Select Status': 'secondary',
+    }.get(self.status, 'secondary')
 
+  def __str__(self):
+    return f"{self.custom_id} - {self.full_name}"
 
 class SocialMediaEntry(models.Model):
     SOCIAL_MEDIA_CHOICES = [

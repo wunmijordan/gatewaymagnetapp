@@ -39,6 +39,8 @@ from django.db import IntegrityError
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
 from django.conf import settings
+from cloudinary.uploader import upload as cloudinary_upload
+
 
 
 
@@ -87,10 +89,11 @@ def dashboard_view(request):
     if user.is_superuser or user.groups.filter(name='Admin').exists():
         queryset = GuestEntry.objects.all()
     else:
-        queryset = GuestEntry.objects.filter(created_by=user)
+        queryset = GuestEntry.objects.filter(assigned_to=user)
 
     available_years = guest_entries.dates('date_of_visit', 'year')
     available_years = [d.year for d in available_years]
+
 
     # Pre-fill for current year summary
     request.GET = request.GET.copy()
@@ -185,16 +188,16 @@ def dashboard_view(request):
         percent_change = increase_rate
 
     # === Logged-in user's total guest entries and month difference ===
-    user_total_guest_entries = GuestEntry.objects.filter(created_by=user).count()
+    user_total_guest_entries = GuestEntry.objects.filter(assigned_to=user).count()
 
     user_current_month_count = GuestEntry.objects.filter(
-        created_by=user,
+        assigned_to=user,
         date_of_visit__gte=first_day_this_month,
         date_of_visit__lte=today
     ).count()
 
     user_last_month_count = GuestEntry.objects.filter(
-        created_by=user,
+        assigned_to=user,
         date_of_visit__gte=first_day_last_month,
         date_of_visit__lte=last_month_end
     ).count()
@@ -212,18 +215,18 @@ def dashboard_view(request):
         user_diff_positive = diff >= 0
 
     # === Planted guests growth rate for logged-in user ===
-    user_planted_total = GuestEntry.objects.filter(created_by=user, status="Planted").count()
+    user_planted_total = GuestEntry.objects.filter(assigned_to=user, status="Planted").count()
     planted_growth_rate = round((user_planted_total / user_total_guest_entries) * 100, 1) if user_total_guest_entries else 0
 
     user_planted_current_month = GuestEntry.objects.filter(
-        created_by=user,
+        assigned_to=user,
         status="Planted",
         date_of_visit__gte=first_day_this_month,
         date_of_visit__lte=today
     ).count()
 
     user_planted_last_month = GuestEntry.objects.filter(
-        created_by=user,
+        assigned_to=user,
         status="Planted",
         date_of_visit__gte=first_day_last_month,
         date_of_visit__lte=last_month_end
@@ -407,7 +410,8 @@ def is_admin_or_superuser(user):
 @login_required
 def guest_list_view(request):
     user = request.user
-    is_admin_group = is_admin_or_superuser(user)
+    is_admin_group = is_admin_or_superuser(user) or user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+
 
     # Filters from GET params
     search_query = request.GET.get('q', '').strip()
@@ -422,10 +426,10 @@ def guest_list_view(request):
     if is_admin_group:
         queryset = GuestEntry.objects.all()
         if user_filter:
-            queryset = queryset.filter(Q(created_by__id=user_filter) | Q(assigned_to__id=user_filter))
+            queryset = queryset.filter(Q(assigned_to__id=user_filter))
     else:
         queryset = GuestEntry.objects.filter(
-            Q(created_by=user, assigned_to__isnull=True) | Q(assigned_to=user)
+            Q(assigned_to=user, assigned_to__isnull=True) | Q(assigned_to=user)
         )
 
     # Search filter
@@ -439,10 +443,7 @@ def guest_list_view(request):
             Q(status__icontains=search_query) |
             Q(channel_of_visit__icontains=search_query) |
             Q(purpose_of_visit__icontains=search_query) |
-            Q(created_by__first_name__icontains=search_query) |
-            Q(created_by__last_name__icontains=search_query) |
-            Q(assigned_to__first_name__icontains=search_query) |
-            Q(assigned_to__last_name__icontains=search_query)
+            Q(assigned_to__full_name__icontains=search_query)
         )
 
     # Other filters
@@ -495,7 +496,7 @@ def guest_list_view(request):
 
 
 
-
+@user_passes_test(lambda u: u.is_superuser or u.is_staff or u.groups.filter(name="Registrant").exists())
 @login_required
 def create_guest(request):
     is_admin_group = is_admin_or_superuser(request.user)
@@ -523,7 +524,6 @@ def create_guest(request):
 
         if form.is_valid() and not errors:
             guest = form.save(commit=False)
-            guest.created_by = request.user
             guest.save()
 
             # Save social media
@@ -561,12 +561,12 @@ def edit_guest(request, pk):
     is_admin_group = is_admin_or_superuser(user)
 
     # Permissions
-    if not (is_admin_group or guest.created_by == user or guest.assigned_to == user):
+    if not (is_admin_group or guest.assigned_to == user):
         messages.error(request, "You do not have permission to edit this guest.")
         return redirect('guest_list')
 
     reassign_allowed = is_admin_group
-    all_users = User.objects.filter(is_active=True).order_by('first_name', 'last_name') if reassign_allowed else None
+    all_users = User.objects.filter(is_active=True).order_by('full_name') if reassign_allowed else None
     social_media_entries = guest.social_media_accounts.all()
 
     if request.method == "POST":
@@ -714,7 +714,7 @@ def guest_detail_view(request, custom_id):
 
     # Access control: allow only superusers/admins or creator/assigned user
     if not (user.is_superuser or is_admin_group):
-        if not (guest.created_by == user or guest.assigned_to == user):
+        if not (guest.assigned_to == user):
             return HttpResponse("Unauthorized", status=403)
 
     # Only admins and superusers get full user list for reassignment
@@ -758,7 +758,7 @@ def is_admin_or_superuser(user):
 
 def can_edit_guest(user, guest):
     """True if user can edit this guest."""
-    return user == guest.created_by or user == guest.assigned_to or is_admin_or_superuser(user)
+    return user == guest.assigned_to or user == guest.assigned_to or is_admin_or_superuser(user)
 
 def can_reassign(user):
     """True if user can reassign guests (admins/superusers only)."""
@@ -806,7 +806,7 @@ def update_guest_status(request, pk):
     """
     guest = get_object_or_404(GuestEntry, pk=pk)
 
-    if not (request.user.is_staff or guest.created_by == request.user):
+    if not (request.user.is_staff or guest.assigned_to == request.user):
         return redirect('guest_list')
 
     new_status = request.POST.get('status')
@@ -831,6 +831,8 @@ def parse_flexible_date(date_str):
     return None
 
 
+
+
 def import_guests_csv(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
@@ -838,7 +840,7 @@ def import_guests_csv(request):
         reader = csv.DictReader(decoded_file)
 
         for row in reader:
-            username = row.get("created_by", "").strip()
+            username = row.get("assigned_to", "").strip()
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
@@ -849,7 +851,7 @@ def import_guests_csv(request):
                 dob = parse_flexible_date(row.get("date_of_birth"))
                 dov = parse_flexible_date(row.get("date_of_visit"))
 
-                GuestEntry.objects.create(
+                guest = GuestEntry.objects.create(
                     full_name=row.get("full_name", "").strip(),
                     title=row.get("title", "").strip(),
                     gender=row.get("gender", "").strip(),
@@ -867,8 +869,16 @@ def import_guests_csv(request):
                     referrer_phone_number=row.get("referrer_phone_number", "").strip(),
                     message=row.get("message", "").strip(),
                     status=row.get("status", "").strip(),
-                    created_by=user,
+                    assigned_to=user,
                 )
+
+                # Handle Cloudinary image
+                image_url = row.get("picture_url", "").strip()
+                if image_url:
+                    cloudinary_response = cloudinary_upload(image_url)
+                    guest.picture = cloudinary_response.get("public_id")
+                    guest.save()
+
             except Exception as e:
                 messages.error(request, f"Error importing '{row.get('full_name')}' – {str(e)}")
                 continue
@@ -878,6 +888,7 @@ def import_guests_csv(request):
 
     messages.error(request, "Please upload a valid CSV file.")
     return redirect("guest_list")
+
 
 
 
@@ -907,7 +918,7 @@ def download_csv_template(request):
         'referrer_phone_number',   # Optional
         'message',                 # Optional
         'status',                  # Optional (New, Returned, Not Interested, etc.)
-        'created_by',              # Required (must match an existing username)
+        'assigned_to',              # Required (must match an existing username)
     ])
 
     # Optionally include one empty sample row
@@ -943,9 +954,9 @@ def export_csv(request):
     if is_admin_group:
         guests = GuestEntry.objects.all()
         if filter_user_id and filter_user_id.isdigit():
-            guests = guests.filter(created_by__id=filter_user_id)
+            guests = guests.filter(assigned_to__id=filter_user_id)
     else:
-        guests = GuestEntry.objects.filter(created_by=request.user)
+        guests = GuestEntry.objects.filter(assigned_to=request.user)
 
     # Service filter
     if filter_service:
@@ -971,7 +982,7 @@ def export_csv(request):
         'Occupation', 'Date of Visit', 'Purpose of Visit',
         'Channel of Visit', 'Service Attended',
         'Referrer Name', 'Referrer Phone Number', 'Status',
-        'Created By'
+        'Assigned To'
     ])
 
     for guest in guests:
@@ -991,7 +1002,7 @@ def export_csv(request):
             guest.referrer_name,
             guest.referrer_phone_number,
             guest.status,
-            guest.created_by.get_full_name() if guest.created_by else '',
+            guest.assigned_to.get_full_name() if guest.assigned_to else '',
         ])
 
     return response
@@ -1002,7 +1013,7 @@ def update_status_view(request, guest_id, status_key):
     guest = get_object_or_404(GuestEntry, id=guest_id)
 
     # Only allow if user is the creator or admin
-    if request.user != guest.created_by and not request.user.is_superuser:
+    if request.user != guest.assigned_to and not request.user.is_superuser:
         return redirect('guest_list')  # or return an HTTP 403 Forbidden response
 
     guest.status = status_key
@@ -1019,10 +1030,10 @@ def export_guests_excel(request):
     filter_service = request.GET.get('service')
     search_query = request.GET.get('q')
 
-    guests = GuestEntry.objects.all() if is_admin_group else GuestEntry.objects.filter(created_by=request.user)
+    guests = GuestEntry.objects.all() if is_admin_group else GuestEntry.objects.filter(assigned_to=request.user)
 
     if filter_user_id and filter_user_id.isdigit():
-        guests = guests.filter(created_by__id=filter_user_id)
+        guests = guests.filter(assigned_to__id=filter_user_id)
 
     if filter_service:
         guests = guests.filter(service_attended__iexact=filter_service)
@@ -1046,7 +1057,7 @@ def export_guests_excel(request):
         'Occupation', 'Date of Visit', 'Purpose of Visit',
         'Channel of Visit', 'Service Attended',
         'Referrer Name', 'Referrer Phone Number', 'Status',
-        'Created By'
+        'Assigned To'
     ]
     ws.append(headers)
 
@@ -1068,7 +1079,7 @@ def export_guests_excel(request):
             guest.referrer_name,
             guest.referrer_phone_number,
             guest.status,
-            guest.created_by.get_full_name() if guest.created_by else '',
+            guest.assigned_to.get_full_name() if guest.assigned_to else '',
         ])
 
     # Direct download as Excel
@@ -1108,12 +1119,12 @@ def import_guests_excel(request):
         sheet = wb.active
 
         headers = [cell.value for cell in sheet[1]]
-        username_col = headers.index("Created By (Username)")
+        username_col = headers.index("Assigned To (Username)")
 
         for row in sheet.iter_rows(min_row=2, values_only=True):
             try:
-                created_by_username = row[username_col]
-                created_by_user = User.objects.get(username=created_by_username)
+                assigned_to_username = row[username_col]
+                assigned_to_user = User.objects.get(username=assigned_to_username)
 
                 GuestEntry.objects.create(
                     title=row[0],
@@ -1132,11 +1143,11 @@ def import_guests_excel(request):
                     referrer_name=row[13],
                     referrer_phone_number=row[14],
                     message=row[15],
-                    created_by=created_by_user,
+                    assigned_to=assigned_to_user,
                 )
 
             except User.DoesNotExist:
-                messages.warning(request, f"User '{created_by_username}' not found. Skipping row.")
+                messages.warning(request, f"User '{assigned_to_username}' not found. Skipping row.")
                 continue
             except Exception as e:
                 messages.error(request, f"Error importing row: {e}")
@@ -1162,6 +1173,13 @@ def followup_report_page(request, guest_id):
     guest = get_object_or_404(GuestEntry, id=guest_id)
     today = localdate()
     guests = GuestEntry.objects.annotate(report_count=Count('reports'))
+    user = request.user
+    is_admin_group = is_admin_or_superuser(user)
+
+    # Permissions
+    if not (is_admin_group or guest.assigned_to == user):
+        messages.error(request, "You do not have permission to edit this guest.")
+        return redirect('guest_list')
 
     reports = FollowUpReport.objects.filter(guest=guest).order_by('-report_date')
     paginator = Paginator(reports, 10)
@@ -1186,7 +1204,7 @@ def followup_report_page(request, guest_id):
                     note=note,
                     service_sunday=service_sunday,
                     service_midweek=service_midweek,
-                    created_by=request.user,
+                    assigned_to=request.user,
                 )
                 return redirect('followup_report_page', guest_id=guest.id)
             except IntegrityError as e:
@@ -1215,7 +1233,7 @@ def create_followup_report(request, guest_id):
         if form.is_valid():
             report = form.save(commit=False)
             report.guest = guest
-            report.created_by = request.user  # Automatically set creator
+            report.assigned_to = request.user  # Automatically set creator
             report.save()
             messages.success(request, "Follow-up report created successfully.")
             return redirect('guest_detail', guest_id=guest.id)
@@ -1289,9 +1307,9 @@ def export_followup_reports_pdf(request, guest_id):
     elements.append(Spacer(1, 10))
 
     # Table header and data
-    data = [['Date', 'Sunday', 'Midweek', 'Message', 'Created By']]
+    data = [['Date', 'Sunday', 'Midweek', 'Message', 'Assigned To']]
     for report in reports:
-        created_by_name = report.created_by.get_full_name() if report.created_by else 'Unknown'
+        assigned_to_name = report.assigned_to.get_full_name() if report.assigned_to else 'Unknown'
         data.append([
             report.report_date.strftime("%Y-%m-%d"),
             '✔️' if report.service_sunday else '',

@@ -17,6 +17,9 @@ from datetime import datetime, timedelta
 from django.db.models.functions import ExtractMonth
 from django.http import JsonResponse
 import calendar
+from django.contrib.auth.models import Group
+from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
+
 
 
 
@@ -67,12 +70,16 @@ def post_login_redirect(request):
         request.session.modified = True
         quote = DAY_QUOTES.get(day_name, "Stay faithful — your work in the Kingdom is never in vain.")
 
-         # Determine dashboard link by role
-        if request.user.is_superuser or request.user.is_staff:
+        # Everyone with elevated roles goes to admin_dashboard
+        if (
+            request.user.is_superuser or
+            request.user.is_staff or
+            request.user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+        ):
             dashboard_url = reverse('accounts:admin_dashboard')
             dashboard_label = "Proceed to Dashboard"
         else:
-            dashboard_url = reverse('dashboard')  # your existing guest dashboard URL
+            dashboard_url = reverse('dashboard')
             dashboard_label = "Proceed to Dashboard"
 
         return render(request, 'accounts/welcome_modal.html', {
@@ -82,18 +89,23 @@ def post_login_redirect(request):
             'dashboard_url': dashboard_url,
             'dashboard_label': dashboard_label,
         })
-    
-    # If welcome already shown, redirect to their dashboard
-    if request.user.is_superuser or request.user.is_staff:
+
+    # If welcome already shown
+    if (
+        request.user.is_superuser or
+        request.user.is_staff or
+        request.user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+    ):
         return redirect('accounts:admin_dashboard')
     else:
         return redirect('dashboard')
 
 
+
 User = get_user_model()
 
 def is_admin_or_superuser(user):
-    return user.is_staff or user.is_superuser
+    return user.is_staff or user.is_superuser or user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
 
 
 @login_required
@@ -109,11 +121,20 @@ def admin_dashboard(request):
 
     # Role-based queryset
     if user.is_superuser:
+        # Full access
         queryset = GuestEntry.objects.all()
-        users = User.objects.all().order_by('first_name', 'last_name')
-    else:  # admin: exclude superusers for user stats
+        users = User.objects.all().order_by('full_name')
+
+    elif user.is_staff:
+        # Admin: all guests, but exclude superusers from user stats
         queryset = GuestEntry.objects.all()
-        users = User.objects.filter(is_superuser=False).order_by('first_name', 'last_name')
+        users = User.objects.filter(is_superuser=False).order_by('full_name')
+
+    else:
+        user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+        # Message Manager & Registrant: only guests, no users
+        queryset = GuestEntry.objects.all()
+        users = None
 
     # Available years
     available_years = queryset.dates('date_of_visit', 'year')
@@ -146,6 +167,7 @@ def admin_dashboard(request):
     min_months = [calendar.month_name[m] for m, c in month_counts.items() if c == min_count]
     max_month = max_months[0] if max_months else "N/A"
     min_month = min_months[0] if min_months else "N/A"
+    
 
     def percent(count):
         return round((count / max_count) * 100, 1) if max_count else 0
@@ -235,11 +257,11 @@ def admin_dashboard(request):
         percent_change = increase_rate
 
     # === Logged-in user's total guest entries & growth ===
-    user_total_guest_entries = queryset.filter(created_by=user).count()
-    user_current_month_count = queryset.filter(created_by=user,
+    user_total_guest_entries = queryset.filter(assigned_to=user).count()
+    user_current_month_count = queryset.filter(assigned_to=user,
                                                date_of_visit__gte=first_day_this_month,
                                                date_of_visit__lte=today).count()
-    user_last_month_count = queryset.filter(created_by=user,
+    user_last_month_count = queryset.filter(assigned_to=user,
                                             date_of_visit__gte=first_day_last_month,
                                             date_of_visit__lte=last_month_end).count()
 
@@ -252,14 +274,14 @@ def admin_dashboard(request):
         user_diff_positive = diff >= 0
 
     # === Planted guests growth for logged-in user ===
-    user_planted_total = queryset.filter(created_by=user, status="Planted").count()
+    user_planted_total = queryset.filter(assigned_to=user, status="Planted").count()
     planted_growth_rate = round((user_planted_total / user_total_guest_entries) * 100, 1) \
                           if user_total_guest_entries else 0
 
-    user_planted_current_month = queryset.filter(created_by=user, status="Planted",
+    user_planted_current_month = queryset.filter(assigned_to=user, status="Planted",
                                                  date_of_visit__gte=first_day_this_month,
                                                  date_of_visit__lte=today).count()
-    user_planted_last_month = queryset.filter(created_by=user, status="Planted",
+    user_planted_last_month = queryset.filter(assigned_to=user, status="Planted",
                                               date_of_visit__gte=first_day_last_month,
                                               date_of_visit__lte=last_month_end).count()
     if user_planted_last_month == 0:
@@ -315,6 +337,7 @@ def admin_dashboard(request):
 
 
 
+
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
@@ -343,6 +366,7 @@ def user_list(request):
     Superusers see all users. Admin group sees non-superusers only.
     """
     search_query = request.GET.get('q', '')
+
 
     # Determine accessible users
     if request.user.is_superuser:
@@ -420,6 +444,7 @@ def create_user(request):
     else:
         form = CustomUserCreationForm(current_user=request.user)
 
+
     return render(request, 'accounts/user_form.html', {
         'form': form,
         'edit_mode': False,
@@ -494,6 +519,7 @@ def edit_user(request, user_id):
             else:
                 messages.error(request, "Please correct the errors below.")
 
+
     return render(request, 'accounts/user_form.html', {
         'form': form,
         'edit_mode': True,
@@ -503,7 +529,23 @@ def edit_user(request, user_id):
     })
 
 
+@login_required
+def manage_groups(request):
+    groups = Group.objects.all().order_by("name")
+    form = GroupForm(request.POST or None)
 
+    if request.method == "POST":
+        if form.is_valid():
+            group = form.save()
+            messages.success(request, f"Group '{group.name}' created successfully.")
+            return redirect("accounts:manage_groups")
+        else:
+            messages.error(request, "Error creating group. Please try again.")
+
+    return render(request, "accounts/manage_groups.html", {
+        "groups": groups,
+        "form": form,
+    })
 
 
 

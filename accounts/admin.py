@@ -5,27 +5,32 @@ from .models import CustomUser
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 
 
-
-
 @admin.register(CustomUser)
 class CustomUserAdmin(BaseUserAdmin):
     add_form = CustomUserCreationForm
     form = CustomUserChangeForm
-    list_display = ('username', 'full_name', 'email', 'is_staff', 'is_active', 'is_superuser', 'image_display')
+    list_display = (
+        'username', 'full_name', 'email',
+        'is_staff', 'is_active', 'is_superuser', 'image_display'
+    )
     ordering = ('username',)
     readonly_fields = ('image_display',)
     filter_horizontal = ('groups', 'user_permissions')
 
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Personal Info', {'fields': (
-            'full_name', 'email', 'phone_number', 'image',
-            'title', 'marital_status', 'department', 'address', 'date_of_birth'
-        )}),
-        ('Permissions', {'fields': (
-            'is_active', 'is_staff', 'is_superuser',
-            'groups', 'user_permissions'
-        )}),
+        ('Personal Info', {
+            'fields': (
+                'full_name', 'email', 'phone_number', 'image',
+                'title', 'marital_status', 'department', 'address', 'date_of_birth'
+            )
+        }),
+        ('Permissions', {
+            'fields': (
+                'is_active', 'is_staff', 'is_superuser',
+                'groups', 'user_permissions'
+            )
+        }),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
 
@@ -45,26 +50,26 @@ class CustomUserAdmin(BaseUserAdmin):
     def get_form(self, request, obj=None, **kwargs):
         """
         Provide current_user to the form so permissions logic works.
+        Also pass edit_mode=True for change form.
         """
-        if obj is None:
-            kwargs['form'] = self.add_form
-        else:
-            kwargs['form'] = self.form
-
+        kwargs['form'] = self.add_form if obj is None else self.form
         form_class = super().get_form(request, obj, **kwargs)
 
         class WrappedForm(form_class):
             def __init__(self_inner, *args, **kw):
-                # Pass current_user safely if form expects it
-                if 'current_user' in kw:
-                    kw.pop('current_user')
+                kw['current_user'] = request.user
+                if obj is not None:
+                    kw['edit_mode'] = True
                 super().__init__(*args, **kw)
 
         return WrappedForm
 
-    # ✅ Image preview
+    # ✅ Image preview in list_display and detail
     def image_display(self, obj):
         if obj.image and hasattr(obj.image, 'url'):
-            return format_html('<img src="{}" width="40" height="40" style="border-radius:50%" />', obj.image.url)
+            return format_html(
+                '<img src="{}" width="40" height="40" style="border-radius:50%" />',
+                obj.image.url
+            )
         return "-"
     image_display.short_description = "Profile Picture"

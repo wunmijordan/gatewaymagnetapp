@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load group_tags %}
 
 {% block content %}
 
@@ -131,7 +132,7 @@
                 <!-- User with picture -->
                 <td>
                   <div class="d-flex align-items-center gap-2">
-                    {% if user.picture %}
+                    {% if user.image %}
                       <span class="avatar rounded" 
                             style="background-image: url('{{ user.image.url }}'); width:48px; height:48px; background-size:cover; background-position:center;">
                       </span>
@@ -149,15 +150,17 @@
 
                 <td>
                   {% if user.is_superuser %}
-                    <span class="badge bg-warning-lt">Superuser</span>
+                    <span class="bg-warning-lt">Superuser</span>
                   {% elif user.is_staff %}
-                    <span class="badge bg-green-lt">Admin</span>
-                  {% elif user.groups.all %}
-                    {% for group in user.groups.all %}
-                      <span class="badge bg-blue-lt">{{ group.name }}</span>
-                    {% endfor %}
+                    <span class="bg-green-lt">Admin</span>
+                  {% elif user|has_group:"Registrant" %}
+                    <span class="bg-pink-lt">Registrant</span>
+                  {% elif user|has_group:"Message Manager" %}
+                    <span class="bg-purple-lt">Message Manager</span>
+                  {% elif user|has_group:"Team Member" %}
+                    <span class="bg-blue-lt">Team Member</span>
                   {% else %}
-                    <span class="badge bg-secondary-lt">Team Member</span>
+                    <span class="bg-gray-lt">Sign-In</span>
                   {% endif %}
                 </td>
                 <td>Guests Managed: {{ user.guest_count|default:"0" }}</td>                  
@@ -268,12 +271,16 @@
                 <div class="mt-2">
                   {% if user.is_superuser %}
                     <span class="bg-warning-lt">Superuser</span>
-                  {% elif user.groups.all.0.name == "Admin" %}
+                  {% elif user.is_staff %}
                     <span class="bg-green-lt">Admin</span>
-                  {% elif user.groups.all.0.name == "Team Member" %}
-                    <span class="bg-azure-lt">Team Member</span>
+                  {% elif user|has_group:"Registrant" %}
+                    <span class="bg-pink-lt">Registrant</span>
+                  {% elif user|has_group:"Message Manager" %}
+                    <span class="bg-purple-lt">Message Manager</span>
+                  {% elif user|has_group:"Team Member" %}
+                    <span class="bg-blue-lt">Team Member</span>
                   {% else %}
-                    <span class="badge bg-gray-lt">Sign-In</span>
+                    <span class="bg-gray-lt">Sign-In</span>
                   {% endif %}
                 </div>
 

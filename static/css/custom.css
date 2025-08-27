@@ -488,6 +488,20 @@
     }
 }
 
+#chat-launcher {
+  position: fixed !important;
+  bottom: 1.5rem !important;
+  right: 1.5rem !important;
+  z-index: 1060 !important;
+}
+
+#chat-launcher button {
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  font-size: 24px;
+}
+
 
 
 

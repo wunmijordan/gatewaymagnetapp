@@ -6,6 +6,7 @@ from django.contrib.auth.models import Group
 from .models import CustomUser
 
 
+
 class CustomUserCreationForm(forms.ModelForm):
     username = forms.CharField(
         label="Username",
@@ -281,3 +282,17 @@ class CustomUserChangeForm(forms.ModelForm):
             #if 'user_permissions' in self.cleaned_data:
             #    user.user_permissions.set(self.cleaned_data.get("user_permissions"))
         return user
+
+
+
+
+class GroupForm(forms.ModelForm):
+    class Meta:
+        model = Group
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter group name'
+            })
+        }
