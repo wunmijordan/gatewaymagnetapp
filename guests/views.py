@@ -35,11 +35,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 import os
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
 from django.conf import settings
 from cloudinary.uploader import upload as cloudinary_upload
+
 
 
 
@@ -833,11 +834,19 @@ def parse_flexible_date(date_str):
 
 
 
+
+
+User = get_user_model()
+
+@login_required
 def import_guests_csv(request):
     if request.method == "POST" and request.FILES.get("csv_file"):
         csv_file = request.FILES["csv_file"]
         decoded_file = csv_file.read().decode("utf-8").splitlines()
         reader = csv.DictReader(decoded_file)
+
+        guests_to_create = []
+        picture_map = []  # keep (guest_obj, image_url) for later
 
         for row in reader:
             username = row.get("assigned_to", "").strip()
@@ -851,7 +860,7 @@ def import_guests_csv(request):
                 dob = parse_flexible_date(row.get("date_of_birth"))
                 dov = parse_flexible_date(row.get("date_of_visit"))
 
-                guest = GuestEntry.objects.create(
+                guest = GuestEntry(
                     full_name=row.get("full_name", "").strip(),
                     title=row.get("title", "").strip(),
                     gender=row.get("gender", "").strip(),
@@ -872,22 +881,39 @@ def import_guests_csv(request):
                     assigned_to=user,
                 )
 
-                # Handle Cloudinary image
+                guests_to_create.append(guest)
+
                 image_url = row.get("picture_url", "").strip()
                 if image_url:
-                    cloudinary_response = cloudinary_upload(image_url)
-                    guest.picture = cloudinary_response.get("public_id")
-                    guest.save()
+                    picture_map.append((guest, image_url))
 
             except Exception as e:
-                messages.error(request, f"Error importing '{row.get('full_name')}' – {str(e)}")
+                messages.error(request, f"Error preparing '{row.get('full_name')}' – {str(e)}")
                 continue
 
-        messages.success(request, "Guest list imported successfully.")
+        try:
+            with transaction.atomic():
+                GuestEntry.objects.bulk_create(guests_to_create, batch_size=100)
+
+            # 🔹 Now handle Cloudinary uploads in a second step
+            for guest, image_url in picture_map:
+                try:
+                    cloudinary_response = cloudinary_upload(image_url)
+                    guest.picture = cloudinary_response.get("public_id")
+                    guest.save(update_fields=["picture"])
+                except Exception as e:
+                    messages.warning(request, f"Image upload failed for {guest.full_name}: {str(e)}")
+
+            messages.success(request, f"{len(guests_to_create)} guests imported successfully.")
+
+        except Exception as e:
+            messages.error(request, f"Bulk import failed: {str(e)}")
+
         return redirect("guest_list")
 
     messages.error(request, "Please upload a valid CSV file.")
     return redirect("guest_list")
+
 
 
 
