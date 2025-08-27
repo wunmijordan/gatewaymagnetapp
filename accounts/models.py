@@ -39,8 +39,6 @@ class CustomUser(AbstractUser):
   is_online = models.BooleanField(default=False)
   role = models.CharField(max_length=30, choices=ROLE_CHOICES, default='Team Member')
 
-  class Meta:
-    db_table = 'auth_user'
 
   def __str__(self):
     return self.full_name or f"User #{self.pk}"
