@@ -437,12 +437,12 @@
                 {% if guest.assigned_to %}
                   {% if guest.assigned_to.image %}
                     <span class="avatar avatar-sm rounded position-absolute"
-                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 2px solid #fff; background-size: cover; background-position: center;
+                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 1px solid #2b2828ff; background-size: cover; background-position: center;
                                 background-image: url('{{ guest.assigned_to.image.url }}');">
                     </span>
                   {% else %}
                     <span class="avatar avatar-sm bg-grey text-white fw-bold d-inline-flex align-items-center justify-content-center position-absolute"
-                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 2px font-size:12px;">
+                          style="bottom: 5px; left: 10px; width: 32px; height: 32px; border: 1px font-size:12px;">
                       {{ guest.assigned_to.initials }}
                     </span>
                   {% endif %}
