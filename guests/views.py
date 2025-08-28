@@ -862,6 +862,7 @@ def parse_flexible_date(date_str):
 
 User = get_user_model()
 
+@login_required
 def import_guests_csv(request):
     if request.method != "POST" or not request.FILES.get("csv_file"):
         messages.error(request, "Please upload a valid CSV file.")
@@ -873,7 +874,7 @@ def import_guests_csv(request):
 
     guests_to_create = []
 
-    # Step 1: prepare GuestEntry objects
+    # --- Step 1: Prepare GuestEntry objects ---
     for row in reader:
         username = row.get("assigned_to", "").strip()
         try:
@@ -882,7 +883,7 @@ def import_guests_csv(request):
             messages.warning(request, f"User '{username}' not found. Skipping row.")
             continue
 
-        dob = row.get("date_of_birth", "").strip()
+        dob = row.get("date_of_birth", "").strip() or None
         dov = row.get("date_of_visit", "").strip() or None
 
         guest = GuestEntry(
@@ -904,20 +905,29 @@ def import_guests_csv(request):
             message=row.get("message", "").strip(),
             status=row.get("status", "").strip(),
             assigned_to=user,
-            picture=row.get("picture_url", "").strip()  # just store CSV URL
+            picture=row.get("picture_url", "").strip() or None  # <-- store Cloudinary URL directly
         )
         guests_to_create.append(guest)
 
-    # Step 2: bulk create all guests
+    if not guests_to_create:
+        messages.warning(request, "No valid guests found to import.")
+        return redirect("guest_list")
+
+    # --- Step 2: Bulk create guests ---
     with transaction.atomic():
         GuestEntry.objects.bulk_create(guests_to_create)
 
-    # Step 3: backfill custom_id for any guests without it
-    prefix = "GNG"
-    new_guests = GuestEntry.objects.filter(custom_id__isnull=True).order_by("id")
-    for idx, guest in enumerate(new_guests, start=1):
-        guest.custom_id = f"{prefix}{idx:06d}"
-    GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
+        # --- Step 3: Backfill custom_id ---
+        prefix = "GNG"
+        last_custom_id = GuestEntry.objects.filter(custom_id__startswith=prefix)\
+            .aggregate(max_id=Max('custom_id'))['max_id']
+        last_num = int(last_custom_id.replace(prefix, "")) if last_custom_id else 0
+
+        new_guests = GuestEntry.objects.filter(custom_id__isnull=True).order_by("id")
+        for idx, guest in enumerate(new_guests, start=last_num + 1):
+            guest.custom_id = f"{prefix}{idx:06d}"
+
+        GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
 
     messages.success(request, f"{len(guests_to_create)} guests imported successfully!")
     return redirect("guest_list")
