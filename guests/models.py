@@ -52,7 +52,7 @@ class GuestEntry(models.Model):
   phone_number = models.CharField(max_length=20, blank=True, null=True)
   email = models.EmailField(blank=True)
   date_of_birth = models.CharField(blank=True, null=True)
-  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
+  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=False)
   home_address = models.TextField(blank=True)
   occupation = models.CharField(max_length=100, blank=True)
   date_of_visit = models.DateField(default=localdate)
