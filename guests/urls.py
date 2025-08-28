@@ -19,6 +19,8 @@ urlpatterns = [
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),
     path('guest/<int:guest_id>/status/<str:status_key>/', views.update_status_view, name='update_status'),
     path('guest/<int:guest_id>/reassign/', views.reassign_guest, name='reassign_guest'),
+    path('bulk-delete-guests/', views.bulk_delete_guests, name='bulk_delete_guests'),
+
 
     # Import/Export
     path('export-csv/', views.export_csv, name='export_csv'),

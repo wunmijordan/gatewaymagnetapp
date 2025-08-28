@@ -646,6 +646,24 @@ def edit_guest(request, pk):
 
 
 
+def superuser_required(view_func):
+    return user_passes_test(lambda u: u.is_superuser)(view_func)
+
+@login_required
+@superuser_required
+def bulk_delete_guests(request):
+    if request.method == "POST" and request.headers.get("x-requested-with") == "XMLHttpRequest":
+        guest_ids = request.POST.getlist("guest_ids[]")
+        if not guest_ids:
+            return JsonResponse({"success": False, "message": "No guests selected."})
+        
+        deleted_count, _ = GuestEntry.objects.filter(id__in=guest_ids).delete()
+        return JsonResponse({"success": True, "deleted_count": deleted_count})
+
+    return JsonResponse({"success": False, "message": "Invalid request."})
+
+
+
 
 
 
@@ -844,7 +862,6 @@ def parse_flexible_date(date_str):
 
 User = get_user_model()
 
-@login_required
 def import_guests_csv(request):
     if request.method != "POST" or not request.FILES.get("csv_file"):
         messages.error(request, "Please upload a valid CSV file.")
@@ -855,10 +872,9 @@ def import_guests_csv(request):
     reader = csv.DictReader(decoded_file)
 
     guests_to_create = []
-    guest_image_map = {}  # map row index -> image_url
 
-    # --- Step 1: Prepare GuestEntry objects ---
-    for idx, row in enumerate(reader):
+    # Step 1: prepare GuestEntry objects
+    for row in reader:
         username = row.get("assigned_to", "").strip()
         try:
             user = User.objects.get(username=username)
@@ -866,7 +882,7 @@ def import_guests_csv(request):
             messages.warning(request, f"User '{username}' not found. Skipping row.")
             continue
 
-        dob = row.get("date_of_birth", "").strip() or None
+        dob = row.get("date_of_birth", "").strip()
         dov = row.get("date_of_visit", "").strip() or None
 
         guest = GuestEntry(
@@ -888,44 +904,20 @@ def import_guests_csv(request):
             message=row.get("message", "").strip(),
             status=row.get("status", "").strip(),
             assigned_to=user,
+            picture=row.get("picture_url", "").strip()  # just store CSV URL
         )
         guests_to_create.append(guest)
 
-        image_url = row.get("picture_url", "").strip()
-        if image_url:
-            guest_image_map[idx] = image_url
-
-    if not guests_to_create:
-        messages.warning(request, "No valid guests found to import.")
-        return redirect("guest_list")
-
-    # --- Step 2: Bulk create guests ---
+    # Step 2: bulk create all guests
     with transaction.atomic():
         GuestEntry.objects.bulk_create(guests_to_create)
 
-        # --- Step 3: Backfill custom_id ---
-        prefix = "GNG"
-        # Get the last numeric custom_id
-        last_custom_id = GuestEntry.objects.filter(custom_id__startswith=prefix) \
-            .aggregate(max_id=Max('custom_id'))['max_id']
-
-        last_num = int(last_custom_id.replace(prefix, "")) if last_custom_id else 0
-
-        new_guests = GuestEntry.objects.filter(custom_id__isnull=True).order_by("id")
-        for idx, guest in enumerate(new_guests, start=last_num + 1):
-            guest.custom_id = f"{prefix}{idx:06d}"
-
-        GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
-
-    # --- Step 4: Upload images to Cloudinary ---
-    for idx, image_url in guest_image_map.items():
-        try:
-            guest = GuestEntry.objects.all().order_by("id")[idx]  # map row index to guest
-            cloudinary_response = cloudinary_upload(image_url)
-            guest.picture = cloudinary_response.get("public_id")
-            guest.save(update_fields=["picture"])
-        except Exception as e:
-            messages.warning(request, f"Failed to upload image for {guest.full_name}: {str(e)}")
+    # Step 3: backfill custom_id for any guests without it
+    prefix = "GNG"
+    new_guests = GuestEntry.objects.filter(custom_id__isnull=True).order_by("id")
+    for idx, guest in enumerate(new_guests, start=1):
+        guest.custom_id = f"{prefix}{idx:06d}"
+    GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
 
     messages.success(request, f"{len(guests_to_create)} guests imported successfully!")
     return redirect("guest_list")

@@ -85,6 +85,7 @@ TEMPLATES = [
                 'notifications.context_processors.unread_notifications',
                 'notifications.context_processors.user_settings',
                 'messaging.context_processors.bulk_message_form',
+                'guests.context_processors.superuser_guests',
             ],
         },
     },

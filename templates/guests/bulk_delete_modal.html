@@ -1,0 +1,62 @@
+
+
+<!-- Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'bulk_delete_guests' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title" id="bulkDeleteModalLabel">Bulk Delete Guests</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <p>Select the guests you want to delete:</p>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>
+                    <input type="checkbox" id="selectAllGuests">
+                    <label for="selectAllGuests" class="ms-1">Select All</label>
+                  </th>
+                  <th>Custom ID</th>
+                  <th>Full Name</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for guest in guests %}
+                <tr>
+                  <td><input type="checkbox" class="guest-checkbox" name="guest_ids" value="{{ guest.id }}"></td>
+                  <td>{{ guest.custom_id }}</td>
+                  <td>{{ guest.full_name }}</td>
+                  <td>{{ guest.status }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete Selected Guests</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JS for Select All functionality -->
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const selectAllCheckbox = document.getElementById("selectAllGuests");
+    const guestCheckboxes = document.querySelectorAll(".guest-checkbox");
+
+    selectAllCheckbox.addEventListener("change", function() {
+      guestCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    });
+  });
+</script>
