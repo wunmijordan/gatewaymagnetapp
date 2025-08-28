@@ -41,6 +41,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from cloudinary.uploader import upload as cloudinary_upload
 from accounts.models import CustomUser
+from urllib.parse import urlencode
 
 
 
@@ -407,13 +408,16 @@ def is_admin_or_superuser(user):
     return user.is_superuser or user.is_staff
 
 
+
+
 @login_required
 def guest_list_view(request):
     user = request.user
-    is_admin_group = is_admin_or_superuser(user) or user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+    is_admin_group = is_admin_or_superuser(user) or user.groups.filter(
+        name__in=["Message Manager", "Registrant"]
+    ).exists()
 
-
-    # Filters from GET params
+    # --- GET filters ---
     search_query = request.GET.get('q', '').strip()
     status_filter = request.GET.get('status', '').strip()
     channel_filter = request.GET.get('channel', '').strip()
@@ -421,18 +425,19 @@ def guest_list_view(request):
     service_filter = request.GET.get('service', '').strip()
     user_filter = request.GET.get('user_filter', '').strip()
     date_of_visit_filter = request.GET.get('date_of_visit', '').strip()
+    view_type = request.GET.get('view', 'cards')
 
-    # Base queryset
+    # --- Base queryset ---
     if is_admin_group:
         queryset = GuestEntry.objects.all()
         if user_filter:
-            queryset = queryset.filter(Q(assigned_to__id=user_filter))
+            queryset = queryset.filter(assigned_to__id=user_filter)
     else:
         queryset = GuestEntry.objects.filter(
-            Q(assigned_to=user, assigned_to__isnull=True) | Q(assigned_to=user)
+            Q(assigned_to=user) | Q(assigned_to__isnull=True)
         )
 
-    # Search filter
+    # --- Apply search ---
     if search_query:
         queryset = queryset.filter(
             Q(full_name__icontains=search_query) |
@@ -446,7 +451,7 @@ def guest_list_view(request):
             Q(assigned_to__full_name__icontains=search_query)
         )
 
-    # Other filters
+    # --- Apply other filters ---
     if status_filter:
         queryset = queryset.filter(status__iexact=status_filter)
     if channel_filter:
@@ -458,19 +463,23 @@ def guest_list_view(request):
     if date_of_visit_filter:
         queryset = queryset.filter(date_of_visit=date_of_visit_filter)
 
-    # Annotate reports
+    # --- Annotate ---
     queryset = queryset.annotate(
         report_count=Count('reports'),
         last_reported=Max('reports__report_date')
     ).order_by('-custom_id')
 
-    # Pagination
-    view_type = request.GET.get('view', 'cards')
+    # --- Pagination ---
     per_page = 50 if view_type == 'list' else 12
     paginator = Paginator(queryset, per_page)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
-    # Context
+    # --- Build query_string excluding 'page' for pagination links ---
+    params = request.GET.copy()
+    params.pop('page', None)
+    query_string = urlencode(params)
+
+    # --- Context ---
     context = {
         'page_obj': page_obj,
         'view_type': view_type,
@@ -488,11 +497,12 @@ def guest_list_view(request):
         'statuses': [s[0] for s in GuestEntry.STATUS_CHOICES],
         'purposes': GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit'),
         'services': GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended'),
-        'query_string': request.GET.urlencode(),
+        'query_string': query_string,
         'page_title': 'Guests',
     }
 
     return render(request, 'guests/guest_list.html', context)
+
 
 
 
@@ -833,7 +843,7 @@ def parse_flexible_date(date_str):
 
 
 
-
+User = get_user_model()
 
 def import_guests_csv(request):
     if request.method != "POST" or not request.FILES.get("csv_file"):
@@ -845,10 +855,10 @@ def import_guests_csv(request):
     reader = csv.DictReader(decoded_file)
 
     guests_to_create = []
-    guest_image_map = {}  # temp mapping for images
+    guest_image_map = {}  # map by temporary index instead of model instance
 
     # Step 1: prepare GuestEntry objects
-    for row in reader:
+    for idx, row in enumerate(reader):
         username = row.get("assigned_to", "").strip()
         try:
             user = User.objects.get(username=username)
@@ -883,7 +893,7 @@ def import_guests_csv(request):
 
         image_url = row.get("picture_url", "").strip()
         if image_url:
-            guest_image_map[guest] = image_url
+            guest_image_map[idx] = image_url  # map by row index
 
     # Step 2: bulk create all guests (fast, no save per row)
     with transaction.atomic():
@@ -897,8 +907,9 @@ def import_guests_csv(request):
     GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
 
     # Step 4: handle Cloudinary images separately
-    for guest, image_url in guest_image_map.items():
+    for idx, image_url in guest_image_map.items():
         try:
+            guest = GuestEntry.objects.all().order_by("id")[idx]  # safe way to get the saved guest
             cloudinary_response = cloudinary_upload(image_url)
             guest.picture = cloudinary_response.get("public_id")
             guest.save()  # only now we call save per guest with image

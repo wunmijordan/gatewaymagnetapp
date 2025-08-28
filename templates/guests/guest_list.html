@@ -492,19 +492,6 @@
       {% endif %}
 
 
-      {# Capture all GET params except page for pagination links #}
-      {% with request.GET.urlencode as full_query %}
-        {% if full_query %}
-          {% with full_query|cut:"page={{ page_obj.number }}"|cut:"&&" as query_string %}
-            {# use query_string here #}
-          {% endwith %}
-        {% else %}
-          {% with "" as query_string %}
-            {# use query_string here #}
-          {% endwith %}
-        {% endif %}
-      {% endwith %}
-
       <div class="d-flex mt-4">
         <ul class="pagination ms-auto">
 
