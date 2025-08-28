@@ -35,12 +35,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 import os
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.middleware.csrf import get_token
 from urllib.parse import urlencode
 from django.conf import settings
 from cloudinary.uploader import upload as cloudinary_upload
-
+from accounts.models import CustomUser
 
 
 
@@ -833,61 +833,81 @@ def parse_flexible_date(date_str):
 
 
 
+
+
 def import_guests_csv(request):
-    if request.method == "POST" and request.FILES.get("csv_file"):
-        csv_file = request.FILES["csv_file"]
-        decoded_file = csv_file.read().decode("utf-8").splitlines()
-        reader = csv.DictReader(decoded_file)
-
-        for row in reader:
-            username = row.get("assigned_to", "").strip()
-            try:
-                user = User.objects.get(username=username)
-            except User.DoesNotExist:
-                messages.warning(request, f"User '{username}' not found. Skipping row.")
-                continue
-
-            try:
-                dob = parse_flexible_date(row.get("date_of_birth"))
-                dov = parse_flexible_date(row.get("date_of_visit"))
-
-                guest = GuestEntry.objects.create(
-                    full_name=row.get("full_name", "").strip(),
-                    title=row.get("title", "").strip(),
-                    gender=row.get("gender", "").strip(),
-                    phone_number=row.get("phone_number", "").strip(),
-                    email=row.get("email", "").strip(),
-                    date_of_birth=dob,
-                    marital_status=row.get("marital_status", "").strip(),
-                    home_address=row.get("home_address", "").strip(),
-                    occupation=row.get("occupation", "").strip(),
-                    date_of_visit=dov,
-                    purpose_of_visit=row.get("purpose_of_visit", "").strip(),
-                    channel_of_visit=row.get("channel_of_visit", "").strip(),
-                    service_attended=row.get("service_attended", "").strip(),
-                    referrer_name=row.get("referrer_name", "").strip(),
-                    referrer_phone_number=row.get("referrer_phone_number", "").strip(),
-                    message=row.get("message", "").strip(),
-                    status=row.get("status", "").strip(),
-                    assigned_to=user,
-                )
-
-                # Handle Cloudinary image
-                image_url = row.get("picture_url", "").strip()
-                if image_url:
-                    cloudinary_response = cloudinary_upload(image_url)
-                    guest.picture = cloudinary_response.get("public_id")
-                    guest.save()
-
-            except Exception as e:
-                messages.error(request, f"Error importing '{row.get('full_name')}' – {str(e)}")
-                continue
-
-        messages.success(request, "Guest list imported successfully.")
+    if request.method != "POST" or not request.FILES.get("csv_file"):
+        messages.error(request, "Please upload a valid CSV file.")
         return redirect("guest_list")
 
-    messages.error(request, "Please upload a valid CSV file.")
+    csv_file = request.FILES["csv_file"]
+    decoded_file = csv_file.read().decode("utf-8").splitlines()
+    reader = csv.DictReader(decoded_file)
+
+    guests_to_create = []
+    guest_image_map = {}  # temp mapping for images
+
+    # Step 1: prepare GuestEntry objects
+    for row in reader:
+        username = row.get("assigned_to", "").strip()
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            messages.warning(request, f"User '{username}' not found. Skipping row.")
+            continue
+
+        dob = row.get("date_of_birth", "").strip()
+        dov = row.get("date_of_visit", "").strip() or None
+
+        guest = GuestEntry(
+            full_name=row.get("full_name", "").strip(),
+            title=row.get("title", "").strip(),
+            gender=row.get("gender", "").strip(),
+            phone_number=row.get("phone_number", "").strip(),
+            email=row.get("email", "").strip(),
+            date_of_birth=dob,
+            marital_status=row.get("marital_status", "").strip(),
+            home_address=row.get("home_address", "").strip(),
+            occupation=row.get("occupation", "").strip(),
+            date_of_visit=dov,
+            purpose_of_visit=row.get("purpose_of_visit", "").strip(),
+            channel_of_visit=row.get("channel_of_visit", "").strip(),
+            service_attended=row.get("service_attended", "").strip(),
+            referrer_name=row.get("referrer_name", "").strip(),
+            referrer_phone_number=row.get("referrer_phone_number", "").strip(),
+            message=row.get("message", "").strip(),
+            status=row.get("status", "").strip(),
+            assigned_to=user,
+        )
+        guests_to_create.append(guest)
+
+        image_url = row.get("picture_url", "").strip()
+        if image_url:
+            guest_image_map[guest] = image_url
+
+    # Step 2: bulk create all guests (fast, no save per row)
+    with transaction.atomic():
+        GuestEntry.objects.bulk_create(guests_to_create)
+
+    # Step 3: backfill custom_id for any guests without it
+    prefix = "GNG"
+    new_guests = GuestEntry.objects.filter(custom_id__isnull=True).order_by("id")
+    for idx, guest in enumerate(new_guests, start=1):
+        guest.custom_id = f"{prefix}{idx:06d}"
+    GuestEntry.objects.bulk_update(new_guests, ["custom_id"])
+
+    # Step 4: handle Cloudinary images separately
+    for guest, image_url in guest_image_map.items():
+        try:
+            cloudinary_response = cloudinary_upload(image_url)
+            guest.picture = cloudinary_response.get("public_id")
+            guest.save()  # only now we call save per guest with image
+        except Exception as e:
+            messages.warning(request, f"Failed to upload image for {guest.full_name}: {str(e)}")
+
+    messages.success(request, f"{len(guests_to_create)} guests imported successfully!")
     return redirect("guest_list")
+
 
 
 
