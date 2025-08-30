@@ -14,7 +14,6 @@ class GuestEntry(models.Model):
   GENDER_CHOICES = [('male', 'Male'), ('female', 'Female')]
   MARITAL_STATUS_CHOICES = [
     ('Single', 'Single'), ('Married', 'Married'),
-    ('Divorced', 'Divorced'), ('Widowed', 'Widowed'),
   ]
   PURPOSE_CHOICES = [
     ('Home Church', 'Home Church'), ('Occasional Visit', 'Occasional Visit'),
