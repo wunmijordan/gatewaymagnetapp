@@ -11,7 +11,7 @@ class GuestEntry(models.Model):
     ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.'), ('Ms.', 'Ms.'),
     ('Pastor', 'Pastor'), ('Prof.', 'Prof.'),
   ]
-  GENDER_CHOICES = [('male', 'Male'), ('female', 'Female')]
+  GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
   MARITAL_STATUS_CHOICES = [
     ('Single', 'Single'), ('Married', 'Married'),
   ]
@@ -69,8 +69,14 @@ class GuestEntry(models.Model):
     on_delete=models.SET_NULL,
     related_name='assigned_guests'
   )
+  assigned_at = models.DateTimeField(null=True, blank=True, editable=False)
+
 
   def save(self, *args, **kwargs):
+    if self.assigned_to and not self.assigned_at:
+        from django.utils.timezone import now
+        self.assigned_at = now()
+
     if not self.custom_id:
       prefix = 'GNG'
       last_guest = GuestEntry.objects.filter(custom_id__startswith=prefix).order_by('-custom_id').first()
@@ -102,8 +108,11 @@ class GuestEntry(models.Model):
 
 class SocialMediaEntry(models.Model):
     SOCIAL_MEDIA_CHOICES = [
-        ('whatsapp', 'WhatsApp'), ('instagram', 'Instagram'),
-        ('twitter', 'Twitter'), ('linkedin', 'LinkedIn'), ('tiktok', 'Tiktok'),
+        ('whatsapp', 'WhatsApp'),
+        ('instagram', 'Instagram'),
+        ('twitter', 'Twitter'),
+        ('linkedin', 'LinkedIn'),
+        ('tiktok', 'Tiktok'),
     ]
     guest = models.ForeignKey(
         GuestEntry,
@@ -113,8 +122,17 @@ class SocialMediaEntry(models.Model):
     platform = models.CharField(max_length=20, choices=SOCIAL_MEDIA_CHOICES)
     handle = models.CharField(max_length=255)
 
-    def __str__(self):
-        return f"{self.get_platform_display()}: {self.handle}"
+    def save(self, *args, **kwargs):
+        base_urls = {
+            'linkedin': 'https://www.linkedin.com/in/',
+            'whatsapp': 'https://wa.me/',
+            'instagram': 'https://www.instagram.com/',
+            'twitter': 'https://twitter.com/',
+            'tiktok': 'https://www.tiktok.com/@',
+        }
+        if self.platform in base_urls and not self.handle.startswith("http"):
+            self.handle = base_urls[self.platform] + self.handle.lstrip("@")
+        super().save(*args, **kwargs)
 
 
 class FollowUpReport(models.Model):

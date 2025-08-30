@@ -18,7 +18,8 @@ from openpyxl.utils import get_column_letter
 from django.contrib import messages
 from datetime import datetime, timedelta
 from django.utils import timezone
-from django.utils.timezone import localtime, now, localdate
+from django.utils.timezone import localtime, now, localdate, is_naive, make_aware
+from django.utils.timesince import timesince
 import pytz
 from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.template.loader import render_to_string, get_template
@@ -411,7 +412,6 @@ def channel_breakdown(request):
 User = get_user_model()
 
 
-
 @login_required
 def guest_list_view(request):
     user = request.user
@@ -430,9 +430,7 @@ def guest_list_view(request):
     # --- Base queryset ---
     if user_in_groups(request.user, "Pastor,Team Lead,Registrant,Admin"):
         queryset = GuestEntry.objects.all()
-
     else:
-        # Non-admins: show assigned guests OR the demo guest
         queryset = GuestEntry.objects.filter(
             Q(assigned_to=user) | Q(full_name="Wunmi Jordan")
         )
@@ -463,9 +461,6 @@ def guest_list_view(request):
     if date_of_visit_filter:
         queryset = queryset.filter(date_of_visit=date_of_visit_filter)
 
-    for guest in queryset:
-        guest.has_unread_reviews = guest.reviews.filter(is_read=False).exists()
-
     # --- Annotate ---
     queryset = queryset.annotate(
         report_count=Count('reports'),
@@ -476,6 +471,83 @@ def guest_list_view(request):
     per_page = 50 if view_type == 'list' else 12
     paginator = Paginator(queryset, per_page)
     page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    excluded_fields = {
+        "id", "custom_id", "title", "full_name", "gender",
+        "message", "picture", "phone_number", "assigned_to"
+    }
+
+    svg_icons={
+        "email":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+            <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />""",  # replace with real paths
+        "date_of_birth":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
+            <path d="M16 3v4" /><path d="M8 3v4" />
+            <path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />""",
+        "marital_status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 22v-5l-1 -1v-4a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4l-1 1v5" /><path d="M17 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+            <path d="M15 22v-4h-2l2 -6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1l2 6h-2v4" />""",
+        "home_address":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />""",
+        "occupation":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
+            <path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" />""",
+        "date_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+            <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M15 3v4" />
+            <path d="M7 3v4" /><path d="M3 11h16" /><path d="M18 16.496v1.504l1 1" />""",
+        "purpose_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 21l18 0" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" />
+            <path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />""",
+        "channel_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+            <path d="M16 3l-4 4l-4 -4" />""",
+        "service_attended":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M7 20h8l-4 -4v-7l4 3l2 -2" />""",
+        "referrer_name":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /><path d="M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25" />
+            <path d="M12.5 15.5l2 2" /><path d="M15 13l2 2" />""",
+        "referrer_phone_number":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+            <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />""",
+        "status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+            <path d="M14.997 19.317l-1.583 1.583a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 13.657 -5.584" />
+            <path d="M19 22v.01" /><path d="M19 19a2.003 2.003 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />""",
+        "assigned_at":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" />
+            <path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" />""",
+    }
+
+    # --- Build uniform field_data ---
+    for guest in page_obj:
+        fields = []
+        for field in guest._meta.fields:
+            if field.name in excluded_fields:
+                continue
+            value = getattr(guest, field.name)
+
+            # Initialize time_since for all fields
+            time_since = None
+
+            # Calculate simplified time for date_of_visit
+            if field.name == "date_of_visit" and value:
+                # Convert date to datetime at midnight
+                dt_value = datetime.combine(value, datetime.min.time())
+                if is_naive(dt_value):
+                    dt_value = make_aware(dt_value)
+                delta = timesince(dt_value, now())
+                time_since = delta.split(",")[0]  # only the first unit (e.g., "3 days")
+
+            fields.append({
+                "name": field.name,
+                "verbose_name": field.verbose_name.title(),
+                "value": value,
+                "choices": bool(field.choices),
+                "time_since": time_since,
+                "icon": field.name,
+            })
+
+        guest.field_data = fields
+
+        # Flag guests assigned in the last 7 days
+        guest.is_new = False
+        if guest.assigned_at and (now() - guest.assigned_at <= timedelta(days=7)):
+            guest.is_new = True
+
+        guest.has_unread_reviews = guest.reviews.filter(is_read=False).exists()
 
     # --- Build query_string excluding 'page' for pagination links ---
     params = request.GET.copy()
@@ -501,10 +573,12 @@ def guest_list_view(request):
         'services': GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended'),
         'query_string': query_string,
         'role': role,
+        'svg_icons': svg_icons,
         'page_title': 'Guests',
     }
 
     return render(request, 'guests/guest_list.html', context)
+
 
 
 
@@ -716,114 +790,6 @@ def bulk_delete_guests(request):
         return JsonResponse({"success": True, "deleted_count": deleted_count})
 
     return JsonResponse({"success": False, "message": "Invalid request."})
-
-
-
-
-
-
-User = get_user_model()
-
-@login_required
-def guest_detail_view(request, custom_id):
-    """
-    Returns rendered HTML for guest details,
-    to be loaded directly into a Bootstrap modal.
-    Bulletproof: handles missing social media, reports, and reassignment users.
-    """
-
-    # Define social media icons
-    social_media_icons = {
-        'linkedin': '''
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-            class="icon icon-tabler icon-tabler-brand-linkedin" style="color:#0A66C2;">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M8 11v5" />
-            <path d="M8 8v.01" />
-            <path d="M12 16v-5" />
-            <path d="M16 16v-3a2 2 0 1 0 -4 0" />
-            <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4z" />
-        </svg>
-        ''',
-        'whatsapp': ''' 
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
-            class="icon icon-tabler icon-tabler-brand-whatsapp" style="color:#25D366;">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
-            <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
-        </svg>
-        ''',
-        'instagram': '''
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="icon icon-tabler icon-tabler-brand-instagram" style="color:#E4405F;">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <rect x="4" y="4" width="16" height="16" rx="4" />
-            <circle cx="12" cy="12" r="3" />
-            <line x1="16.5" y1="7.5" x2="16.5" y2="7.501" />
-        </svg>
-        ''',
-        'twitter': '''
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="icon icon-tabler icon-tabler-brand-twitter" style="color:#1DA1F2;">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M22 4.01c-1 .49-1.98.689-3 .99c-1.121-1.265-2.783-1.335-4.38-.737
-                    c-1.16 0-2.34.522-3.18 1.36c-1.208-.055-2.287-.616-3.07-1.52
-                    c-.422.722-.666 1.561-.666 2.475c0 1.71.87 3.213 2.188 4.096
-                    c-.807-.026-1.566-.247-2.229-.616c-.054 1.047.729 2.042 1.95 2.24
-                    c-.693.188-1.452.232-2.224.084c.626 1.956 2.444 3.377 4.6 3.417
-                    c-1.68 1.318-3.809 2.105-6.102 2.105c-.395 0-.779-.023-1.158-.067
-                    c2.179 1.397 4.768 2.213 7.557 2.213c9.054 0 14-7.496 14-13.986
-                    c0-.21 0-.423-.015-.633c.962-.689 1.8-1.56 2.46-2.548l-.047-.02z"/>
-        </svg>
-        ''',
-        'tiktok': '''
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
-            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-            class="icon icon-tabler icon-tabler-brand-tiktok" style="color:#000000;">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M9 19c-4 0-5-4-5-7a8 8 0 0 1 14-6v4" />
-            <path d="M16 18.5a4.5 4.5 0 0 1-6.5-4" />
-        </svg>
-        ''',
-    }
-
-    user = request.user
-    guest = get_object_or_404(GuestEntry, custom_id=custom_id)
-
-    # Access control: allow only superusers/admins or creator/assigned user
-    if not (user_in_groups(request.user, "Pastor,Team Lead,Admin")):
-        if not (guest.assigned_to == user):
-            return HttpResponse("Unauthorized", status=403)
-
-    # Only admins and superusers get full user list for reassignment
-    users = get_user_model().objects.all() if user_in_groups(request.user, "Pastor,Team Lead,Admin") else []
-
-    # Fetch all social media accounts linked to this guest
-    social_media_handles = guest.social_media_accounts.all()  # queryset, can be empty
-
-    # Fetch all reports
-    reports = guest.reports.all().order_by('-report_date') if hasattr(guest, 'reports') else []
-
-    # Create form instance for display (readonly)
-    form = GuestEntryForm(instance=guest)
-
-    html = render_to_string('guests/guest_detail_modal.html', {
-        'guest': guest,
-        'social_media_icons': social_media_icons,
-        'social_media_handles': social_media_handles,
-        'reports': reports,
-        'users': users,
-        'form': form,
-        'view_only': True,
-        'page_title': f'Guest Detail - {guest.full_name}',
-    }, request=request)
-
-    return HttpResponse(html)
-
 
 
 

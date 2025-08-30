@@ -13,7 +13,6 @@ urlpatterns = [
     path('guest/<int:pk>/edit/', views.edit_guest, name='edit_guest'),
 
     # Guest detail by custom_id
-    path('guest/<str:custom_id>/', views.guest_detail_view, name='guest_detail'),
     path("reviews/submit/<int:guest_id>/<str:role>/", views.submit_review, name="submit_review"),
     path('guest/<int:guest_id>/mark_read/', views.mark_reviews_read, name='mark_reviews_read'),
 
