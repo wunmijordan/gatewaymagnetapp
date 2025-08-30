@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
-from .models import GuestEntry, FollowUpReport, SocialMediaEntry
+from .models import GuestEntry, FollowUpReport, SocialMediaEntry, Review
 from .forms import GuestEntryForm, FollowUpReportForm
 import csv
 import io
@@ -42,6 +42,8 @@ from django.conf import settings
 from cloudinary.uploader import upload as cloudinary_upload
 from accounts.models import CustomUser
 from urllib.parse import urlencode
+from accounts.utils import user_in_groups
+
 
 
 
@@ -87,7 +89,7 @@ def dashboard_view(request):
     guest_entries = GuestEntry.objects.all()  # all guest entries for available years filter
 
     # Queryset for filtered data cards, charts (role based)
-    if user.is_superuser or user.groups.filter(name='Admin').exists():
+    if user_in_groups(request.user, "Pastor,Team Lead,Registrant,Admin"):
         queryset = GuestEntry.objects.all()
     else:
         queryset = GuestEntry.objects.filter(assigned_to=user)
@@ -247,6 +249,9 @@ def dashboard_view(request):
     #with open(image_path, 'rb') as img:
     #    image_data_uri = f"data:image/png;base64,{base64.b64encode(img.read()).decode()}"
 
+    # Add all users except the logged-in user
+    other_users = User.objects.exclude(id=request.user.id)
+
     context = {
         'show_filters': False,
         'available_years': available_years,
@@ -282,6 +287,7 @@ def dashboard_view(request):
         "one_time_visit_percentage": one_time_visit_percentage,
         "special_programme_count": special_programme_count,
         "special_programme_percentage": special_programme_percentage,
+        "other_users": other_users,
         "page_title": "Dashboard"
     }
     return render(request, "guests/dashboard.html", context)
@@ -404,18 +410,12 @@ def channel_breakdown(request):
 
 User = get_user_model()
 
-def is_admin_or_superuser(user):
-    return user.is_superuser or user.is_staff
-
-
 
 
 @login_required
 def guest_list_view(request):
     user = request.user
-    is_admin_group = is_admin_or_superuser(user) or user.groups.filter(
-        name__in=["Message Manager", "Registrant"]
-    ).exists()
+    role = user.username
 
     # --- GET filters ---
     search_query = request.GET.get('q', '').strip()
@@ -428,13 +428,13 @@ def guest_list_view(request):
     view_type = request.GET.get('view', 'cards')
 
     # --- Base queryset ---
-    if is_admin_group:
+    if user_in_groups(request.user, "Pastor,Team Lead,Registrant,Admin"):
         queryset = GuestEntry.objects.all()
-        if user_filter:
-            queryset = queryset.filter(assigned_to__id=user_filter)
+
     else:
+        # Non-admins: show assigned guests OR the demo guest
         queryset = GuestEntry.objects.filter(
-            Q(assigned_to=user) | Q(assigned_to__isnull=True)
+            Q(assigned_to=user) | Q(full_name="Wunmi Jordan")
         )
 
     # --- Apply search ---
@@ -463,6 +463,9 @@ def guest_list_view(request):
     if date_of_visit_filter:
         queryset = queryset.filter(date_of_visit=date_of_visit_filter)
 
+    for guest in queryset:
+        guest.has_unread_reviews = guest.reviews.filter(is_read=False).exists()
+
     # --- Annotate ---
     queryset = queryset.annotate(
         report_count=Count('reports'),
@@ -483,7 +486,6 @@ def guest_list_view(request):
     context = {
         'page_obj': page_obj,
         'view_type': view_type,
-        'is_admin_group': is_admin_group,
         'users': User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:100],
         'search_query': search_query,
         'status_filter': status_filter,
@@ -498,6 +500,7 @@ def guest_list_view(request):
         'purposes': GuestEntry.objects.values_list('purpose_of_visit', flat=True).distinct().order_by('purpose_of_visit'),
         'services': GuestEntry.objects.values_list('service_attended', flat=True).distinct().order_by('service_attended'),
         'query_string': query_string,
+        'role': role,
         'page_title': 'Guests',
     }
 
@@ -506,10 +509,10 @@ def guest_list_view(request):
 
 
 
-@user_passes_test(lambda u: u.is_superuser or u.is_staff or u.groups.filter(name="Registrant").exists())
+@user_passes_test(lambda u: user_in_groups(u, "Pastor,Team Lead,Registrant,Admin"))
+
 @login_required
 def create_guest(request):
-    is_admin_group = is_admin_or_superuser(request.user)
 
     if request.method == 'POST':
         form = GuestEntryForm(request.POST, request.FILES)
@@ -568,23 +571,36 @@ def create_guest(request):
 def edit_guest(request, pk):
     guest = get_object_or_404(GuestEntry, pk=pk)
     user = request.user
-    is_admin_group = is_admin_or_superuser(user)
 
     # Permissions
-    if not (is_admin_group or guest.assigned_to == user):
+    if guest.full_name == "Wunmi Jordan":
+        # Allow everyone to edit this guest, but restrict certain actions
+        pass
+    elif not (user_in_groups(request.user, "Pastor,Team Lead,Admin") or guest.assigned_to == user):
         messages.error(request, "You do not have permission to edit this guest.")
         return redirect('guest_list')
 
-    reassign_allowed = is_admin_group
+    reassign_allowed = user_in_groups(request.user, "Pastor,Team Lead,Admin")
     all_users = User.objects.filter(is_active=True).order_by('full_name') if reassign_allowed else None
     social_media_entries = guest.social_media_accounts.all()
 
     if request.method == "POST":
         if "delete_guest" in request.POST:
+            # Restrict deleting "Wunmi Jordan"
+            if guest.full_name == "Wunmi Jordan" and not request.user.is_superuser:
+                messages.error(request, "Only superusers can delete this guest.")
+                return redirect("guest_list")
+
             guest.delete()
-            return redirect('guest_list')  # <-- Redirect after deletion
+            messages.success(request, f"{guest.full_name} was deleted successfully.")
+            return redirect("guest_list")
 
         form = GuestEntryForm(request.POST, request.FILES, instance=guest)
+
+        # 🔒 Lock the name field in backend
+        if guest.full_name == "Wunmi Jordan":
+            form.fields["full_name"].disabled = True  # Prevent UI editing
+
         social_media_types = request.POST.getlist('social_media_type[]')
         social_media_handles = request.POST.getlist('social_media_handle[]')
         social_media_data = []
@@ -605,7 +621,11 @@ def edit_guest(request, pk):
 
         if form.is_valid() and not errors:
             updated_guest = form.save(commit=False)
-            
+
+            # 🔒 Ensure full_name remains unchanged
+            if guest.full_name == "Wunmi Jordan":
+                updated_guest.full_name = guest.full_name
+
             # Handle reassignment
             if reassign_allowed and 'assigned_to' in request.POST:
                 assigned_id = request.POST.get('assigned_to')
@@ -632,6 +652,10 @@ def edit_guest(request, pk):
     else:
         form = GuestEntryForm(instance=guest)
 
+        # 🔒 Lock the field in UI (read-only)
+        if guest.full_name == "Wunmi Jordan":
+            form.fields["full_name"].disabled = True
+
     return render(request, 'guests/guest_form.html', {
         'form': form,
         'guest': guest,
@@ -642,6 +666,37 @@ def edit_guest(request, pk):
         'social_media_entries': social_media_entries,
         'page_title': 'Guests',
     })
+
+
+
+
+@login_required
+def submit_review(request, guest_id, role):
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+    if request.method == "POST":
+        comment = request.POST.get("comment")
+        parent_id = request.POST.get("parent_id")
+        parent = Review.objects.filter(id=parent_id).first() if parent_id else None
+        Review.objects.create(
+            guest=guest,
+            reviewer=request.user,
+            role=role,
+            comment=comment,
+            parent=parent
+        )
+    return redirect("guest_list")
+
+
+
+@login_required
+def mark_reviews_read(request, guest_id):
+    guest = get_object_or_404(Guest, id=guest_id)
+    
+    # Only mark unread reviews for this user
+    unread_reviews = guest.reviews.filter(is_read=False, reviewer=request.user)
+    unread_reviews.update(is_read=True)
+    
+    return JsonResponse({"status": "success"})
 
 
 
@@ -737,16 +792,15 @@ def guest_detail_view(request, custom_id):
     }
 
     user = request.user
-    is_admin_group = user.groups.filter(name='Admin').exists()
     guest = get_object_or_404(GuestEntry, custom_id=custom_id)
 
     # Access control: allow only superusers/admins or creator/assigned user
-    if not (user.is_superuser or is_admin_group):
+    if not (user_in_groups(request.user, "Pastor,Team Lead,Admin")):
         if not (guest.assigned_to == user):
             return HttpResponse("Unauthorized", status=403)
 
     # Only admins and superusers get full user list for reassignment
-    users = get_user_model().objects.all() if user.is_superuser or is_admin_group else []
+    users = get_user_model().objects.all() if user_in_groups(request.user, "Pastor,Team Lead,Admin") else []
 
     # Fetch all social media accounts linked to this guest
     social_media_handles = guest.social_media_accounts.all()  # queryset, can be empty
@@ -763,7 +817,6 @@ def guest_detail_view(request, custom_id):
         'social_media_handles': social_media_handles,
         'reports': reports,
         'users': users,
-        'is_admin_group': is_admin_group,
         'form': form,
         'view_only': True,
         'page_title': f'Guest Detail - {guest.full_name}',
@@ -775,29 +828,11 @@ def guest_detail_view(request, custom_id):
 
 
 
-
-
-# -------------------------
-# Centralized permission helpers
-# -------------------------
-def is_admin_or_superuser(user):
-    """True if user is superuser or belongs to Admin group."""
-    return user.is_superuser or user.groups.filter(name='Admin').exists()
-
-def can_edit_guest(user, guest):
-    """True if user can edit this guest."""
-    return user == guest.assigned_to or user == guest.assigned_to or is_admin_or_superuser(user)
-
-def can_reassign(user):
-    """True if user can reassign guests (admins/superusers only)."""
-    return is_admin_or_superuser(user)
-
-
 # -------------------------
 # Reassign guest
 # -------------------------
 @login_required
-@user_passes_test(is_admin_or_superuser)
+@user_passes_test(lambda u: user_in_groups(u, "Pastor,Team Lead,Admin"))
 def reassign_guest(request, guest_id):
     guest = get_object_or_404(GuestEntry, id=guest_id)
 
@@ -834,7 +869,7 @@ def update_guest_status(request, pk):
     """
     guest = get_object_or_404(GuestEntry, pk=pk)
 
-    if not (request.user.is_staff or guest.assigned_to == request.user):
+    if not (user_in_groups(request.user, "Pastor,Team Lead,Admin") or guest.assigned_to == user):
         return redirect('guest_list')
 
     new_status = request.POST.get('status')
@@ -988,14 +1023,13 @@ def export_csv(request):
     - Respects service and search filters.
     """
     User = get_user_model()
-    is_admin_group = request.user.groups.filter(name="Admin").exists() or request.user.is_superuser
 
     filter_user_id = request.GET.get('user')
     filter_service = request.GET.get('service')
     search_query = request.GET.get('q')
 
     # Base queryset
-    if is_admin_group:
+    if user_in_groups(request.user, "Pastor,Team Lead,Admin"):
         guests = GuestEntry.objects.all()
         if filter_user_id and filter_user_id.isdigit():
             guests = guests.filter(assigned_to__id=filter_user_id)
@@ -1069,12 +1103,11 @@ def update_status_view(request, guest_id, status_key):
 
 @login_required
 def export_guests_excel(request):
-    is_admin_group = request.user.groups.filter(name="Admin").exists() or request.user.is_superuser
     filter_user_id = request.GET.get('user')
     filter_service = request.GET.get('service')
     search_query = request.GET.get('q')
 
-    guests = GuestEntry.objects.all() if is_admin_group else GuestEntry.objects.filter(assigned_to=request.user)
+    guests = GuestEntry.objects.all() if user_in_groups(request.user, "Pastor,Team Lead,Admin") else GuestEntry.objects.filter(assigned_to=request.user)
 
     if filter_user_id and filter_user_id.isdigit():
         guests = guests.filter(assigned_to__id=filter_user_id)
@@ -1151,7 +1184,7 @@ def export_guests_pdf(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_staff)  # Only staff users can import
+@user_passes_test(lambda u: user_in_groups(u, "Pastor,Team Lead,Admin"))  # Only staff users can import
 def import_guests_excel(request):
     if request.method == "POST":
         file = request.FILES.get("excel_file")
@@ -1216,12 +1249,10 @@ def get_week_start_end(target_date):
 def followup_report_page(request, guest_id):
     guest = get_object_or_404(GuestEntry, id=guest_id)
     today = localdate()
-    guests = GuestEntry.objects.annotate(report_count=Count('reports'))
     user = request.user
-    is_admin_group = is_admin_or_superuser(user)
 
-    # Permissions
-    if not (is_admin_group or guest.assigned_to == user):
+    # Permissions: admin or assigned user
+    if not (user_in_groups(request.user, "Pastor,Team Lead,Admin") or guest.assigned_to == user):
         messages.error(request, "You do not have permission to edit this guest.")
         return redirect('guest_list')
 
@@ -1248,7 +1279,7 @@ def followup_report_page(request, guest_id):
                     note=note,
                     service_sunday=service_sunday,
                     service_midweek=service_midweek,
-                    assigned_to=request.user,
+                    assigned_to=guest.assigned_to,  # Use the user assigned to the guest
                 )
                 return redirect('followup_report_page', guest_id=guest.id)
             except IntegrityError as e:
@@ -1266,18 +1297,17 @@ def followup_report_page(request, guest_id):
     })
 
 
-
-
-
+@login_required
 def create_followup_report(request, guest_id):
     guest = get_object_or_404(GuestEntry, id=guest_id)
+    user = request.user
 
     if request.method == "POST":
         form = FollowUpReportForm(request.POST)
         if form.is_valid():
             report = form.save(commit=False)
             report.guest = guest
-            report.assigned_to = request.user  # Automatically set creator
+            report.assigned_to = guest.assigned_to  # Assign the report to the guest's assigned user
             report.save()
             messages.success(request, "Follow-up report created successfully.")
             return redirect('guest_detail', guest_id=guest.id)
@@ -1288,6 +1318,7 @@ def create_followup_report(request, guest_id):
         'form': form,
         'guest': guest
     })
+
 
 
 

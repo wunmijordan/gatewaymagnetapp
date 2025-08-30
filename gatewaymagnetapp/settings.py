@@ -20,8 +20,13 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 ENVIRONMENT = config('DJANGO_ENV', default='development')
 
 # Allowed hosts
-allowed_hosts_env = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+allowed_hosts_env = os.getenv(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,magnet.gatewaynation.org,gatewaymagnetapp.onrender.com'
+)
+
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
+
 
 # Installed apps
 INSTALLED_APPS = [

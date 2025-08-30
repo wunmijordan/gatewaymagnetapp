@@ -14,6 +14,9 @@ urlpatterns = [
 
     # Guest detail by custom_id
     path('guest/<str:custom_id>/', views.guest_detail_view, name='guest_detail'),
+    path("reviews/submit/<int:guest_id>/<str:role>/", views.submit_review, name="submit_review"),
+    path('guest/<int:guest_id>/mark_read/', views.mark_reviews_read, name='mark_reviews_read'),
+
 
     # Status updates
     path('status/<int:pk>/', views.update_guest_status, name='update_guest_status'),

@@ -19,6 +19,8 @@ from django.http import JsonResponse
 import calendar
 from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
+from .utils import user_in_groups
+
 
 
 
@@ -70,11 +72,7 @@ def post_login_redirect(request):
         quote = DAY_QUOTES.get(day_name, "Stay faithful — your work in the Kingdom is never in vain.")
 
         # Everyone with elevated roles goes to admin_dashboard
-        if (
-            request.user.is_superuser or
-            request.user.is_staff or
-            request.user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
-        ):
+        if user_in_groups(request.user, "Pastor,Team Lead,Message Manager,Registrant,Admin"):
             dashboard_url = reverse('accounts:admin_dashboard')
             dashboard_label = "Proceed to Dashboard"
         else:
@@ -90,11 +88,7 @@ def post_login_redirect(request):
         })
 
     # If welcome already shown
-    if (
-        request.user.is_superuser or
-        request.user.is_staff or
-        request.user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
-    ):
+    if user_in_groups(request.user, "Pastor,Team Lead,Message Manager,Registrant,Admin"):
         return redirect('accounts:admin_dashboard')
     else:
         return redirect('dashboard')
@@ -103,12 +97,8 @@ def post_login_redirect(request):
 
 User = get_user_model()
 
-def is_admin_or_superuser(user):
-    return user.is_staff or user.is_superuser or user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
-
-
 @login_required
-@user_passes_test(is_admin_or_superuser)
+@user_passes_test(lambda u: user_in_groups(u, "Pastor,Team Lead,Admin,Registrant,Message Manager"))
 def admin_dashboard(request):
     """
     Admin/Superuser dashboard with all user stats and charts.
@@ -124,13 +114,12 @@ def admin_dashboard(request):
         queryset = GuestEntry.objects.all()
         users = User.objects.all().order_by('full_name')
 
-    elif user.is_staff:
+    elif user_in_groups(request.user, "Pastor,Team Lead,Admin"):
         # Admin: all guests, but exclude superusers from user stats
         queryset = GuestEntry.objects.all()
         users = User.objects.filter(is_superuser=False).order_by('full_name')
 
-    else:
-        user.groups.filter(name__in=["Message Manager", "Registrant"]).exists()
+    elif user_in_groups(request.user, "Message Manager,Registrant"):
         # Message Manager & Registrant: only guests, no users
         queryset = GuestEntry.objects.all()
         users = None
@@ -289,6 +278,8 @@ def admin_dashboard(request):
         diff = ((user_planted_current_month - user_planted_last_month) / user_planted_last_month) * 100
         planted_growth_change = round(diff, 1)
 
+    other_users = User.objects.exclude(id=request.user.id)
+
     context = {
         'show_filters': False,
         'available_years': available_years,
@@ -325,6 +316,7 @@ def admin_dashboard(request):
         'special_programme_percentage': special_programme_percentage,
         'users': users,
         'guests': queryset,
+        'other_users': other_users,
         'page_title': "Admin Dashboard",
     }
 
@@ -346,9 +338,6 @@ from django.contrib.auth.forms import SetPasswordForm
 
 from .models import CustomUser
 
-# Utility: check if user is superuser
-def is_superuser_check(user):
-    return user.is_superuser
 
 
 from django.contrib.auth.decorators import login_required
@@ -370,7 +359,7 @@ def user_list(request):
     # Determine accessible users
     if request.user.is_superuser:
         users = CustomUser.objects.all()
-    elif request.user.groups.filter(name="Admin").exists():
+    elif user_in_groups(request.user, "Pastor,Team Lead,Admin"):
         users = CustomUser.objects.filter(is_superuser=False)
     else:
         messages.error(request, "You do not have permission to view users.")
@@ -413,7 +402,7 @@ def create_user(request):
     Create new users. Admin group cannot create superusers.
     """
     # Only superusers or Admin group can access
-    if not request.user.is_superuser and not request.user.groups.filter(name="Admin").exists():
+    if not (user_in_groups(request.user, "Pastor,Team Lead,Registrant,Admin")):
         messages.error(request, "You do not have permission to create users.")
         return redirect('accounts:user_list')
 
@@ -465,7 +454,7 @@ def edit_user(request, user_id):
         return redirect('accounts:user_list')
 
     # Only superusers or Admin group can access
-    if not request.user.is_superuser and not request.user.groups.filter(name="Admin").exists():
+    if not (user_in_groups(request.user, "Pastor,Team Lead,Registrant,Admin")):
         messages.error(request, "You do not have permission to edit users.")
         return redirect('accounts:user_list')
 

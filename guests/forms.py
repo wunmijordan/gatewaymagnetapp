@@ -146,11 +146,11 @@ class GuestEntryForm(forms.ModelForm):
             raise forms.ValidationError("Enter date in format: January 01")
 
 
+
 class FollowUpReportForm(forms.ModelForm):
     class Meta:
         model = FollowUpReport
-        exclude = ['guest', 'created_by', 'created_at']
-        fields = ['report_date', 'note', 'service_sunday', 'service_midweek']
+        exclude = ['guest', 'assigned_to', 'created_at']
         widgets = {
             'report_date': forms.DateInput(attrs={
                 'type': 'date',
@@ -172,10 +172,20 @@ class FollowUpReportForm(forms.ModelForm):
         cleaned_data = super().clean()
         report_date = cleaned_data.get('report_date')
 
-        if FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exists():
+        if self.guest and FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exists():
             raise ValidationError("You already submitted a report for this date.")
 
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.guest:
+            instance.guest = self.guest
+            instance.assigned_to = self.guest.assigned_to  # automatically set the assigned user
+        if commit:
+            instance.save()
+        return instance
+
 
 
 

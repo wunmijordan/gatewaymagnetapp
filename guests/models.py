@@ -52,7 +52,7 @@ class GuestEntry(models.Model):
   phone_number = models.CharField(max_length=20, blank=True, null=True)
   email = models.EmailField(blank=True)
   date_of_birth = models.CharField(blank=True, null=True)
-  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=False)
+  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
   home_address = models.TextField(blank=True)
   occupation = models.CharField(max_length=100, blank=True)
   date_of_visit = models.DateField(default=localdate)
@@ -126,7 +126,13 @@ class FollowUpReport(models.Model):
     service_midweek = models.BooleanField(default=False)
     reviewed = models.BooleanField(default=False)
     
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='assigned_reports'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -135,3 +141,25 @@ class FollowUpReport(models.Model):
 
     def __str__(self):
         return f"{self.guest.full_name} - {self.report_date}"
+
+class Review(models.Model):
+    guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name="reviews")
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(
+        max_length=20,
+        choices=[("pastor", "Pastor"), ("team_lead", "Team Lead")]
+    )
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.role} review on {self.guest.full_name}"
+
+    @property
+    def has_unread_reviews(self):
+        return self.reviews.filter(is_read=False).exists()

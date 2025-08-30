@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load guest_extras %}
 {% load group_tags %}
+{% load static %}
 
 {% block content %}
 
@@ -16,7 +17,7 @@
         </div>
 
         <!-- Page title actions -->
-        {% if request.user.is_superuser or request.user.is_staff or request.user|has_group:"Registrant" %}
+        {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant" %}
           <div class="col-auto ms-auto d-print-none">
             <div class="btn-list">
               <div>
@@ -42,6 +43,36 @@
         {% endif %}
       </div>
     </div>
+    <div class="container-xl mt-4">
+      <div class="row g-2 justify-content-center">
+        <div class="avatar-list d-flex justify-content-center flex-wrap" style="overflow-x:auto; white-space:nowrap; padding-bottom:4px;">
+          {% for user in other_users %}
+            {% if user.image %}
+              <a href="tel:{{ user.phone_number }}" title="{{ user.title|default:''}} {{ user.full_name }}">
+                <span class="avatar avatar-1 rounded mx-1"
+                      style="background-image: url('{{ user.image.url }}');
+                            display:inline-block; width:36px; height:36px;
+                            background-size:cover; background-position:center;
+                            margin-right:6px; box-shadow:0 2px 8px #15945433;">
+                </span>
+              </a>
+            {% else %}
+              <a href="tel:{{ user.phone_number }}" title="{{ user.title|default:''}} {{ user.full_name }}">
+                <span class="avatar avatar-1 bg-grey text-white d-inline-flex align-items-center justify-content-center rounded"
+                      style="width:36px; height:36px; font-weight:bold; font-size:16px; 
+                            margin-right:6px; box-shadow:0 2px 8px #15945433;">
+                  {{ user.initials }}
+                </span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+    
   </div>
   <!-- END PAGE HEADER -->
   <div class="page-body">
@@ -685,6 +716,8 @@
     </div>
   </div>
 </div>
+
+
 
 {% endblock %}
 

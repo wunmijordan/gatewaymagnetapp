@@ -65,9 +65,10 @@ class GuestEntryAdmin(admin.ModelAdmin):
 @admin.register(FollowUpReport)
 class FollowUpReportAdmin(admin.ModelAdmin):
     list_display = (
-        'guest', 'report_date', 'created_by',
+        'guest', 'report_date', 'assigned_to',
         'service_sunday', 'service_midweek', 'reviewed'
     )
     list_filter = ('report_date', 'service_sunday', 'service_midweek', 'reviewed')
-    search_fields = ('guest__full_name', 'note', 'created_by__username')
+    search_fields = ('guest__full_name', 'note', 'assigned_to__username')  # removed created_by__username
     list_editable = ('reviewed',)
+

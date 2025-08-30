@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load group_tags %}
-
+{% load static %}
 {% block content %}
 
 
@@ -151,8 +151,12 @@
                 <td>
                   {% if user.is_superuser %}
                     <span class="bg-warning-lt">Superuser</span>
-                  {% elif user.is_staff %}
-                    <span class="bg-green-lt">Admin</span>
+                  {% elif user|has_group:"Pastor" %}
+                    <span class="bg-green-lt">Pastor</span>
+                  {% elif user|has_group:"Team Lead" %}
+                    <span class="bg-green-lt">Team Lead</span>
+                  {% elif user|has_group:"Admin" %}
+                    <span class="bg-secondary-lt">Admin</span>
                   {% elif user|has_group:"Registrant" %}
                     <span class="bg-pink-lt">Registrant</span>
                   {% elif user|has_group:"Message Manager" %}
@@ -176,9 +180,11 @@
                         <circle cx="12" cy="19" r="1"/>
                       </svg>
                     </a>
+                    {% if request.user.is_superuser %}
                     <div class="dropdown-menu dropdown-menu-end p-1">
                       <a class="dropdown-item py-1 text-grey" href="{% url 'accounts:edit_user' user.id %}">Edit</a>
                     </div>
+                    {% endif %}
                   </div>
                 </td>
               </tr>
@@ -221,7 +227,7 @@
                       <circle cx="12" cy="19" r="1" />
                     </svg>
                   </a>
-                  {% if user.is_superuser %}
+                  {% if request.user.is_superuser %}
                   <div class="dropdown-menu dropdown-menu-end p-1">
                     <a class="dropdown-item py-1 text-grey" href="{% url 'accounts:edit_user' user.id %}">Edit</a>
                   </div>
@@ -273,8 +279,12 @@
                 <div class="mt-2">
                   {% if user.is_superuser %}
                     <span class="bg-warning-lt">Superuser</span>
-                  {% elif user.is_staff %}
-                    <span class="bg-green-lt">Admin</span>
+                  {% elif user|has_group:"Pastor" %}
+                    <span class="bg-green-lt">Pastor</span>
+                  {% elif user|has_group:"Team Lead" %}
+                    <span class="bg-green-lt">Team Lead</span>
+                  {% elif user|has_group:"Admin" %}
+                    <span class="bg-secondary-lt">Admin</span>
                   {% elif user|has_group:"Registrant" %}
                     <span class="bg-pink-lt">Registrant</span>
                   {% elif user|has_group:"Message Manager" %}

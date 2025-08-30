@@ -1,6 +1,6 @@
 {% load static %}
 {% load dict_extras %}
-
+{% load group_tags %}
 {% block content %}
 <div class="page-wrapper">
   <!-- BEGIN PAGE HEADER -->
@@ -128,7 +128,7 @@
           </div>
 
           <div class="mt-4 d-flex align-items-center justify-content-center gap-2">
-            {% if request.user.is_superuser or is_admin_group %}
+            {% if request.user|has_group:"Pastor,Team Lead,Admin" %}
               <form method="post" action="{% url 'reassign_guest' guest.id %}" class="d-flex mt-2" style="gap: 0.5rem;">
                 {% csrf_token %}
                 <select name="assigned_to" class="form-select" required>
