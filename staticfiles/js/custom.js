@@ -343,4 +343,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+  // ========================
+  // PWA Service Worker Registration (minimal, no caching)
+  // ========================
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Unregister any old SWs first
+      navigator.serviceWorker.getRegistrations()
+        .then(regs => regs.forEach(r => r.unregister()))
+        .finally(() => {
+          navigator.serviceWorker.register("/static/js/sw.js")
+            .then(reg => console.log('Service Worker registered:', reg))
+            .catch(err => console.error('SW registration failed:', err));
+        });
+    });
+  }
+
 });
