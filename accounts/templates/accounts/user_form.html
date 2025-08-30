@@ -25,7 +25,7 @@
         <div class="card-header">
           <h3 class="card-title">
             {% if edit_mode %}
-              Editing Profile for: <span class="text-warning fs-2">{{ user_obj.full_name }}</span>
+              Editing Profile for: <span class="text-warning fs-2">{{ user_obj.title|default:"" }} {{ user_obj.full_name }}</span>
             {% else %}
               Add New Team Member
             {% endif %} </h3>

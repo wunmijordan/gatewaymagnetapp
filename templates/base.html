@@ -256,21 +256,23 @@
                   {% elif user|has_group:"Team Member" %}
                     <span class="bg-blue-lt">Team Member</span>
                   {% else %}
-                    <span class="bg-gray-lt">Sign-In</span>
+                    <span class="bg-red-lt">Demo</span>
                   {% endif %}
                 </div>
               </div>
             </a>
             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-              <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
-                  <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
-                  <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
-                  <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
-                </svg>
-                Preferences
-              </a>
+              {% if request.user.is_superuser %}
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
+                    <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
+                    <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
+                    <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
+                  </svg>
+                  Preferences
+                </a>
+              {% endif %}
               <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
                 <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -295,7 +297,7 @@
           <!-- BEGIN NAVBAR MENU -->
           <ul class="navbar-nav">
             <li class="nav-item">
-              {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant" %}
+              {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant,Message Manager" %}
                 <a class="nav-link text-white" href="{% url 'accounts:admin_dashboard' %}">
                   <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">

@@ -25,7 +25,7 @@
         <div class="card-header">
           <h3 class="card-title">
             {% if edit_mode %}
-              Editing Info for: <span class="text-warning fs-2">{{ guest.full_name }}</span>
+              Editing Info for: <span class="text-warning fs-2">{{ guest.title }} {{ guest.full_name }}</span>
             {% else %}
               Add New Guest
             {% endif %} </h3>
@@ -407,13 +407,33 @@
 
             <!-- Buttons -->
             <div class="mt-4 d-flex gap-2">
-              <button type="submit" name="save_return" class="btn btn-success">
-                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy">
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
-                  <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M14 4l0 4l-6 0l0 -4" />
-                </svg> 
-                Save
-              </button>
+              {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant" or guest.assigned_to == request.user or guest.full_name == "Wunmi Jordan" %}
+                <button type="submit" name="save_return" class="btn btn-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
+                    <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M14 4l0 4l-6 0l0 -4" />
+                  </svg>
+                  Save
+                </button>
+              {% elif not request.user|has_group:"Demo" and not request.user.is_superuser %}
+                <button type="submit" name="save_return" class="btn btn-success">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-device-floppy">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2" />
+                    <path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M14 4l0 4l-6 0l0 -4" />
+                  </svg>
+                  Save
+                </button>
+              {% endif %}
               {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant" %}
                 <button type="submit" name="save_add_another" class="btn">
                   <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-reload">

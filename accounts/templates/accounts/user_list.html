@@ -164,7 +164,7 @@
                   {% elif user|has_group:"Team Member" %}
                     <span class="bg-blue-lt">Team Member</span>
                   {% else %}
-                    <span class="bg-gray-lt">Sign-In</span>
+                    <span class="bg-red-lt">Demo</span>
                   {% endif %}
                 </td>
                 <td>Guests Managed: {{ user.guest_count|default:"0" }}</td>                  
@@ -292,7 +292,7 @@
                   {% elif user|has_group:"Team Member" %}
                     <span class="bg-blue-lt">Team Member</span>
                   {% else %}
-                    <span class="bg-gray-lt">Sign-In</span>
+                    <span class="bg-red-lt">Demo</span>
                   {% endif %}
                 </div>
 
