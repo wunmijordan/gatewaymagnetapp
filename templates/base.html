@@ -36,7 +36,7 @@
 </head>
 <body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
   <!-- BEGIN GLOBAL THEME SCRIPT -->
-  <script src="./dist/js/tabler-theme.min.js?1752697825" integrity="sha384-SoDJmj40r6f9Rfxi6Fq+bNS8ofhlZMyxHk9dq9Y8e1M17PZGkBRN/XUpx8swn0i5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js" integrity="sha384-+e6qv+K0v0sWwYJ4b91cKjZV9ZOV6mU/JjCD7V6U3y3D6uqmcL7Z6B7n1xAk7yEY" crossorigin="anonymous"></script>
   <!-- END GLOBAL THEME SCRIPT -->
 
   <div class="page">
@@ -262,17 +262,15 @@
               </div>
             </a>
             <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-              {% if request.user.is_superuser %}
-                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
-                    <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
-                    <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
-                    <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
-                  </svg>
-                  Preferences
-                </a>
-              {% endif %}
+              <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
+                  <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
+                  <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
+                  <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
+                </svg>
+                Preferences
+              </a>
               <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
                 <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
                   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
@@ -696,60 +694,6 @@
     </div>
   </div>
 
-
-  <!-- Notification Settings Modal -->
-  <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-labelledby="notifSettingsLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-3 shadow">
-        <div class="modal-header">
-          <h5 class="modal-title" id="notifSettingsLabel">Notification Settings</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <form id="settingsForm">
-          <div class="modal-body">
-            {% csrf_token %}
-
-            <!-- Notification Sound Selector -->
-            <div class="mb-3">
-              <label class="form-label">Notification Sound</label>
-              <div class="list-group">
-                {% for value,label in sound_choices %}
-                <label class="list-group-item d-flex align-items-center">
-                  <input type="radio" 
-                        name="notification_sound" 
-                        value="{{ value }}" 
-                        {% if request.user.usersettings.notification_sound == value %}checked{% endif %} 
-                        class="me-2">
-                  <span class="flex-grow-1">{{ label }}</span>
-                  <button type="button" class="btn btn-outline-secondary btn-sm preview-btn" data-sound="{{ value }}">
-                    ▶
-                  </button>
-                </label>
-                {% endfor %}
-              </div>
-            </div>
-
-            <!-- Vibration Toggle -->
-            <div class="form-check mb-3">
-              <input type="checkbox" name="vibration_enabled" id="vibration_enabled"
-                    {% if request.user.usersettings.vibration_enabled %}checked{% endif %} class="form-check-input">
-              <label for="vibration_enabled" class="form-check-label">Enable Vibration</label>
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button type="submit" class="btn btn-primary">Save</button>
-          </div>
-        </form>
-
-        <!-- Hidden audio element -->
-        <audio id="previewSound" preload="auto"></audio>
-      </div>
-    </div>
-  </div>
-
-
   
 
   <!-- Bulk Delete Modal -->
@@ -912,8 +856,82 @@
   </script>
 
 
-  <audio id="notifSound" preload="auto"></audio>
-  <audio id="previewSound" preload="auto"></audio>
+  <!-- Notification Settings Modal -->
+  <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-labelledby="notifSettingsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-3 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title" id="notifSettingsLabel">Notification Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form id="settingsForm" method="post">
+          <div class="modal-body">
+            {% csrf_token %}
+
+            <!-- Notification Sound Selector -->
+            <div class="mb-3">
+              <label class="form-label">Notification Sound</label>
+              <div class="list-group">
+                {% for value,label in sound_choices %}
+                <label class="list-group-item d-flex align-items-center">
+                  <input type="radio"
+                        name="notification_sound"
+                        value="{{ value }}"
+                        {% if settings and settings.notification_sound == value %}checked{% endif %}
+                        class="me-2">
+                  <span class="flex-grow-1">{{ label }}</span>
+                  <button type="button"
+                          class="btn btn-outline-secondary btn-sm preview-btn"
+                          data-sound="{{ value }}">
+                    ▶
+                  </button>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Vibration Toggle -->
+            <div class="form-check mb-3">
+              <input type="checkbox"
+                    name="vibration_enabled"
+                    id="vibration_enabled"
+                    {% if settings and settings.vibration_enabled %}checked{% endif %}
+                    class="form-check-input">
+              <label for="vibration_enabled" class="form-check-label">Enable Vibration</label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+
+        <!-- Hidden audio elements -->
+        <audio id="notifSound" preload="auto"></audio>
+        <audio id="previewSound" preload="auto"></audio>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS: Map sound keys → static URLs & URLs -->
+  <script>
+    window.djangoData = {
+      csrfToken: "{{ csrf_token }}",
+      userSound: "{{ settings.notification_sound|default:'chime1' }}",
+      soundMap: {
+        {% for value,label in sound_choices %}
+        "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      },
+      urls: {
+        updateSettings: "{% url 'notifications:update_user_settings' %}",
+        unreadApi: "{% url 'notifications:notifications_unread_api' %}",
+        markAllRead: "{% url 'notifications:mark_all_read' %}"
+      }
+    };
+  </script>
+
 
 
 

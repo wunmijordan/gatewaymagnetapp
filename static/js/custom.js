@@ -365,321 +365,110 @@ document.addEventListener('DOMContentLoaded', () => {
   // Notifications
   // =======================
 
-  // === User Settings from Backend (with defaults) ===
+  // ====== Audio Elements ======
   const notifSound = document.getElementById("notifSound");
-  const previewSound = document.getElementById("previewSound");
-  const userSound = "{{ request.user.usersettings.notification_sound|default:'chime1' }}";
-  const vibrateEnabled = true; // Set to true or false, or inject value via template rendering
+  const previewAudio = document.getElementById("previewSound");
+  const { csrfToken, userSound, soundMap, urls } = window.djangoData;
 
-  // Map sound keys to static files
-  const soundMap = {
-    "chime1": "{% static 'sounds/chime1.mp3' %}",
-    "chime2": "{% static 'sounds/chime2.mp3' %}",
-    "chime3": "{% static 'sounds/chime3.mp3' %}",
-    "chime4": "{% static 'sounds/chime4.mp3' %}",
-    "chime5": "{% static 'sounds/chime5.mp3' %}",
-    "chime6": "{% static 'sounds/chime6.mp3' %}",
-    "chime7": "{% static 'sounds/chime7.mp3' %}",
-    "chime8": "{% static 'sounds/chime8.mp3' %}"
-  };
+  let audioUnlocked = false;
 
-  // Assign chosen sound for real-time notifications
-  notifSound.src = soundMap[userSound] || soundMap["chime1"];
-
-  // === Unlock audio for browsers ===
-  let soundUnlocked = false;
-
-  function setUnlocked() {
-    soundUnlocked = true;
-    localStorage.setItem("notifSoundUnlocked", "true");
-    const toastEl = document.getElementById("enableSoundToast");
-    if (toastEl) bootstrap.Toast.getOrCreateInstance(toastEl).hide();
-    console.log("✅ Notification sound unlocked");
-  }
-
-  function unlockSound() {
-    if (soundUnlocked) return;
-    notifSound.play().then(() => {
-      notifSound.pause();
-      notifSound.currentTime = 0;
-      setUnlocked();
-    }).catch(err => {
-      console.warn("⚠️ Sound unlock failed:", err);
+  // Unlock audio function
+  function unlockAudio() {
+    if (audioUnlocked) return;
+    [notifSound, previewAudio].forEach(audio => {
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }).catch(() => {});
     });
+    audioUnlocked = true;
+    console.log("✅ Audio unlocked");
   }
 
-  // Check persistent unlock state
-  if (localStorage.getItem("notifSoundUnlocked") === "true") {
-    soundUnlocked = true;
-  } else {
-    window.addEventListener("load", () => {
-      const toastEl = document.getElementById("enableSoundToast");
-      if (toastEl) {
-        const toast = new bootstrap.Toast(toastEl);
-        toast.show();
-      }
-    });
-  }
-
-  // One-time listeners
-  document.addEventListener("click", unlockSound, { once: true });
-  document.addEventListener("keydown", unlockSound, { once: true });
-  document.addEventListener("touchstart", unlockSound, { once: true });
-
-  function playChime() {
-    try {
-      notifSound.currentTime = 0;
-      notifSound.play().catch(err => {
-        console.warn("⚠️ Sound blocked until user interacts:", err);
-      });
-      if ("vibrate" in navigator && vibrateEnabled) {
-        navigator.vibrate([150, 75, 150]);
-      }
-    } catch (e) {
-      console.warn("⚠️ Sound play failed:", e);
-    }
-  }
-
-  // === WebSocket for Real-Time Notifications ===
-  document.addEventListener("DOMContentLoaded", () => {
-    // Pick correct scheme depending on http/https
-    const ws_scheme = window.location.protocol === "https:" ? "wss://" : "ws://";
-    
-    // Construct WebSocket URL
-    const socket = new WebSocket(ws_scheme + window.location.host + "/ws/notifications/");
-
-    socket.onopen = () => {
-      console.log("✅ WebSocket connected:", socket.url);
-    };
-
-    socket.onmessage = (e) => {
-      playChime(); // your sound function
-      const data = JSON.parse(e.data);
-      console.log("🔔 New notification:", data);
-      // (Optional) update UI with data here
-    };
-
-    socket.onerror = (error) => {
-      console.error("❌ WebSocket error:", error);
-    };
-
-    socket.onclose = () => {
-      console.warn("⚠️ WebSocket closed. Attempting reconnect in 5s...");
-      setTimeout(() => {
-        window.location.reload(); // simple reconnect strategy
-      }, 5000);
-    };
+  // Unlock on first interaction
+  ["click", "keydown", "touchstart"].forEach(evt => {
+    document.addEventListener(evt, unlockAudio, { once: true });
   });
 
-  // === Notification Dropdown + Badge Handling ===
-  const csrfToken = "{{ csrf_token }}";
-  const notifList = document.getElementById("notif-list");
-  const navLink = document.querySelector(".nav-link"); 
-  if (!notifList || !navLink) return;
+  // Set initial notification sound
+  notifSound.src = soundMap[userSound] || Object.values(soundMap)[0];
 
-  let notifBadge = document.getElementById("notif-badge");
-
-  function updateBadge(count) {
-    if (count > 0) {
-      if (!notifBadge) {
-        notifBadge = document.createElement("span");
-        notifBadge.id = "notif-badge";
-        notifBadge.className = "badge bg-red";
-        navLink.appendChild(notifBadge);
-      }
-      notifBadge.textContent = count;
-    } else {
-      notifBadge?.remove();
-      notifBadge = null;
-    }
-  }
-
-  function bindNotifLinks() {
-    document.querySelectorAll(".notif-link").forEach(link => {
-      link.onclick = async function (e) {
-        e.preventDefault();
-        const parent = link.closest(".notif-item");
-        const notifId = parent.dataset.id;
-        const href = link.href;
-
-        try {
-          const res = await fetch(`/notifications/mark-read/${notifId}/`, {
-            method: "POST",
-            headers: { "X-CSRFToken": csrfToken, "Accept": "application/json" },
-            credentials: "same-origin"
-          });
-          const data = await res.json();
-          if (data.status === "ok") parent.remove();
-          updateBadge(document.querySelectorAll(".notif-item").length);
-          window.location.href = href;
-        } catch (err) {
-          console.error("Error marking notification as read:", err);
-        }
-      };
-    });
-
-    // Bind expand/collapse for truncated descriptions
-    document.querySelectorAll(".show-more").forEach(link => {
-      link.onclick = function(e) {
-        e.preventDefault();
-        const container = link.closest(".notif-description");
-        const fullText = container.dataset.full;
-        const isExpanded = container.dataset.expanded === "true";
-
-        if (!isExpanded) {
-          container.textContent = fullText;
-          const toggleLink = document.createElement("a");
-          toggleLink.href = "#";
-          toggleLink.className = "show-more";
-          toggleLink.textContent = " show less";
-          container.appendChild(toggleLink);
-          container.dataset.expanded = "true";
-          bindNotifLinks(); // rebind new link
-        } else {
-          const truncated = fullText.substring(0, 100);
-          container.textContent = truncated;
-          const toggleLink = document.createElement("a");
-          toggleLink.href = "#";
-          toggleLink.className = "show-more";
-          toggleLink.textContent = "...more";
-          container.appendChild(toggleLink);
-          container.dataset.expanded = "false";
-          bindNotifLinks();
-        }
-      };
-    });
-  }
-
-  function updateDropdown(data) {
-    updateBadge(data.unread_count);
-    notifList.innerHTML = "";
-
-    if (!data.notifications || data.notifications.length === 0) {
-      notifList.innerHTML = '<div class="list-group-item">No new notifications</div>';
-      return;
-    }
-
-    data.notifications.forEach(n => {
-      const item = document.createElement("div");
-      item.className = "list-group-item notif-item";
-      item.dataset.id = n.id;
-
-      let truncated = false;
-      let descriptionText = n.description;
-      if (n.description.length > 100) {
-        descriptionText = n.description.substring(0, 100);
-        truncated = true;
-      }
-
-      const title = `<a href="${n.link}" class="text-body d-block notif-link text-truncate">${n.title}</a>`;
-      const description = `
-        <div class="d-block text-secondary mt-n1 notif-description" data-full="${n.description}" data-expanded="false">
-          ${descriptionText}${truncated ? '<a href="#" class="show-more">...more</a>' : ''}
-        </div>
-      `;
-
-      item.innerHTML = `
-        <div class="row align-items-center">
-          <div class="col-auto">
-            <span class="status-dot status-dot-animated ${
-              n.is_urgent ? "bg-red" : n.is_success ? "bg-green" : "bg-gray"
-            } d-block"></span>
-          </div>
-          <div class="col">
-            ${title}
-            ${description}
-          </div>
-        </div>
-      `;
-      notifList.appendChild(item);
-    });
-
-    bindNotifLinks();
-  }
-
-  // === Mark All Read ===
-  const markAllBtn = document.getElementById("mark-all-read-btn");
-  markAllBtn?.addEventListener("click", async function (e) {
-    e.preventDefault();
-    const notifItems = Array.from(document.querySelectorAll(".notif-item"));
-    if (notifItems.length === 0) return;
-
-    // Immediately remove items and update badge
-    notifItems.forEach(el => el.remove());
-    updateBadge(0);
-
-    // Then send request to backend
-    const notifIds = notifItems.map(el => el.dataset.id);
-    try {
-      const res = await fetch(`/notifications/mark-read-all/`, {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken,
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ ids: notifIds }),
-        credentials: "same-origin"
-      });
-      const data = await res.json();
-      if (data.status !== "ok") {
-        console.warn("⚠️ Mark all read failed on backend, dropdown already cleared");
-      }
-    } catch (err) {
-      console.error("Error marking all notifications as read:", err);
-    }
-  });
-
-  bindNotifLinks();
-
-  // Poll API for unread count every 1s
-  setInterval(async () => {
-    try {
-      const res = await fetch("/notifications/api/unread/");
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-      const data = await res.json();
-      updateDropdown(data);
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-    }
-  }, 1000);
-
-  // === Modal Settings Save + Preview ===
+  // ====== Preview Buttons ======
   document.querySelectorAll(".preview-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const soundKey = btn.dataset.sound;
-      if (!soundKey || !soundMap[soundKey]) return;
-      previewSound.src = soundMap[soundKey];
-      previewSound.currentTime = 0;
-      previewSound.play().catch(err => {
-        console.warn("Preview blocked until user interacts:", err);
-      });
-      setUnlocked(); // preview unlocks global sounds too
+      const soundSrc = soundMap[soundKey];
+      if (!soundSrc) return console.warn("Sound not found:", soundKey);
+
+      console.log("🔊 Previewing sound:", soundKey, soundSrc);
+
+      previewAudio.src = soundSrc;
+      previewAudio.currentTime = 0;
+
+      if (!audioUnlocked) {
+        previewAudio.play().then(() => {
+          previewAudio.pause();
+          previewAudio.currentTime = 0;
+          audioUnlocked = true;
+          previewAudio.play().catch(err => console.warn("⚠️ Preview blocked after unlock:", err));
+        }).catch(err => console.warn("⚠️ Initial unlock blocked:", err));
+      } else {
+        previewAudio.play().catch(err => console.warn("⚠️ Preview blocked:", err));
+      }
     });
   });
 
+  // ====== Save Settings ======
   const settingsForm = document.getElementById("settingsForm");
-  if (settingsForm) {
-    settingsForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      const formData = new FormData(settingsForm);
+  if (!settingsForm) return console.error("Settings form not found");
 
-      try {
-        const res = await fetch("{% url 'notifications:update_user_settings' %}", {
-          method: "POST",
-          headers: { "X-CSRFToken": csrfToken },
-          body: formData
-        });
-        const data = await res.json();
-        if (data.status === "ok") {
-          notifSound.src = soundMap[data.sound] || soundMap["chime1"];
-          bootstrap.Modal.getInstance(document.getElementById("notifSettingsModal")).hide();
-          console.log("✅ Settings updated:", data);
-        }
-      } catch (err) {
-        console.error("❌ Error saving settings:", err);
-      }
-    });
+  settingsForm.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const formData = new FormData(settingsForm);
+    const payload = {
+      notification_sound: formData.get("notification_sound"),
+      vibration_enabled: formData.get("vibration_enabled") === "on",
+    };
+
+    try {
+      const response = await fetch(urls.updateSettings, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Failed to update settings");
+
+      const result = await response.json();
+
+      // Update main notification sound
+      notifSound.src = soundMap[payload.notification_sound] || Object.values(soundMap)[0];
+      audioUnlocked = true;
+
+      // Close modal
+      const modalEl = document.getElementById("notifSettingsModal");
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      console.log("✅ Settings updated:", result);
+    } catch (err) {
+      console.error("Error updating settings:", err);
+    }
+  });
+
+  // ====== Optional: Fetch Unread Notifications ======
+  function fetchUnreadNotifications() {
+    fetch(urls.unreadApi)
+      .then(res => res.json())
+      .then(data => console.log("Unread notifications:", data))
+      .catch(err => console.error(err));
   }
+  setInterval(fetchUnreadNotifications, 15000);
+
+
 
 });

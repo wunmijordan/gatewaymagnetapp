@@ -77,11 +77,15 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from .models import UserSettings
 
+import json
+from django.views.decorators.csrf import csrf_exempt  # not needed if CSRF token is sent
+
 @login_required
 @require_POST
 def update_user_settings(request):
-    sound = request.POST.get("notification_sound", "chime1")
-    vibration = request.POST.get("vibration_enabled") == "on"
+    data = json.loads(request.body.decode("utf-8"))
+    sound = data.get("notification_sound", "chime1")
+    vibration = data.get("vibration_enabled", False)
 
     settings, _ = UserSettings.objects.get_or_create(user=request.user)
     settings.notification_sound = sound
@@ -89,3 +93,4 @@ def update_user_settings(request):
     settings.save()
 
     return JsonResponse({"status": "ok", "sound": sound, "vibration": vibration})
+
