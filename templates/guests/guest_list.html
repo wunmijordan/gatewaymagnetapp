@@ -145,8 +145,10 @@
                         {{ guest.initials }}
                       </span>
                     {% endif %}
-                    <a href="#" class="guest-name-link text-warning fs-3 fw-bold" 
-                      data-detail-url="{% url 'guest_detail' guest.custom_id %}">
+                    <a href="javascript:void(0);" 
+                      class="guest-name-link" 
+                      data-bs-toggle="modal" 
+                      data-bs-target="#guestDetailModal-{{ guest.id }}">
                       <small>{{ guest.title }}</small> {{ guest.full_name }}
                     </a>
                   </div>
@@ -212,7 +214,7 @@
                   {% if guest.assigned_to %}
                     {% if guest.assigned_to.image %}
                       <span class="avatar avatar-sm rounded"
-                            style="width: 32px; height: 32px; border: 2px solid #fff; background-size: cover; background-position: center;
+                            style="width: 32px; height: 32px; border: 1px solid #221d1dff; background-size: cover; background-position: center;
                                   background-image: url('{{ guest.assigned_to.image.url }}');">
                       </span>
                     {% else %}
