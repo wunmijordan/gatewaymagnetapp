@@ -502,4 +502,85 @@
   font-size: 24px;
 }
 
+#replyIndicator button svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.reply-preview {
+  border-left: 2px solid #ccc;
+  padding-left: 5px;
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+/* Long press overlay */
+.user-card-longpress-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 128, 0, 0.3); /* semi-transparent green */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border-radius: 0.25rem; /* match card radius */
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none; /* allow clicks through overlay */
+  z-index: 10;
+}
+.user-card-longpress-overlay.show {
+  opacity: 1;
+}
+
+/* stronger highlight style */
+.message-bubble.highlight {
+  box-shadow: 0 0 20px rgba(255, 115, 0, 0.9) !important; /* glowing border */
+  border-radius: 10px !important;
+  transition: all 0.3s ease;
+}
+
+.date-divider-text {
+  display: inline-block;
+  background-color: #1f2937; /* dark gray */
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.637);
+  position: sticky;
+  top: 8px;       /* distance from top of chat container */
+  z-index: 10;
+}
+
+/* Ensure the flag sits inside the input and is visible */
+.phone-input-wrapper .iti {
+    width: 100%;
+}
+
+.phone-input-wrapper .iti__flag-container {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.phone-input-wrapper .iti__selected-flag {
+    border: none;
+}
+
+.phone-input-wrapper input.phone-input {
+    padding-left: 50px; /* Adjust so text doesn't overlap the flag */
+}
+
+
+
+
+
+
+
+
+
 

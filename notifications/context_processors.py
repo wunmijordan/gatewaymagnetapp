@@ -16,12 +16,23 @@ def unread_notifications(request):
 
 
 
+#def user_settings(request):
+#    if request.user.is_authenticated:
+#        try:
+#            settings = request.user.settings
+#        except UserSettings.DoesNotExist:
+#            settings = None
+#        return {
+#            "settings": settings,
+#            "sound_choices": UserSettings.SOUND_CHOICES,
+#        }
+#    return {}
+
+
+
 def user_settings(request):
     if request.user.is_authenticated:
-        try:
-            settings = request.user.settings
-        except UserSettings.DoesNotExist:
-            settings = None
+        settings = getattr(request.user, "settings", None)
         return {
             "settings": settings,
             "sound_choices": UserSettings.SOUND_CHOICES,

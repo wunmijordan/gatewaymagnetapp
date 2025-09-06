@@ -382,15 +382,22 @@
                   {% endif %}
 
                   <!-- New Review Badge -->
-                  {% if guest.has_unread_reviews %}
-                    <span class="badge bg-red-lt position-absolute top-0 start-100 translate-middle">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="36"  height="36"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-message-plus">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" />
-                        <path d="M8 13h6" /><path d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5" />
-                        <path d="M16 19h6" /><path d="M19 16v6" />
-                      </svg>
-                    </span>
-                  {% endif %}
+                  <div id="review-badge-{{ guest.id }}" class="review-badge-wrapper">
+                    {% if guest.has_unread_reviews %}
+                      <span class="badge bg-red-lt position-absolute top-0 start-100 translate-middle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                          class="icon icon-tabler icons-tabler-outline icon-tabler-message-plus">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                          <path d="M8 9h8" />
+                          <path d="M8 13h6" />
+                          <path d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5" />
+                          <path d="M16 19h6" />
+                          <path d="M19 16v6" />
+                        </svg>
+                      </span>
+                    {% endif %}
+                  </div>
                 </a>
 
                 <!-- Preview Modal -->
@@ -846,10 +853,10 @@
                               <p class="text-base text-warning fs-3">
                                 {% if field.choices %}
                                   {% with display_method=field.name|add:"_display" %}
-                                    {{ guest|attr:display_method|default:field.value }}
+                                    {{ guest|attr:display_method|default_if_none:"" }}
                                   {% endwith %}
                                 {% else %}
-                                  {{ guest|attr:field.name|default:field.value }}
+                                  {{ guest|attr:field.name|default_if_none:"" }}
                                 {% endif %}
                               </p>
                               <!-- Optional description -->
@@ -874,9 +881,15 @@
                       <select name="assigned_to" class="form-select" required>
                         <option value="">Select User</option>
                         {% for u in users %}
-                          <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
-                            {{ u.title|default:"" }} {{ u.full_name }}
-                          </option>
+                          {% if request.user.is_superuser %}
+                            <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
+                              {{ u.title|default:"" }} {{ u.full_name }}
+                            </option>
+                          {% elif request.user|has_group:"Pastor,Team Lead,Admin" and not u.is_superuser %}
+                            <option value="{{ u.id }}" {% if guest.assigned_to == u %}selected{% endif %}>
+                              {{ u.title|default:"" }} {{ u.full_name }}
+                            </option>
+                          {% endif %}
                         {% endfor %}
                       </select>
                       <button type="submit" class="btn btn-green">Assign</button>
@@ -963,7 +976,7 @@
                                                 {% else %}
                                                   bg-warning-lt text-white
                                                 {% endif %}">
-                                      <span class="text fs-3">
+                                      <span class="text-muted fs-5">
                                         <strong>
                                           {% if review.reviewer == request.user %}
                                             You
@@ -1152,7 +1165,7 @@
                     <div class="mb-2">
                       
                       {% if guest.reviews.exists %}
-                        <div class="mb-3 text-end">
+                        <div class="mb-3 text-end" id="reviews-container-{{ guest.id }}">
                           {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
 
                           {% for day in reviews_by_date %}
@@ -1217,7 +1230,7 @@
 
                     {% if not guest.reviews.exists %}
                       <!-- New Review Form -->
-                      <form method="post" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-new-{{ guest.id }}">
+                      <form method="post" class="review-form" data-guest-id="{{ guest.id }}" action="{% url 'submit_review' guest.id role %}" id="PastorReviewform-new-{{ guest.id }}">
                         {% csrf_token %}
                         <div class="d-flex justify-content-between align-items-center mb-3">
                           <!-- Expanding Textarea -->
@@ -1260,7 +1273,7 @@
           </div>
           <div class="modal-body">
             {% if guest.reviews.exists %}
-              <div class="mb-3 text-end">
+              <div class="mb-3 text-end" id="reviews-container-{{ guest.id }}">
                 {% regroup guest.reviews.all by created_at.date as reviews_by_date %}
 
                 {% for day in reviews_by_date %}
@@ -1300,7 +1313,7 @@
                   {% endfor %}
                 {% endfor %} 
                 <!-- Reply Form -->
-                <form method="post" action="{% url 'submit_review' guest.id role %}" class="d-flex mt-1">
+                <form method="post" class="review-form d-flex mt-1" data-guest-id="{{ guest.id }}" action="{% url 'submit_review' guest.id role %}">
                   {% csrf_token %}
                   <input type="hidden" name="parent_id" value="{{ review.id }}">
                   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -1332,58 +1345,77 @@
 <!-- Guest Review Modal JS -->
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  {% for guest in page_obj %}
 
-    // ===== MODAL LISTENER =====
-    var modals = [
-      document.getElementById("reviewModal{{ guest.id }}"),
-      document.getElementById("PastorreviewModal{{ guest.id }}")
-    ];
-
-    modals.forEach(function(modal) {
-      if(modal) {
-        modal.addEventListener("show.bs.modal", function () {
-          fetch("{% url 'mark_reviews_read' guest.id %}", {
-            method: "POST",
-            headers: {
-              "X-CSRFToken": "{{ csrf_token }}",
-              "Accept": "application/json"
-            },
-          }).then(response => response.json())
-            .then(data => {
-              if(data.status === "success") {
-                // Hide the badge inside this guest card
-                var guestCard = document.getElementById("guest-card-{{ guest.id }}");
-                if(guestCard) {
-                  var badge = guestCard.querySelector(".badge");
-                  if(badge) badge.style.display = "none";
-                }
-              }
-            });
-        });
+  // === CSRF helper ===
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
       }
-    });
+    }
+    return cookieValue;
+  }
 
-    // ===== SHOW BADGE WHEN PASTOR SUBMITS REVIEW =====
-    var pastorForms = [
-      document.getElementById("PastorReviewform-{{ guest.id }}"),
-      document.getElementById("PastorReviewform-new-{{ guest.id }}")
-    ];
+  // === Badge updater ===
+  function updateReviewBadge(guestId, hasUnread) {
+    const badgeWrapper = document.getElementById("review-badge-" + guestId);
+    if (!badgeWrapper) return;
+    badgeWrapper.innerHTML = hasUnread
+      ? `<span class="badge bg-red-lt position-absolute top-0 start-100 translate-middle">+</span>`
+      : "";
+  }
 
-    pastorForms.forEach(function(form) {
-      if(form) {
-        form.addEventListener("submit", function(e) {
-          // Show the badge only on this guest's card
-          var guestCard = document.getElementById("guest-card-{{ guest.id }}");
-          if(guestCard) {
-            var badge = guestCard.querySelector(".badge");
-            if(badge) badge.style.display = "inline-block";
+  // === Hook up all review/reply forms for every guest ===
+  const reviewForms = document.querySelectorAll(
+    {% for guest in page_obj %}
+      `#reviewModal{{ guest.id }} form, #PastorreviewModal{{ guest.id }} form`{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+  );
+
+  reviewForms.forEach(form => {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const formData = new FormData(this);
+
+      fetch(this.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          // Append review/reply
+          const chatArea = document.getElementById("reviews-container-" + data.review.guest_id);
+          if (chatArea) {
+            const newMsg = document.createElement("div");
+            newMsg.classList.add("chat-message", "mb-2");
+            newMsg.innerHTML = `<strong>${data.review.reviewer}:</strong> ${data.review.comment}`;
+            chatArea.appendChild(newMsg);
           }
-        });
-      }
-    });
 
-  {% endfor %}
+          // Trigger badge for Pastor Review (no parent_id)
+          if (!data.review.parent_id) {
+            updateReviewBadge(data.review.guest_id, true);
+          }
+
+          // Clear textarea
+          this.querySelector("textarea[name='comment']").value = "";
+        }
+      })
+      .catch(err => console.error("Error submitting review:", err));
+    });
+  });
+
 });
 </script>
 

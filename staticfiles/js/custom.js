@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
     const dropdown = toggle.closest('.dropdown');
     toggle.addEventListener('show.bs.dropdown', () => updateDropdownZIndex(dropdown));
-  });
 
   window.addEventListener('resize', () => {
     document.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(toggle => {
@@ -349,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========================
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      // Unregister any old SWs first
+      // Unregister old SWs first
       navigator.serviceWorker.getRegistrations()
         .then(regs => regs.forEach(r => r.unregister()))
         .finally(() => {
@@ -372,26 +371,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let audioUnlocked = false;
 
-  // Unlock audio function
+  // ====== Unlock Audio Function ======
   function unlockAudio() {
     if (audioUnlocked) return;
+
     [notifSound, previewAudio].forEach(audio => {
+      audio.volume = 0; // silent unlock
       audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
+        audio.volume = 1;
       }).catch(() => {});
     });
+
     audioUnlocked = true;
     console.log("✅ Audio unlocked");
   }
 
-  // Unlock on first interaction
-  ["click", "keydown", "touchstart"].forEach(evt => {
-    document.addEventListener(evt, unlockAudio, { once: true });
-  });
+  // Unlock on first user gesture
+  ["click", "keydown", "touchstart"].forEach(evt =>
+    document.addEventListener(evt, unlockAudio, { once: true })
+  );
 
-  // Set initial notification sound
-  notifSound.src = soundMap[userSound] || Object.values(soundMap)[0];
+  // ====== Set initial notification sound ======
+  function setNotificationSound(soundKey) {
+    const src = soundMap[soundKey] || Object.values(soundMap)[0];
+    notifSound.src = src;
+    notifSound.load();
+  }
+  setNotificationSound(userSound);
+
+  // ====== Play Notification Sound (safe) ======
+  function playNotifSound() {
+    if (!audioUnlocked) return;
+    notifSound.currentTime = 0;
+    notifSound.play().catch(err => console.warn("🔇 Notification blocked:", err));
+  }
 
   // ====== Preview Buttons ======
   document.querySelectorAll(".preview-btn").forEach(btn => {
@@ -399,8 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const soundKey = btn.dataset.sound;
       const soundSrc = soundMap[soundKey];
       if (!soundSrc) return console.warn("Sound not found:", soundKey);
-
-      console.log("🔊 Previewing sound:", soundKey, soundSrc);
 
       previewAudio.src = soundSrc;
       previewAudio.currentTime = 0;
@@ -420,55 +433,151 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ====== Save Settings ======
   const settingsForm = document.getElementById("settingsForm");
-  if (!settingsForm) return console.error("Settings form not found");
+  if (settingsForm) {
+    settingsForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const formData = new FormData(settingsForm);
+      const payload = {
+        notification_sound: formData.get("notification_sound"),
+        vibration_enabled: formData.get("vibration_enabled") === "on",
+      };
 
-  settingsForm.addEventListener("submit", async e => {
-    e.preventDefault();
+      try {
+        const response = await fetch(urls.updateSettings, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          body: JSON.stringify(payload),
+        });
 
-    const formData = new FormData(settingsForm);
-    const payload = {
-      notification_sound: formData.get("notification_sound"),
-      vibration_enabled: formData.get("vibration_enabled") === "on",
-    };
+        if (!response.ok) throw new Error("Failed to update settings");
 
+        const result = await response.json();
+
+        // Update main notification sound safely
+        setNotificationSound(payload.notification_sound);
+        audioUnlocked = true;
+
+        // Close modal
+        const modalEl = document.getElementById("notifSettingsModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        console.log("✅ Notification settings updated:", result);
+      } catch (err) {
+        console.error("❌ Error updating settings:", err);
+      }
+    });
+  }
+
+  // ====== Handle incoming notifications ======
+  function onNewNotification(notification) {
+    // Update UI: badge, toast, modal, etc.
+    console.log("🔔 New notification:", notification);
+
+    // Play the notification sound
+    playNotifSound();
+  }
+
+  // ====== Fetch and render unread notifications ======
+  const notifCsrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  async function fetchUnreadNotifications() {
     try {
-      const response = await fetch(urls.updateSettings, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": csrfToken,
-        },
-        body: JSON.stringify(payload),
+      const res = await fetch("/notifications/api/unread/");
+      const data = await res.json();
+
+      const notifList = document.getElementById("notif-list");
+      let badge = document.getElementById("notif-badge");
+
+      if (!notifList) return;
+
+      if (data.length === 0) {
+        notifList.innerHTML = '<div class="list-group-item">No new notifications</div>';
+        badge?.remove();
+        return;
+      }
+
+      notifList.innerHTML = "";
+      data.forEach(n => {
+        const item = document.createElement("div");
+        item.className = "list-group-item notif-item";
+        item.dataset.id = n.id;
+
+        item.innerHTML = `
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <span class="status-dot status-dot-animated ${n.is_urgent ? 'bg-red' : n.is_success ? 'bg-green' : 'bg-gray'} d-block"></span>
+            </div>
+            <div class="col">
+              <a href="${n.link || '#'}" class="text-body d-block notif-link text-truncate">${n.title}</a>
+              <div class="d-block text-secondary mt-n1 notif-description" data-full="${n.description}">
+                ${n.description.length > 150 ? n.description.slice(0,150) + ' <a href="#" class="show-more">...more</a>' : n.description}
+              </div>
+            </div>
+          </div>
+        `;
+        notifList.appendChild(item);
+
+        // Click to mark as read
+        item.querySelector(".notif-link").addEventListener("click", async e => {
+          e.preventDefault();
+          try {
+            const res = await fetch(`/notifications/mark-read/${n.id}/`, {
+              method: "POST",
+              headers: { "X-CSRFToken": notifCsrfToken },
+            });
+            if (res.ok) {
+              item.remove();
+              if (!notifList.children.length) {
+                notifList.innerHTML = '<div class="list-group-item">No new notifications</div>';
+                badge?.remove();
+              }
+              if (n.link) window.location.href = n.link;
+            }
+          } catch (err) {
+            console.error("Failed to mark notification as read", err);
+          }
+        });
       });
 
-      if (!response.ok) throw new Error("Failed to update settings");
-
-      const result = await response.json();
-
-      // Update main notification sound
-      notifSound.src = soundMap[payload.notification_sound] || Object.values(soundMap)[0];
-      audioUnlocked = true;
-
-      // Close modal
-      const modalEl = document.getElementById("notifSettingsModal");
-      const modal = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-
-      console.log("✅ Settings updated:", result);
+      // Update badge
+      if (badge) {
+        badge.textContent = data.length;
+      } else if (data.length > 0) {
+        const bell = document.querySelector('.nav-link[data-bs-toggle="dropdown"]');
+        if (bell) {
+          const newBadge = document.createElement("span");
+          newBadge.id = "notif-badge";
+          newBadge.className = "badge bg-red text-light";
+          newBadge.textContent = data.length;
+          bell.appendChild(newBadge);
+        }
+      }
     } catch (err) {
-      console.error("Error updating settings:", err);
+      console.error("Failed to fetch notifications", err);
+    }
+  }
+
+  // Poll every 3 seconds
+  setInterval(fetchUnreadNotifications, 3000);
+  fetchUnreadNotifications();
+
+  // Mark all read
+  document.getElementById("mark-all-read-btn")?.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/notifications/mark-all-read/", {
+        method: "POST",
+        headers: { "X-CSRFToken": notifCsrfToken },
+      });
+      if (res.ok) fetchUnreadNotifications();
+    } catch (err) {
+      console.error("Failed to mark all read", err);
     }
   });
 
-  // ====== Optional: Fetch Unread Notifications ======
-  function fetchUnreadNotifications() {
-    fetch(urls.unreadApi)
-      .then(res => res.json())
-      .then(data => console.log("Unread notifications:", data))
-      .catch(err => console.error(err));
-  }
-  setInterval(fetchUnreadNotifications, 15000);
 
-
-
+});
 });

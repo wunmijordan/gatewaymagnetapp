@@ -52,3 +52,45 @@ class CustomUser(AbstractUser):
   @property
   def guest_count(self):
     return self.assigned_guests.count() if hasattr(self, 'assigned_guests') else 0
+
+
+
+class ChatMessage(models.Model):
+  sender = models.ForeignKey(
+      settings.AUTH_USER_MODEL,  # explicitly using CustomUser
+      on_delete=models.CASCADE,
+      related_name='sent_chats'
+  )
+  parent = models.ForeignKey(
+      'self',
+      null=True,
+      blank=True,
+      on_delete=models.CASCADE,
+      related_name='replies'
+  )
+  message = models.TextField(blank=True)
+  attachment = models.FileField(upload_to='chat_files/', blank=True, null=True)
+  voice_note = models.FileField(upload_to='chat_voice/', blank=True, null=True)
+  guest_card = models.ForeignKey(
+      GuestEntry,
+      null=True,
+      blank=True,
+      on_delete=models.SET_NULL,
+      related_name='chat_messages'
+  )
+  created_at = models.DateTimeField(auto_now_add=True)
+  seen_by = models.ManyToManyField(
+      settings.AUTH_USER_MODEL,  # explicitly using CustomUser
+      related_name='seen_chats',
+      blank=True
+  )
+
+  def __str__(self):
+      return f"Message #{self.id} by {self.sender.full_name or self.sender.username}"
+
+  def is_seen_by_all(self):
+      """Returns True if all users have seen this message"""
+      from django.contrib.auth import get_user_model
+      User = get_user_model()
+      return self.seen_by.count() >= (User.objects.count() - 1)
+

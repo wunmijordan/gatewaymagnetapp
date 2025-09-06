@@ -1,0 +1,725 @@
+from django import forms
+from .models import GuestEntry
+from django.core.exceptions import ValidationError
+import datetime
+from .models import FollowUpReport
+
+class GuestEntryForm(forms.ModelForm):
+
+    date_of_birth = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'January 01 (Ignore Year)',
+        }),
+        help_text="Date of Birth."
+    )
+
+    date_of_visit = forms.DateField(
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'autocomplete': 'off',
+        }),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],  # support input formats for validation
+        required=False,
+    )
+
+    class Meta:
+        model = GuestEntry
+        exclude = ['assigned_to', 'status', 'custom_id']
+        widgets = {
+            'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'title': forms.Select(attrs={'class': 'form-select'}),
+            'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'John Doe'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'johndoe@guest.gatewaynation'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
+            'date_of_birth': forms.DateInput(attrs={
+                'type': 'text',
+                'class': 'form-control',
+                'placeholder': 'January 01 (Ignore Year)',
+                'autocomplete': 'off'
+            }),
+            'marital_status': forms.Select(attrs={'class': 'form-select'}),
+            'gender': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
+            'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manager'}),
+            'home_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '3/4, Francis Aghedo Close, Off Isheri Road, Lagos'}),
+            'date_of_visit': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control'}),
+            'purpose_of_visit': forms.Select(attrs={'class': 'form-select'}),
+            'channel_of_visit': forms.Select(attrs={'class': 'form-select'}),
+            'service_attended': forms.Select(attrs={'class': 'form-select'}),
+            'referrer_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sis. Jane Doe'}),
+            'referrer_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Write any additional notes about the Guest here...'}),
+        }
+        
+        
+        labels = {
+            'title': 'Title',
+            'picture': 'Profile Picture',
+            'full_name': 'Full Name',
+            'phone_number': 'Phone Number',
+            'email': 'Email Address',
+            'date_of_birth': 'Date of Birth',
+            'marital_status': 'Marital Status',
+            'occupation': 'Occupation',
+            'date_of_visit': 'Date of Visit',
+            'purpose_of_visit': 'Purpose of Visit',
+            'channel_of_visit': 'Channel of Visit',
+            'service_attended': 'Service Attended',
+            'referrer_name': 'Referrer Name',
+            'referrer_phone_number': 'Referrer Phone Number',
+        }
+        
+
+        help_texts = {
+            'title': 'Title.',
+            'picture': 'Profile Picture for the Guest.',
+            'gender': 'Gender.',
+            'full_name': 'Full Name.',
+            'phone_number': 'Phone Number.',
+            'email': 'Email Address.',
+            'date_of_birth': 'Date of Birth.',
+            'marital_status': 'Marital Status.',
+            'home_address': 'Home Address.',
+            'occupation': 'Occupation.',
+            'date_of_visit': 'Date of Visit.',
+            'purpose_of_visit': 'Purpose of Visit.',
+            'channel_of_visit': 'How did the Guest found out about us?',
+            'service_attended': 'What Service did the Guest Attend?',
+            'referrer_name': 'Who referred the Guest?',
+            'referrer_phone_number': 'Referrer\'s Phone Number.',
+            'message': 'Additional Notes.',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        
+
+
+        # Fields that should allow blank without showing '---------' or 'None'
+        select_fields = ['title', 'marital_status', 'gender', 'purpose_of_visit',
+                         'channel_of_visit', 'service_attended', 'status']
+
+        for field_name in select_fields:
+            if field_name in self.fields:
+                # Replace default empty label with a real blank choice
+                choices = list(self.fields[field_name].choices)
+                if choices and choices[0][0] == '':
+                    # Replace first choice (usually '---------') with empty
+                    choices[0] = ("", "")
+                else:
+                    # If no blank exists, prepend one
+                    choices = [("", "")] + choices
+                self.fields[field_name].choices = choices
+
+        # Format initial date_of_visit to ISO
+        if self.instance and self.instance.date_of_visit:
+            self.fields['date_of_visit'].initial = self.instance.date_of_visit.strftime('%Y-%m-%d')
+
+    def clean_phone_number(self):
+        phone = self.cleaned_data.get('phone_number')
+        if phone and not phone.isdigit():
+            raise ValidationError("Phone number must contain only digits.")
+        return phone
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and '@' not in email:
+            raise ValidationError("Enter a valid email address.")
+        return email
+
+    def clean_date_of_birth(self):
+        dob_raw = self.cleaned_data.get('date_of_birth')
+        if not dob_raw:
+            return None
+
+        try:
+            # Try parsing format like "January 01"
+            dob_parsed = datetime.datetime.strptime(dob_raw, "%B %d").date()
+            # Force a default year (e.g., 1900)
+            dob_parsed = dob_parsed.replace(year=1900)
+            return dob_parsed
+        except ValueError:
+            raise forms.ValidationError("Enter date in format: January 01")
+
+
+
+class FollowUpReportForm(forms.ModelForm):
+
+    report_date = forms.DateField(
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={
+            'type': 'date',
+            'class': 'form-control',
+            'autocomplete': 'off',
+        }),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],  # support input formats for validation
+        required=False,
+    )
+
+    class Meta:
+        model = FollowUpReport
+        exclude = ['guest', 'assigned_to', 'created_at']
+        widgets = {
+            'report_date': forms.DateInput(format='%Y-%m-%d', attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'note': forms.Textarea(attrs={
+                'class': 'form-control',
+                'placeholder': 'Write follow-up note here...'
+            }),
+            'service_sunday': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'service_midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'service_others': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.guest = kwargs.pop('guest', None)
+        super().__init__(*args, **kwargs)
+
+        # Set initial value in YYYY-MM-DD format for HTML datepicker
+        if not self.instance.pk and not self.initial.get('report_date'):
+            today = localdate()
+            self.initial['report_date'] = today.strftime('%Y-%m-%d')
+        elif self.instance.pk and self.instance.report_date:
+            # Editing existing report, ensure value is ISO format
+            self.initial['report_date'] = self.instance.report_date.strftime('%Y-%m-%d')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        report_date = cleaned_data.get('report_date')
+
+        if self.guest and FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exists():
+            raise ValidationError("You already submitted a report for this date.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.guest:
+            instance.guest = self.guest
+            instance.assigned_to = self.guest.assigned_to  # automatically set the assigned user
+        if commit:
+            instance.save()
+        return instance
+
+
+
+
+import re
+from django.db import models
+from django.conf import settings
+from django.utils.timezone import localdate
+from cloudinary.models import CloudinaryField
+
+
+class GuestEntry(models.Model):
+  TITLE_CHOICES = [
+    ('Chief', 'Chief'), ('Dr.', 'Dr.'), ('Engr.', 'Engr.'),
+    ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.'), ('Ms.', 'Ms.'),
+    ('Pastor', 'Pastor'), ('Prof.', 'Prof.'),
+  ]
+  GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
+  MARITAL_STATUS_CHOICES = [
+    ('Single', 'Single'), ('Married', 'Married'),
+  ]
+  PURPOSE_CHOICES = [
+    ('Home Church', 'Home Church'), ('Occasional Visit', 'Occasional Visit'),
+    ('One-Time Visit', 'One-Time Visit'), ('Special Programme Visit', 'Special Programme Visit'),
+  ]
+  CHANNEL_CHOICES = [
+    ('Billboard (Grammar School)', 'Billboard (Grammar School)'),
+    ('Billboard (Kosoko)', 'Billboard (Kosoko)'),
+    ('Billboard (Ojodu)', 'Billboard (Ojodu)'),
+    ('Facebook', 'Facebook'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
+    ('Referral', 'Referral'), ('Self', 'Self'), ('Visit', 'Visit'),
+    ('YouTube', 'YouTube'),
+  ]
+  SERVICE_CHOICES = [
+    ('Black Ball', 'Black Ball'), ('Breakthrough Campaign', 'Breakthrough Campaign'),
+    ('Breakthrough Festival', 'Breakthrough Festival'), ('Code Red. Revival', 'Code Red. Revival'),
+    ('Cross Over', 'Cross Over'), ('Deep Dive', 'Deep Dive'), ('Family Hangout', 'Family Hangout'),
+    ('Forecasting', 'Forecasting'), ('Life Masterclass', 'Life Masterclass'), ('Love Lounge', 'Love Lounge'),
+    ('Midweek Recharge', 'Midweek Recharge'), ('Midyear Praise Party', 'Midyear Praise Party'),
+    ('Outreach', 'Outreach'), ('Praise Party', 'Praise Party'), ('Quantum Leap', 'Quantum Leap'),
+    ('Recalibrate Marathon', 'Recalibrate Marathon'), ('Singles Connect', 'Singles Connect'),
+    ('Supernatural Encounter', 'Supernatural Encounter'),
+  ]
+  STATUS_CHOICES = [
+    ('Planted', 'Planted'),
+    ('Planted Elsewhere', 'Planted Elsewhere'), ('Relocated', 'Relocated'),
+    ('Work in Progress', 'Work in Progress'),
+  ]
+
+  picture = CloudinaryField('image', blank=True, null=True)
+  custom_id = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
+  title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=False)
+  full_name = models.CharField(max_length=100)
+  gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=False)
+  phone_number = models.CharField(max_length=20, blank=True, null=True)
+  email = models.EmailField(blank=True)
+  date_of_birth = models.CharField(blank=True, null=True)
+  marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
+  home_address = models.TextField(blank=True)
+  occupation = models.CharField(max_length=100, blank=True)
+  date_of_visit = models.DateField(default=localdate)
+  purpose_of_visit = models.CharField(max_length=30, choices=PURPOSE_CHOICES, blank=True)
+  channel_of_visit = models.CharField(max_length=30, choices=CHANNEL_CHOICES, blank=True)
+  service_attended = models.CharField(max_length=50, choices=SERVICE_CHOICES, blank=False)
+  referrer_name = models.CharField(max_length=100, blank=True)
+  referrer_phone_number = models.CharField(max_length=20, blank=True)
+  message = models.TextField(blank=True)
+  status = models.CharField(max_length=30, choices=STATUS_CHOICES)
+
+  assigned_to = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    null=True, blank=True,
+    on_delete=models.SET_NULL,
+    related_name='assigned_guests'
+  )
+  assigned_at = models.DateTimeField(null=True, blank=True, editable=False)
+
+
+  def save(self, *args, **kwargs):
+    if self.assigned_to and not self.assigned_at:
+        from django.utils.timezone import now
+        self.assigned_at = now()
+
+    if not self.custom_id:
+      prefix = 'GNG'
+      last_guest = GuestEntry.objects.filter(custom_id__startswith=prefix).order_by('-custom_id').first()
+      if last_guest and last_guest.custom_id:
+        last_num = int(re.sub(r'^\D+', '', last_guest.custom_id))
+        new_num = last_num + 1
+      else:
+        new_num = 1
+      self.custom_id = f'{prefix}{new_num:06d}'
+    super().save(*args, **kwargs)
+
+  @property
+  def initials(self):
+    if self.full_name:
+      return ''.join([n[0].upper() for n in self.full_name.split()[:2]])
+    return 'G'
+
+  def get_status_color(self):
+    return {
+      'Planted': 'success',
+      'Planted Elsewhere': 'danger',
+      'Relocated': 'primary',
+      'Work in Progress': 'warning',
+      'Select Status': 'secondary',
+    }.get(self.status, 'secondary')
+
+  def __str__(self):
+    return f"{self.custom_id} - {self.full_name}"
+
+class SocialMediaEntry(models.Model):
+    SOCIAL_MEDIA_CHOICES = [
+        ('whatsapp', 'WhatsApp'),
+        ('instagram', 'Instagram'),
+        ('twitter', 'Twitter'),
+        ('linkedin', 'LinkedIn'),
+        ('tiktok', 'Tiktok'),
+    ]
+    guest = models.ForeignKey(
+        GuestEntry,
+        on_delete=models.CASCADE,
+        related_name='social_media_accounts'
+    )
+    platform = models.CharField(max_length=20, choices=SOCIAL_MEDIA_CHOICES)
+    handle = models.CharField(max_length=255)
+
+    def save(self, *args, **kwargs):
+        base_urls = {
+            'linkedin': 'https://www.linkedin.com/in/',
+            'whatsapp': 'https://wa.me/',
+            'instagram': 'https://www.instagram.com/',
+            'twitter': 'https://twitter.com/',
+            'tiktok': 'https://www.tiktok.com/@',
+        }
+        if self.platform in base_urls and not self.handle.startswith("http"):
+            self.handle = base_urls[self.platform] + self.handle.lstrip("@")
+        super().save(*args, **kwargs)
+
+
+class FollowUpReport(models.Model):
+    guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name='reports')
+    report_date = models.DateField(default=localdate)
+    note = models.TextField()
+    service_sunday = models.BooleanField(default=False)
+    service_midweek = models.BooleanField(default=False)
+    service_others = models.BooleanField(default=False)
+    reviewed = models.BooleanField(default=False)
+    
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='assigned_reports'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-report_date']
+        unique_together = ['guest', 'report_date']
+
+    def __str__(self):
+        return f"{self.guest.full_name} - {self.report_date}"
+
+
+class Review(models.Model):
+    guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name="reviews")
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    role = models.CharField(
+        max_length=20,
+        choices=[("pastor", "Pastor"), ("team_lead", "Team Lead")]
+    )
+    comment = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE, related_name="replies")
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.role} review on {self.guest.full_name}"
+
+    @property
+    def has_unread_reviews(self):
+        return self.reviews.filter(is_read=False).exists()
+
+
+@login_required
+def followup_report_page(request, guest_id):
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+    today = localdate()
+    user = request.user
+
+    # Permission check
+    if guest.full_name != "Wunmi Jordan" and not (user.is_superuser or guest.assigned_to == user):
+        messages.error(request, "You do not have permission to edit this guest.")
+        return redirect('guest_list')
+
+    # Fetch reports with pagination
+    reports = FollowUpReport.objects.filter(guest=guest).order_by('-report_date')
+    paginator = Paginator(reports, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    error = None
+    report_to_edit = None
+
+    # Handle Edit GET request
+    edit_report_id = request.GET.get('edit_report_id')
+    if edit_report_id:
+        try:
+            report_to_edit = FollowUpReport.objects.get(id=edit_report_id, guest=guest)
+        except FollowUpReport.DoesNotExist:
+            messages.error(request, "Report not found.")
+            return redirect('followup_report_page', guest_id=guest.id)
+
+    # Handle POST (create or update)
+    if request.method == 'POST' and 'submit_report' in request.POST:
+        report_id = request.POST.get('report_id')
+        note = request.POST.get('note')
+        service_sunday = request.POST.get('service_sunday') == 'on'
+        service_midweek = request.POST.get('service_midweek') == 'on'
+        service_others = request.POST.get('service_others') == 'on'
+
+        if report_id:  # Updating existing report
+            report = get_object_or_404(FollowUpReport, id=report_id, guest=guest)
+            report.note = note
+            report.service_sunday = service_sunday
+            report.service_midweek = service_midweek
+            report.service_others = service_others
+            report.save()
+            messages.success(request, "Report updated successfully.")
+        else:  # Creating new report
+            report_date = request.POST.get('date_of_visit') or localdate()
+            if not note:
+                error = "Note field is required."
+            else:
+                try:
+                    FollowUpReport.objects.create(
+                        guest=guest,
+                        report_date=report_date,
+                        note=note,
+                        service_sunday=service_sunday,
+                        service_midweek=service_midweek,
+                        service_others=service_others,
+                        assigned_to=guest.assigned_to,
+                    )
+                    messages.success(request, "Follow-up report created successfully.")
+                except IntegrityError as e:
+                    if 'unique constraint' in str(e).lower() or 'duplicate key' in str(e).lower():
+                        error = "Duplicate dates are not allowed."
+                    else:
+                        raise
+
+        return redirect('followup_report_page', guest_id=guest.id)
+
+    return render(request, 'guests/followup_report_page.html', {
+        'guest': guest,
+        'reports': reports,
+        'page_obj': page_obj,
+        'today': today,
+        'error': error,
+        'report_to_edit': report_to_edit,  # pass to template
+    })
+
+
+{% extends 'base.html' %}
+{% load guest_extras %}
+{% block title %}Guest Report{% endblock %}
+{% load widget_tweaks %}
+{% load form_tags %}
+{% load group_tags %}
+
+
+{% block content %}
+
+
+<!-- Updated Follow-Up Report Page Template -->
+<div class="page-wrapper">
+  
+  <div class="page-header d-print-none" aria-label="Page Header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <h3 class="page-title text-white mt-1">
+            <small class="text-warning"> Report(s) on {{ guest.full_name }} </small>
+          </h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container-xl">
+      <div class="row row-deck row-cards justify-content-center">
+      
+        <!-- Past Reports Section -->
+        <div class="col-12 mb-4">
+          <div class="card">
+            
+            <div class="card-table">
+              <div class="card-header">
+                <div class="d-flex justify-content-between align-items-start flex-wrap w-100">
+                  <!-- Left section: Title and pagination -->
+                  <div>
+                    <h3 class="card-title mb-0">Past Reports</h3>
+                    <p class="text-secondary m-0">
+                      {% with start=page_obj.start_index end=page_obj.end_index total=page_obj.paginator.count %}
+                        <i><small class="text-warning">You are viewing {{ start }}–{{ end }} of {{ total }} Report(s)</small></i>
+                      {% endwith %}
+                    </p>
+                  </div>
+
+                  <!-- Right section: Export button -->
+                  <div class="ms-auto">
+                    <a href="{% url 'export_followup_reports_pdf' guest.id %}" class="btn btn-grey ms-auto">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-export">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                        <path d="M11.5 21h-4.5a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v5m-5 6h7m-3 -3l3 3l-3 3" />
+                      </svg>
+                      Export Report
+                    </a>
+                  </div>
+                </div>
+              </div>
+              <div id="advanced-table">
+                <div class="table-responsive">
+                  <table class="table table-vcenter table-selectable table-striped table-hover table-bordered mb-0">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Note</th>
+                        <th>Status</th>
+                        <th>Service Attendance</th>
+                        <th>Edit</th>
+                      </tr>
+                    </thead>
+
+                    <tbody class="table-tbody">
+                      {% for report in page_obj %}
+                        <tr data-report-id="{{ report.id }}">
+                          <td><strong>{{ report.report_date }}</strong></td>
+                          <td class="note-cell text-secondary">{{ report.note }}</td>
+                          <td>
+                            <span class="badge
+                              {% if report.guest.status == 'planted' %}bg-success-lt
+                              {% elif report.guest.status == 'planted_elsewhere' %}bg-danger-lt
+                              {% elif report.guest.status == 'relocated' %}bg-primary-lt
+                              {% elif report.guest.status == 'work_in_progress' %}bg-warning-lt
+                              {% else %}bg-grey-lt{% endif %}">
+                              {{ report.guest.get_status_display }}
+                            </span>
+                          </td>
+                          <td>
+                            <div class="badges-list">
+                              {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
+                              {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
+                              {% if report.service_others %}<span class="badge bg-pink-lt">Others</span>{% endif %}
+                            </div>
+                          </td>
+                          <td>
+                            <form method="get" action="{% url 'followup_report_page' guest.id %}">
+                              <input type="hidden" name="edit_report_id" value="{{ report.id }}">
+                              <button type="submit" class="btn btn-sm btn-outline-warning">
+                                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                  <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+                                  <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+                                  <path d="M16 5l3 3" />
+                                </svg>
+                              </button>
+                            </form>
+                          </td>
+                        </tr>  
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                  <!-- Paginator -->
+                  <div class="card-footer d-flex align-items-center">
+                    {% if not page_obj.object_list %}
+                      <div class="flex-grow-1 text-center text-muted">
+                        No Follow-up Reports Yet!
+                      </div>
+                    {% endif %}
+                    <ul class="pagination bg-grey m-0">
+                      {% if page_obj.has_previous %}
+                        <li class="page-item">
+                          <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                              <path d="M15 6l-6 6l6 6"></path>
+                            </svg>
+                          </a>
+                        </li>
+                      {% endif %}
+                      {% for num in page_obj.paginator.page_range %}
+                        {% if num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+                          <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                          </li>
+                        {% endif %}
+                      {% endfor %}
+                      {% if page_obj.has_next %}
+                        <li class="page-item">
+                          <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                              <path d="M9 6l6 6l-6 6"></path>
+                            </svg>
+                          </a>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+     
+        <!-- Follow-Up Form Section -->
+        <div class="col-md-12 col-lg-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">
+                {% if report_to_edit %}Edit Report{% else %}New Report{% endif %}
+              </h3>
+            </div>
+            <div class="card-body">
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="submit_report" value="1" />
+                {% if report_to_edit %}
+                  <input type="hidden" name="report_id" value="{{ report_to_edit.id }}" />
+                {% endif %}
+                <div class="space-y">
+                  <div class="row row-cols-2 g-4">
+                    <!-- Date Field (Read-only if editing) -->
+                    <div class="input-icon">
+                      <span class="input-icon-addon me-3 text-white"></span> 
+                      <input 
+                        type="date" 
+                        id="date_of_visit" 
+                        name="date_of_visit" 
+                        class="form-control bg-grey text-white border-0" 
+                        value="{{ form.report_date.value|default_if_none:'' }}"
+                        {% if report_to_edit %}readonly{% endif %}
+                      >
+                    </div>
+
+                    <!-- Service checkboxes -->
+                    <div class="col-md-9 d-flex align-items-center">
+                      <label class="form-check me-8 mb-0">
+                        <input class="form-check-input" type="checkbox" name="service_sunday"
+                          {% if report_to_edit and report_to_edit.service_sunday %}checked{% endif %}>
+                        <span class="form-check-label">Sunday Service</span>
+                      </label>
+                      <label class="form-check me-8 ms-4 mb-0">
+                        <input class="form-check-input" type="checkbox" name="service_midweek"
+                          {% if report_to_edit and report_to_edit.service_midweek %}checked{% endif %}>
+                        <span class="form-check-label">Midweek Recharge</span>
+                      </label>
+                      <label class="form-check ms-4 mb-0">
+                        <input class="form-check-input" type="checkbox" name="service_others"
+                          {% if report_to_edit and report_to_edit.service_others %}checked{% endif %}>
+                        <span class="form-check-label">Others</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Note -->
+                  <div class="mb-3">
+                    <textarea name="note" rows="6" class="form-control" placeholder="Enter Report Here...">{% if report_to_edit %}{{ report_to_edit.note }}{% endif %}</textarea>
+                  </div>
+
+                  <div>
+                    {% if request.user.is_superuser or guest.assigned_to == request.user or guest.full_name == "Wunmi Jordan" %}
+                      <button type="submit" class="btn btn-success btn-4 w-100">
+                        {% if report_to_edit %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="icon icon-tabler icon-tabler-file-isr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M15 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M6 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" />
+                            <path d="M3 15l3 -3l3 3" />
+                          </svg>
+                          Update Report
+                        {% else %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="icon icon-tabler icon-tabler-file-isr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M15 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M6 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" />
+                            <path d="M3 15l3 -3l3 3" />
+                          </svg>
+                          Submit Report
+                        {% endif %}
+                      </button>
+                    {% endif %}
+                  </div>
+                  {% if error %}
+                    <div class="alert alert-danger mt-2">{{ error }}</div>
+                  {% endif %}
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+
+
+

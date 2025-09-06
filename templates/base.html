@@ -23,21 +23,31 @@
   <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512.png' %}">
   <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512-maskable.png' %}">
 
+  <!-- Force dark theme before CSS loads --
+  <script>
+    (function () {
+      const defaults = { theme: "dark", "theme-base": "gray", "theme-font": "sans-serif", "theme-primary": "blue", "theme-radius": "1" };
+      for (const key in defaults) {
+        document.documentElement.setAttribute("data-bs-" + key, defaults[key]);
+        localStorage.setItem("tabler-" + key, defaults[key]);
+      }
+    })();
+  </script>-->
 
   <!-- CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/css/tabler.min.css" rel="stylesheet" />
+  <!--<link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" rel="stylesheet" />-->
+  <link href="{% static 'vendor/tabler/tabler.min.css' %}" rel="stylesheet" />
   <link rel="stylesheet" href="https://unpkg.com/@tabler/icons-webfont/tabler-icons.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-button@4.6.2/dist/index.min.css" />
   <link href="{% static 'css/custom.css' %}" rel="stylesheet" />
 
+  <script src="{% static 'js/tabler-theme-dark.js' %}"></script>
+
   {% block extra_css %}{% endblock %}
+
 </head>
 <body class="min-vh-100" data-new-gr-c-s-check-loaded="14.1249.0" data-gr-ext-installed="">
-  <!-- BEGIN GLOBAL THEME SCRIPT -->
-  <script src="https://cdn.jsdelivr.net/npm/@tabler/core@latest/dist/js/tabler.min.js" integrity="sha384-+e6qv+K0v0sWwYJ4b91cKjZV9ZOV6mU/JjCD7V6U3y3D6uqmcL7Z6B7n1xAk7yEY" crossorigin="anonymous"></script>
-  <!-- END GLOBAL THEME SCRIPT -->
 
   <div class="page">
     <header class="navbar navbar-expand-md d-print-none">
@@ -142,16 +152,26 @@
             </div>
           </div>
 
+          <div class="nav-item">
+            <a href="{% url 'accounts:chat_page' %}" class="nav-link px-0">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#16e203ff"  stroke-width="4"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-message-circle-user">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M19 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                <path d="M22 22a2 2 0 0 0 -2 -2h-2a2 2 0 0 0 -2 2" />
+                <path d="M12.454 19.97a9.9 9.9 0 0 1 -4.754 -.97l-4.7 1l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c1.667 1.423 2.596 3.294 2.747 5.216" />
+              </svg>
+            </a>
+          </div>
 
           <div class="nav-item dropdown d-flex align-items-center">
             <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
               <!-- Tabler bell icon -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
                 <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
                 <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
               </svg>
-              {% if unread_count %}
+              {% if unread_count > 0 %}
                 <span class="badge bg-red text-light" id="notif-badge">{{ unread_count }}</span>
               {% endif %}
             </a>
@@ -173,8 +193,8 @@
                       <div class="col">
                         <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
                         <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
-                          {{ notif.description|truncatechars:100 }}
-                          {% if notif.description|length > 100 %}
+                          {{ notif.description|truncatechars:150 }}
+                          {% if notif.description|length > 150 %}
                             <a href="#" class="show-more">...more</a>
                           {% endif %}
                         </div>
@@ -199,10 +219,7 @@
                 <div class="card-body">
                   <div class="row">
                     <div class="col">
-                      <a href="#" class="btn btn-2 w-100" id="archive-all-btn"> Archive All </a>
-                    </div>
-                    <div class="col">
-                      <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All </a>
+                      <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
                     </div>
                   </div>
                 </div>
@@ -801,7 +818,7 @@
 
   
 
-  <footer class="footer bg-dark text-light py-3 mt-auto border-top shadow-sm">
+  <footer class="footer text-light py-3 mt-auto border-top shadow-sm">
     <div class="container">
       <div class="row align-items-center text-center text-md-start">
         
@@ -932,19 +949,71 @@
     };
   </script>
 
+  <!----
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll(".phone-input").forEach(function (input) {
+        const iti = window.intlTelInput(input, {
+          preferredCountries: ["ng", "us", "gb"],
+          separateDialCode: true,
+          initialCountry: "ng",
+          nationalMode: false,
+        });
+
+        // On form submit, replace value with full international number
+        input.form.addEventListener("submit", function () {
+          if (iti.isValidNumber()) {
+            input.value = iti.getNumber();  // e.g., +2348123456789
+          }
+        });
+      });
+    });
+  </script>
+  -->
 
 
-
-
-
-  <!-- JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- ========================= -->
+  <!-- JS LIBRARIES -->
+  <!-- ========================= -->
   <script src="https://unpkg.com/htmx.org@1.9.3"></script>
-  <!-- Emoji Picker -->
-  <script src="https://cdn.jsdelivr.net/npm/emoji-button@4.6.2/dist/index.min.js"></script>
-  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!--<script src="{% static 'vendor/tabler/tabler-theme.min.js' %}"></script>-->
+  <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js"></script>-->
+
+  <!--<script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler-theme.min.js" integrity="sha384-pku3birjgGovaJ9ngF7SaxKkF/eYUvBjiMJ+jTtWbNesIj2Rud2K63+4JD7EF4gk">
+    integrity="sha384-SoDJmj40r6f9Rfxi6Fq+bNS8ofhlZMyxHk9dq9Y8e1M17PZGkBRN/XUpx8swn0i5" crossorigin="anonymous"
+  </script>-->
+
+  <!-- ========================= -->
+  <!-- Theme toggle logic -->
+  <!-- ========================= -->
+  <script>
+    (function() {
+      const root = document.documentElement;
+
+      document.querySelectorAll("[href*='?theme=']").forEach(link => {
+        link.addEventListener("click", function(e) {
+          e.preventDefault();
+          const newTheme = this.href.includes("dark") ? "dark" : "light";
+          root.setAttribute("data-bs-theme", newTheme);
+          localStorage.setItem("theme", newTheme);
+
+          // Update Tabler Theme instantly
+          if (window.Tabler && Tabler.theme && Tabler.theme.set) {
+            Tabler.theme.set(newTheme);
+          }
+        });
+      });
+    })();
+  </script>
+
+  <!-- ========================= -->
+  <!-- CUSTOM SCRIPTS -->
+  <!-- ========================= -->
   <script src="{% static 'js/custom.js' %}"></script>
+  <script src="{% static 'js/chat_page.js' %}"></script>
   
   {% block extra_js %}{% endblock %}
 

@@ -66,6 +66,7 @@
                         <th>Note</th>
                         <th>Status</th>
                         <th>Service Attendance</th>
+                        <th>Edit</th>
                       </tr>
                     </thead>
 
@@ -88,7 +89,21 @@
                             <div class="badges-list">
                               {% if report.service_sunday %}<span class="badge bg-indigo-lt">Sunday</span>{% endif %}
                               {% if report.service_midweek %}<span class="badge bg-purple-lt">Midweek</span>{% endif %}
+                              {% if report.service_others %}<span class="badge bg-pink-lt">Others</span>{% endif %}
                             </div>
+                          </td>
+                          <td>
+                            <form method="get" action="{% url 'followup_report_page' guest.id %}">
+                              <input type="hidden" name="edit_report_id" value="{{ report.id }}">
+                              <button type="submit" class="btn btn-sm bg-gray text-warning">
+                                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-edit">
+                                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                  <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1" />
+                                  <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z" />
+                                  <path d="M16 5l3 3" />
+                                </svg>
+                              </button>
+                            </form>
                           </td>
                         </tr>  
                       {% endfor %}
@@ -139,52 +154,73 @@
         <div class="col-md-12 col-lg-6">
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title">New Report</h3>
+              <h3 class="card-title">
+                {% if report_to_edit %}Edit Report{% else %}New Report{% endif %}
+              </h3>
             </div>
             <div class="card-body">
               <form method="post">
                 {% csrf_token %}
                 <input type="hidden" name="submit_report" value="1" />
                 <div class="space-y">
-                  <div class="row row-cols-2 g-4">
-                    <div class="input-icon">
-                      <span class="input-icon-addon me-3 text-white">
-                      </span> 
-                      <input 
-                        type="date" 
-                        id="date_of_visit" 
-                        name="date_of_visit" 
-                        class="form-control bg-grey text-white border-0" 
-                        value="{{ field.value|default_if_none:'' }}"
-                        autocomplete="off"
-                      >
-                          
+                  <div class="row g-4">
+                    <!-- Date Field (Read-only if editing) -->
+                    <div class="col-12 mb-3">
+                      {{ form.report_date.label_tag }}
+                      {{ form.report_date }}
                     </div>
-                    <div class="col-md-9 d-flex align-items-center">
-                      <label class="form-check me-3 mb-0">
-                        <input class="form-check-input" type="checkbox" name="service_sunday">
-                        <span class="form-check-label">Sunday Service</span>
-                      </label>
-                      <label class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" name="service_midweek">
-                        <span class="form-check-label">Midweek Recharge</span>
-                      </label>
+
+                    <!-- Service checkboxes in a new row -->
+                    <div class="col-12">
+                      <div class="row mb-3">
+                        <div class="col-md-4">
+                          <label class="form-check">
+                            {{ form.service_sunday }}
+                            <span class="form-check-label">Sunday Service</span>
+                          </label>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-check">
+                            {{ form.service_midweek }}
+                            <span class="form-check-label">Midweek Recharge</span>
+                          </label>
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-check">
+                            {{ form.service_others }}
+                            <span class="form-check-label">Others</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
+                  <!-- Note -->
                   <div class="mb-3">
-                    <textarea name="note" rows="6" class="form-control" placeholder="Enter Report Here..."></textarea>
+                    {{ form.note.label_tag }}
+                    {{ form.note }}
                   </div>
 
                   <div>
                     {% if request.user.is_superuser or guest.assigned_to == request.user or guest.full_name == "Wunmi Jordan" %}
                       <button type="submit" class="btn btn-success btn-4 w-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="icon icon-tabler icon-tabler-file-isr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                          <path d="M15 3v4a1 1 0 0 0 1 1h4" />
-                          <path d="M6 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" />
-                          <path d="M3 15l3 -3l3 3" />
-                        </svg>
-                        Submit Report
+                        {% if report_to_edit %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="icon icon-tabler icon-tabler-file-isr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M15 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M6 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" />
+                            <path d="M3 15l3 -3l3 3" />
+                          </svg>
+                          Update Report
+                        {% else %}
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" class="icon icon-tabler icon-tabler-file-isr" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M15 3v4a1 1 0 0 0 1 1h4" />
+                            <path d="M6 8v-3a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-7" />
+                            <path d="M3 15l3 -3l3 3" />
+                          </svg>
+                          Submit Report
+                        {% endif %}
                       </button>
                     {% endif %}
                   </div>

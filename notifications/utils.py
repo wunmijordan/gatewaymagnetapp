@@ -3,8 +3,15 @@ from notifications.models import Notification
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from guests.models import GuestEntry
+from accounts.utils import user_in_groups
+from django.utils import timezone
+
+
 
 User = get_user_model()
+
+# Define staff groups globally
+STAFF_GROUPS = ["Pastor", "Team Lead", "Admin"]
 
 
 def guest_full_name(guest):
@@ -80,17 +87,6 @@ def notify_users(users, title, description, link="#", is_urgent=False, is_succes
         push_realtime_notification(notif)
 
 
-def get_superusers():
-    return User.objects.filter(is_superuser=True)
-
-
-def get_staff_excluding_superusers():
-    return User.objects.filter(is_staff=True, is_superuser=False)
-
-
-def get_regular_users():
-    return User.objects.filter(is_staff=False, is_superuser=False)
-
 
 def get_user_role(user):
     """Return the role of a user as string for notification purposes."""
@@ -98,11 +94,14 @@ def get_user_role(user):
         return "Unknown"
     if user.is_superuser:
         return "Superuser"
-    elif user.is_staff:
-        return "Admin"
-    elif user.groups.filter(name="Message Manager").exists():
+    elif user_in_groups(user, STAFF_GROUPS):
+        # Return the first matching group as role
+        for group in STAFF_GROUPS:
+            if user_in_groups(user, group):
+                return group
+    elif user_in_groups(user, "Message Manager"):
         return "Message Manager"
-    elif user.groups.filter(name="Registrant").exists():
+    elif user_in_groups(user, "Registrant"):
         return "Registrant"
     else:
         return "Team Member"

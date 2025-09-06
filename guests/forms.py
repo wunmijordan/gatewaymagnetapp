@@ -3,6 +3,8 @@ from .models import GuestEntry
 from django.core.exceptions import ValidationError
 import datetime
 from .models import FollowUpReport
+from django.utils.timezone import localdate
+
 
 class GuestEntryForm(forms.ModelForm):
 
@@ -34,12 +36,13 @@ class GuestEntryForm(forms.ModelForm):
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'John Doe'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'johndoe@guest.gatewaynation'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
-            'date_of_birth': forms.DateInput(attrs={
+            'date_of_birth': forms.TextInput(attrs={
                 'type': 'text',
                 'class': 'form-control',
                 'placeholder': 'January 01 (Ignore Year)',
                 'autocomplete': 'off'
             }),
+            'age_range': forms.Select(attrs={'class': 'form-select'}),
             'marital_status': forms.Select(attrs={'class': 'form-select'}),
             'gender': forms.Select(attrs={'class': 'form-select', 'required': 'required'}),
             'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manager'}),
@@ -81,6 +84,7 @@ class GuestEntryForm(forms.ModelForm):
             'phone_number': 'Phone Number.',
             'email': 'Email Address.',
             'date_of_birth': 'Date of Birth.',
+            'age_range': 'Select the Guest\'s Age Range.',
             'marital_status': 'Marital Status.',
             'home_address': 'Home Address.',
             'occupation': 'Occupation.',
@@ -101,7 +105,7 @@ class GuestEntryForm(forms.ModelForm):
 
         # Fields that should allow blank without showing '---------' or 'None'
         select_fields = ['title', 'marital_status', 'gender', 'purpose_of_visit',
-                         'channel_of_visit', 'service_attended', 'status']
+                         'channel_of_visit', 'service_attended', 'status', 'age_range']
 
         for field_name in select_fields:
             if field_name in self.fields:
@@ -134,45 +138,67 @@ class GuestEntryForm(forms.ModelForm):
     def clean_date_of_birth(self):
         dob_raw = self.cleaned_data.get('date_of_birth')
         if not dob_raw:
-            return None
+            return ""
 
         try:
-            # Try parsing format like "January 01"
-            dob_parsed = datetime.datetime.strptime(dob_raw, "%B %d").date()
-            # Force a default year (e.g., 1900)
-            dob_parsed = dob_parsed.replace(year=1900)
-            return dob_parsed
+            # Parse to ensure format is valid
+            dob_parsed = datetime.datetime.strptime(dob_raw, "%B %d")
+            # Return formatted string only (e.g. "April 01")
+            return dob_parsed.strftime("%B %d")
         except ValueError:
             raise forms.ValidationError("Enter date in format: January 01")
 
 
 
 class FollowUpReportForm(forms.ModelForm):
+    report_date = forms.DateField(
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={
+                'type': 'date',
+                'class': 'form-control bg-grey text-white border-0',
+            }
+        ),
+        input_formats=['%Y-%m-%d', '%d/%m/%Y'],
+        required=False,
+    )
+
     class Meta:
         model = FollowUpReport
         exclude = ['guest', 'assigned_to', 'created_at']
         widgets = {
-            'report_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'form-control'
-            }),
             'note': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': 'Write follow-up note here...'
+                'placeholder': 'Enter Report Here...',
+                'rows': 6,
             }),
             'service_sunday': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'service_midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'})
+            'service_midweek': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'service_others': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.guest = kwargs.pop('guest', None)
         super().__init__(*args, **kwargs)
 
+        if self.instance.pk:  # Editing existing report
+            if self.instance.report_date:
+                self.initial['report_date'] = self.instance.report_date.strftime('%Y-%m-%d')
+            # Make report_date readonly + style
+            self.fields['report_date'].widget.attrs.update({
+                'readonly': True,
+                'class': self.fields['report_date'].widget.attrs.get('class', '') + ' bg-secondary text-dark fw-bold'
+            })
+        else:  # New report
+            if not self.initial.get('report_date'):
+                today = localdate()
+                self.initial['report_date'] = today.strftime('%Y-%m-%d')
+
     def clean(self):
         cleaned_data = super().clean()
         report_date = cleaned_data.get('report_date')
 
-        if self.guest and FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exists():
+        if self.guest and FollowUpReport.objects.filter(guest=self.guest, report_date=report_date).exclude(pk=self.instance.pk).exists():
             raise ValidationError("You already submitted a report for this date.")
 
         return cleaned_data
@@ -181,7 +207,7 @@ class FollowUpReportForm(forms.ModelForm):
         instance = super().save(commit=False)
         if self.guest:
             instance.guest = self.guest
-            instance.assigned_to = self.guest.assigned_to  # automatically set the assigned user
+            instance.assigned_to = self.guest.assigned_to
         if commit:
             instance.save()
         return instance

@@ -483,6 +483,11 @@ def guest_list_view(request):
         "date_of_birth":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
             <path d="M16 3v4" /><path d="M8 3v4" />
             <path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />""",
+        "age_range":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+            <path d="M11.5 10.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M11.5 13.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M7 15v-6" /><path d="M15.5 12h3" /><path d="M17 10.5v3" />""",
         "marital_status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 22v-5l-1 -1v-4a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4l-1 1v5" /><path d="M17 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
             <path d="M15 22v-4h-2l2 -6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1l2 6h-2v4" />""",
         "home_address":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
@@ -558,7 +563,7 @@ def guest_list_view(request):
     context = {
         'page_obj': page_obj,
         'view_type': view_type,
-        'users': User.objects.filter(is_active=True).order_by('first_name', 'last_name')[:100],
+        'users': User.objects.filter(is_active=True).order_by('full_name')[:100],
         'search_query': search_query,
         'status_filter': status_filter,
         'channel_filter': channel_filter,
@@ -579,6 +584,110 @@ def guest_list_view(request):
 
     return render(request, 'guests/guest_list.html', context)
 
+
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+#from django.utils.dateformat import format as dj_format
+
+
+# ---- Chat Guest Card Detail ----
+@login_required
+def guest_detail_api(request, guest_id):
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+
+    # Build field data just like in guest_list_view
+    excluded_fields = {
+        "id", "custom_id", "title", "full_name", "gender",
+        "message", "picture", "phone_number", "assigned_to"
+    }
+
+    svg_icons={
+        "email":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+            <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />""",  # replace with real paths
+        "date_of_birth":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
+            <path d="M16 3v4" /><path d="M8 3v4" />
+            <path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" />""",
+        "age_range":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+            <path d="M11.5 10.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M11.5 13.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
+            <path d="M7 15v-6" /><path d="M15.5 12h3" /><path d="M17 10.5v3" />""",
+        "marital_status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 22v-5l-1 -1v-4a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4l-1 1v5" /><path d="M17 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+            <path d="M15 22v-4h-2l2 -6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1l2 6h-2v4" />""",
+        "home_address":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+            <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />""",
+        "occupation":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
+            <path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" />""",
+        "date_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+            <path d="M18 18m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M15 3v4" />
+            <path d="M7 3v4" /><path d="M3 11h16" /><path d="M18 16.496v1.504l1 1" />""",
+        "purpose_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M3 21l18 0" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" />
+            <path d="M12 3l0 5" /><path d="M6 21v-7m-2 2l8 -8l8 8m-2 -2v7" />""",
+        "channel_of_visit":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
+            <path d="M16 3l-4 4l-4 -4" />""",
+        "service_attended":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+            <path d="M7 20h8l-4 -4v-7l4 3l2 -2" />""",
+        "referrer_name":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /><path d="M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25" />
+            <path d="M12.5 15.5l2 2" /><path d="M15 13l2 2" />""",
+        "referrer_phone_number":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+            <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />""",
+        "status":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+            <path d="M14.997 19.317l-1.583 1.583a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 13.657 -5.584" />
+            <path d="M19 22v.01" /><path d="M19 19a2.003 2.003 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />""",
+        "assigned_at":"""<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M16 19h6" />
+            <path d="M19 16v6" /><path d="M6 21v-2a4 4 0 0 1 4 -4h4" />""",
+    }
+
+    field_data = []
+    for field in guest._meta.fields:
+        if field.name in excluded_fields:
+            continue
+        value = getattr(guest, field.name)
+        time_since = None
+        formatted_value = value
+        if field.name == "date_of_visit" and value:
+            formatted_value = value.strftime("%b. %-d, %Y")
+            dt_value = datetime.combine(value, datetime.min.time())
+            if is_naive(dt_value):
+                dt_value = make_aware(dt_value)
+            delta = timesince(dt_value, now())
+            time_since = delta.split(",")[0]
+
+        if field.name == "assigned_at" and value:
+            formatted_value = value.strftime("%b. %-d, %Y %I:%M %p")
+
+        field_data.append({
+            "name": field.name,
+            "verbose_name": field.verbose_name.title(),
+            "value": formatted_value,
+            "time_since": time_since,
+            "icon": field.name,
+        })
+
+    social_accounts = []
+    for account in guest.social_media_accounts.all():
+        social_accounts.append({
+            "platform": account.platform,
+            "handle": account.handle,
+        })
+
+    data = {
+        "id": guest.id,
+        "custom_id": guest.custom_id,
+        "title": guest.title,
+        "full_name": guest.full_name,
+        "phone_number": guest.phone_number,
+        "picture": guest.picture.url if guest.picture else None,
+        "field_data": field_data,
+        "social_media_accounts": social_accounts,
+        "svg_icons": svg_icons,
+    }
+
+    return JsonResponse(data)
 
 
 
@@ -744,33 +853,76 @@ def edit_guest(request, pk):
 
 
 
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .models import Review
+from notifications.utils import user_full_name
+
 @login_required
+@require_POST
 def submit_review(request, guest_id, role):
+    """
+    Submit a review for a guest.
+    Signals handle notifications automatically.
+    Redirects back to guest list.
+    """
     guest = get_object_or_404(GuestEntry, id=guest_id)
-    if request.method == "POST":
-        comment = request.POST.get("comment")
-        parent_id = request.POST.get("parent_id")
-        parent = Review.objects.filter(id=parent_id).first() if parent_id else None
-        Review.objects.create(
-            guest=guest,
-            reviewer=request.user,
-            role=role,
-            comment=comment,
-            parent=parent
-        )
+    parent_id = request.POST.get("parent_id")
+    parent = Review.objects.filter(id=parent_id).first() if parent_id else None
+
+    Review.objects.create(
+        guest=guest,
+        reviewer=request.user,
+        role=role,
+        comment=request.POST.get("comment"),
+        parent=parent
+    )
+
     return redirect("guest_list")
 
 
 
+
+
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .models import Review
+from guests.models import GuestEntry
+from notifications.models import Notification
+
 @login_required
 def mark_reviews_read(request, guest_id):
-    guest = get_object_or_404(Guest, id=guest_id)
-    
-    # Only mark unread reviews for this user
-    unread_reviews = guest.reviews.filter(is_read=False, reviewer=request.user)
-    unread_reviews.update(is_read=True)
-    
-    return JsonResponse({"status": "success"})
+    """
+    Mark all unread reviews for the current user on a given guest as read,
+    and also mark the related notifications as read.
+    Returns JSON with counts for updating UI dynamically.
+    """
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
+
+    guest = get_object_or_404(GuestEntry, id=guest_id)
+
+    # Only unread reviews for this user, optionally excluding self-authored reviews
+    unread_reviews = guest.reviews.filter(is_read=False).exclude(reviewer=request.user)
+    reviews_marked = unread_reviews.update(is_read=True)
+
+    # Mark notifications corresponding to these reviews as read
+    notif_qs = Notification.objects.filter(
+        user=request.user,
+        link__icontains=f"guest/{guest_id}/review",  # adjust to match your review URL pattern
+        is_read=False
+    )
+    notifs_marked = notif_qs.update(is_read=True)
+
+    return JsonResponse({
+        "status": "success",
+        "reviews_marked": reviews_marked,
+        "notifications_marked": notifs_marked
+    })
+
+
 
 
 
@@ -1217,75 +1369,48 @@ def followup_report_page(request, guest_id):
     today = localdate()
     user = request.user
 
-    if guest.full_name == "Wunmi Jordan":
-        pass
-
-    elif not (request.user.is_superuser or guest.assigned_to == user):
+    # Permission check
+    if guest.full_name != "Wunmi Jordan" and not (user.is_superuser or guest.assigned_to == user):
         messages.error(request, "You do not have permission to edit this guest.")
         return redirect('guest_list')
 
+    # Fetch reports with pagination
     reports = FollowUpReport.objects.filter(guest=guest).order_by('-report_date')
     paginator = Paginator(reports, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    error = None
+    report_to_edit = None
+    edit_report_id = request.GET.get('edit_report_id')
+    if edit_report_id:
+        report_to_edit = get_object_or_404(FollowUpReport, id=edit_report_id, guest=guest)
 
+    # Build form
     if request.method == 'POST' and 'submit_report' in request.POST:
-        report_date = request.POST.get('date_of_visit') or localdate()
-        note = request.POST.get('note')
-        service_sunday = request.POST.get('service_sunday') == 'on'
-        service_midweek = request.POST.get('service_midweek') == 'on'
-
-        if not note:
-            error = "Note field is required."
+        if report_to_edit:
+            form = FollowUpReportForm(request.POST, instance=report_to_edit, guest=guest)
         else:
-            try:
-                FollowUpReport.objects.create(
-                    guest=guest,
-                    report_date=report_date,
-                    note=note,
-                    service_sunday=service_sunday,
-                    service_midweek=service_midweek,
-                    assigned_to=guest.assigned_to,  # Use the user assigned to the guest
-                )
-                return redirect('followup_report_page', guest_id=guest.id)
-            except IntegrityError as e:
-                if 'unique constraint' in str(e).lower() or 'duplicate key' in str(e).lower():
-                    error = "Duplicate dates are not allowed."
-                else:
-                    raise
+            form = FollowUpReportForm(request.POST, guest=guest)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Report updated successfully." if report_to_edit else "Follow-up report created successfully.")
+            return redirect('followup_report_page', guest_id=guest.id)
+    else:
+        if report_to_edit:
+            form = FollowUpReportForm(instance=report_to_edit, guest=guest)
+        else:
+            form = FollowUpReportForm(guest=guest)
 
     return render(request, 'guests/followup_report_page.html', {
         'guest': guest,
         'reports': reports,
         'page_obj': page_obj,
         'today': today,
-        'error': error,
-    })
-
-
-@login_required
-def create_followup_report(request, guest_id):
-    guest = get_object_or_404(GuestEntry, id=guest_id)
-    user = request.user
-
-    if request.method == "POST":
-        form = FollowUpReportForm(request.POST)
-        if form.is_valid():
-            report = form.save(commit=False)
-            report.guest = guest
-            report.assigned_to = guest.assigned_to  # Assign the report to the guest's assigned user
-            report.save()
-            messages.success(request, "Follow-up report created successfully.")
-            return redirect('guest_detail', guest_id=guest.id)
-    else:
-        form = FollowUpReportForm()
-
-    return render(request, 'guests/followup_form.html', {
+        'report_to_edit': report_to_edit,
         'form': form,
-        'guest': guest
     })
+
 
 
 

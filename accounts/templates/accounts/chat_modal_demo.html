@@ -1,0 +1,408 @@
+<!-- User Chat Modal -->
+  <div class="modal fade modal-blur" id="chatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content" style="background-image: url(static 'images/church_logo.png'); background-size: cover; opacity: 0.95;">
+        <div class="modal-header d-flex justify-content-between align-items-center">
+          <h5 class="modal-title">Magnet Chat</h5>
+          <div class="dropdown">
+            <a href="#" class="text-purple" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-dots-vertical" width="20" height="20" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 250px;">
+              <a><strong>Group Info</strong></a>
+              <a><input type="text" class="form-control mb-2" placeholder="Search users..." id="groupSearch"></a>
+              <a>
+                <span id="groupUsers" class="list-unstyled mb-0">
+                  {% for user in users %}
+                    <a>{{ user.full_name }} - {{ user.get_role_display }}</a>
+                  {% endfor %}
+                </span>
+              </a>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3 text-end" id="chatMessagesContainer">
+            {% if chat_messages %}
+              {% regroup chat_messages by created_at.date as messages_by_date %}
+              {% for day in messages_by_date %}
+                <div class="text-center text-muted my-2">{{ day.grouper|date:"M d, Y" }}</div>
+                {% for msg in day.list %}
+
+                  <!-- CHatBody Render with JS -->                  
+
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+          </div>          
+
+          <!-- Reply indicator -->
+          <div id="replyIndicator" class="mb-1 text-muted align-items-center" style="display:none;">
+            <span id="replyToName" class="me-2"></span>
+            <button type="button" onclick="clearReply()" class="btn p-0 border-0 d-flex align-items-center justify-content-center" style="width:16px; height:16px;">
+              <!-- Cancel SVG -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Chat form -->
+          <form id="chatReplyForm" class="d-flex mt-1">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" id="replyToId">
+            <div class="d-flex flex-column w-100">
+
+              <!-- Textarea and buttons -->
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <textarea id="chatInput" rows="1" class="form-control border-0 flex-grow-1 me-2" style="width: 200px;" placeholder="Type Message" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
+                <div class="d-flex align-items-center">
+
+                  <!-- Guest card attachment -->
+                  <label for="guestAttachment" class="avatar bg-gray-lt border-0 me-2 text-white p-1 d-flex align-items-center justify-content-center" title="Attach Guest Card">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4 4h16v16H4z"/>
+                    </svg>
+                  </label>
+                  <select id="guestAttachment" class="form-select d-none">
+                    <option value="">Select Guest Card</option>
+                    {% for guest in accessible_guests %}
+                      <option value="{{ guest.id }}">{{ guest.full_name }} - {{ guest.phone_number }}</option>
+                    {% endfor %}
+                  </select>
+
+                  <!-- Device file attachment -->
+                  <label for="fileAttachment" class="avatar bg-gray-lt border-0 me-2 text-white p-1 d-flex align-items-center justify-content-center" title="Attach File">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"/>
+                    </svg>
+                  </label>
+                  <input type="file" id="fileAttachment" class="d-none">
+
+                  <!-- Voice note -->
+                  <span id="voiceNoteBtn" class="avatar bg-gray-lt border-0 me-2 text-purple p-1 d-flex align-items-center justify-content-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M9 2m0 3a3 3 0 0 1 3 -3h0a3 3 0 0 1 3 3v5a3 3 0 0 1 -3 3h0a3 3 0 0 1 -3 -3z" />
+                      <path d="M5 10a7 7 0 0 0 14 0" /><path d="M8 21l8 0" /><path d="M12 17l0 4" />
+                    </svg>
+                  </span>
+
+                  <!-- Send button -->
+                  <button type="submit" id="sendChatBtn" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
+                      <path d="M6.5 12h14.5" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Attachment preview area -->
+              <div id="attachmentPreview" class="mt-2"></div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.chatUrls = {
+      send: "{% url 'accounts:send_chat_message' %}",
+      fetch: "{% url 'accounts:fetch_chat_messages' %}"
+    };
+    window.currentUserId = {{ request.user.id }};
+
+    // Accessible guests rendered as JS array
+    const accessibleGuests = [
+      {% for guest in accessible_guests %}
+        { id: {{ guest.id }}, name: "{{ guest.name }}", phone: "{{ guest.phone }}" },
+      {% endfor %}
+    ];
+  </script>
+
+
+
+{% for message in chat_messages %}
+  {% if message.id %}
+    <div class="modal fade modal-blur" id="chatModal-{{ message.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="background-image: url('/static/images/chat-bg.jpg'); background-size: cover; opacity: 0.95;">
+          <div class="modal-header align-items-center justify-content-center">
+            <h5 class="modal-title">Chat Room</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            {% if chat_messages %}
+              <div class="mb-3 text-end" id="chatMessagesContainer">
+                {% regroup chat_messages by created_at.date as messages_by_date %}
+                {% for day in messages_by_date %}
+                  <div class="text-center text-muted my-2">{{ day.grouper|date:"M d, Y" }}</div>
+                  {% for msg in day.list %}
+                    <div class="{% if msg.sender == request.user %}text-end{% else %}text-start{% endif %} mb-2">
+                      <div class="d-inline-block px-3 py-2 rounded-2 
+                        {% if msg.sender == request.user %}bg-green-lt text-white{% else %}bg-warning-lt text-white{% endif %}" 
+                        id="msg-{{ msg.id }}">
+                        <em>
+                          <span class="text-muted fs-5">
+                            <strong>
+                              {% if msg.sender == request.user %}You
+                              {% else %}{{ msg.sender.title|default:"" }} {{ msg.sender.full_name }} ({{ msg.sender.role }}){% endif %}
+                            </strong>
+                          </span>
+                        </em><br>
+                        {{ msg.message }}
+                        {% if msg.attachment %}<br><a href="{{ msg.attachment.url }}" target="_blank">📎 Attachment</a>{% endif %}
+                        {% if msg.voice_note %}<br><audio controls src="{{ msg.voice_note.url }}"></audio>{% endif %}
+                        <div>
+                          <em>
+                            <small class="text-muted d-block">{% if msg.sender == request.user %}text-end{% endif %}
+                              {{ msg.created_at|time:"H:i" }}
+                              {% if msg.is_seen_by_all %} ✅✅ {% else %} ✅ {% endif %}
+                            </small>
+                          </em>
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                {% endfor %}
+                <form id="chatReplyForm" class="d-flex mt-1">
+                  {% csrf_token %}
+                  <input type="hidden" name="parent_id" id="replyToId">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <textarea id="chatInput" rows="1" class="form-control border-0 flex-grow-1 me-2" placeholder="Reply..." oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
+                    <button type="button" id="sendChatBtn" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-send-2">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
+                        <path d="M6.5 12h14.5" />
+                      </svg>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            {% else %}
+              <p class="text-muted">No messages yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endfor %}
+
+
+
+<div class="{% if msg.sender == request.user %}text-end{% else %}text-start{% endif %} mb-2">
+                    <div class="d-inline-block px-3 py-2 rounded-2 
+                      {% if msg.sender == request.user %}bg-green-lt text-white{% else %}bg-warning-lt text-white{% endif %}" 
+                      id="msg-{{ msg.id }}" onclick="setReply({{ msg.id }}, '{{ msg.sender.full_name }}')">
+                      <em>
+                        <span class="text-muted fs-5">
+                          <strong>
+                            {% if msg.sender == request.user %}You
+                            {% else %}{{ msg.sender.title|default:"" }} {{ msg.sender.full_name }} ({{ msg.sender.role }}){% endif %}
+                          </strong>
+                        </span>
+                      </em><br>
+                      {{ msg.message }}
+                      {% if msg.attachment %}<br><a href="{{ msg.attachment.url }}" target="_blank">📎 Attachment</a>{% endif %}
+                      {% if msg.voice_note %}<br><audio controls src="{{ msg.voice_note.url }}"></audio>{% endif %}
+                      <div>
+                        <em>
+                          <small class="text-muted d-block">{% if msg.sender == request.user %}text-end{% endif %}
+                            {{ msg.created_at|time:"H:i" }}
+                            {% if msg.is_seen_by_all %} ✅✅ {% else %} ✅ {% endif %}
+                          </small>
+                        </em>
+                      </div>
+                    </div>
+                  </div>
+                  -->
+
+
+
+
+<script>
+const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/');
+const chatContainer = document.getElementById('chatMessagesContainer');
+const chatInput = document.getElementById('chatInput');
+const replyToIdInput = document.getElementById('replyToId');
+let replyToId = null;
+let mediaRecorder, audioChunks = [];
+
+// Send message
+document.getElementById('sendChatBtn').onclick = () => {
+  const message = chatInput.value;
+  if(!message.trim() && !replyToId) return;
+
+  chatSocket.send(JSON.stringify({ message, parent: replyToId }));
+  chatInput.value = '';
+  replyToId = null;
+  replyToIdInput.value = '';
+};
+
+// Receive message
+chatSocket.onmessage = function(e){
+  const data = JSON.parse(e.data);
+  const msgEl = document.createElement('div');
+  msgEl.className = 'mb-2 ' + (data.sender.id == {{ request.user.id }} ? 'text-end' : 'text-start');
+  msgEl.id = 'msg-' + data.id;
+
+  msgEl.innerHTML = `
+    <div class="d-inline-block px-3 py-2 rounded-2 ${data.sender.id == {{ request.user.id }} ? 'bg-green-lt text-white' : 'bg-warning-lt text-white'}">
+      <strong>${data.sender.id == {{ request.user.id }} ? 'You' : (data.sender.title+' '+data.sender.full_name+' ('+data.sender.role+')')}</strong><br>
+      ${data.message || ''}
+      ${data.attachment ? `<br><a href="${data.attachment}" target="_blank">📎 Attachment</a>` : ''}
+      ${data.voice_note ? `<br><audio controls src="${data.voice_note}"></audio>` : ''}
+      <br><small class="text-muted">${new Date(data.created_at).toLocaleTimeString()} ${data.parent ? '↩️' : ''}</small>
+    </div>
+  `;
+  chatContainer.appendChild(msgEl);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+};
+
+// Reply to message
+function setReply(id){
+  replyToId = id;
+  replyToIdInput.value = id;
+  document.getElementById('msg-' + id).classList.add('replying');
+}
+
+// Voice note
+document.getElementById('voiceNoteBtn')?.addEventListener('click', async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+    const url = URL.createObjectURL(blob);
+    chatSocket.send(JSON.stringify({ message: '', voice_note: url }));
+    audioChunks = [];
+  };
+  mediaRecorder.start();
+  setTimeout(() => mediaRecorder.stop(), 5000);
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="page-body">
+  <div class="container-xl flex-fill d-flex flex-column">
+    <div class="card flex-fill">
+      <div class="row g-0 flex-fill">
+        <div class="col-12 col-lg-5 col-xl-3 border-end d-flex flex-column">
+          <div class="card-header d-none d-md-block">
+            <div class="input-icon">
+              <span class="input-icon-addon">
+                <!-- Download SVG icon from http://tabler.io/icons/icon/search -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+                  <path d="M21 21l-6 -6"></path>
+                </svg>
+              </span>
+              <input type="text" value="" class="form-control" placeholder="Search…" aria-label="Search">
+            </div>
+          </div>
+          <div class="card-body p-0 scrollable flex-fill">
+            <div class="nav flex-column nav-pills" role="tablist">
+              <a href="#chat-1" class="nav-link text-start mw-100 p-3 active" id="chat-1-tab" data-bs-toggle="pill" role="tab" aria-selected="true">
+                <div class="row align-items-center flex-fill">
+                  <div class="col-auto"><span class="avatar avatar-1" style="background-image: url(./static/avatars/000m.jpg)"> </span></div>
+                  <div class="col text-body">
+                    <div>Paweł Kuna</div>
+                    <div class="text-secondary text-truncate w-100">Sure Paweł, let me pull the latest updates.</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-7 col-xl-9 d-flex flex-column">
+          
+
+
+
+
+<div class="page-body">
+    <div class="container py-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <div class="card-title w-100">
+            <div class="container-xl mt-4">
+              <div class="row g-2 justify-content-center">
+                <div class="avatar-list d-flex justify-content-center flex-wrap"
+                    style="overflow-x:auto; white-space:nowrap; padding-bottom:4px; scrollbar-width:thin;">
+                  {% for user in other_users %}
+                    <div class="dropdown me-2">
+                      {% if user.image_url %}
+                        <a href="#" class="avatar avatar-1 rounded dropdown" 
+                          id="userDropdown{{ user.id }}" 
+                          data-bs-toggle="dropdown" 
+                          aria-expanded="false"
+                          style="background-image:url('{{ user.image_url }}');
+                                  display:inline-block;width:36px;height:36px;
+                                  background-size:cover;background-position:center;
+                                  margin-right:6px;box-shadow:0 2px 8px #15945433;">
+                        </a>
+                      {% else %}
+                        <a href="#" class="avatar avatar-1 rounded dropdown d-flex align-items-center justify-content-center" 
+                          id="userDropdown{{ user.id }}" 
+                          data-bs-toggle="dropdown" 
+                          aria-expanded="false"
+                          style="width:36px;height:36px;font-weight:bold;font-size:16px;
+                                  margin-right:6px;box-shadow:0 2px 8px #15945433;">
+                          {{ user.initials }}
+                        </a>
+                      {% endif %}
+                      <ul class="dropdown-menu" aria-labelledby="userDropdown{{ user.id }}">
+                        {% for guest in user.assigned_guests.all %}
+                          <li>
+                            <a href="#" class="dropdown-item guest-item" 
+                              data-userid="{{ user.id }}"
+                              data-guestid="{{ guest.id }}"
+                              data-fullname="{{ guest.full_name }}"
+                              data-phone="{{ guest.phone_number }}"
+                              data-picture="{{ guest.picture.url|default:'' }}"
+                              data-customid="{{ guest.custom_id }}"
+                              data-date="{{ guest.date_of_visit|date:'Y-m-d' }}">
+                              {{ guest.full_name }}
+                            </a>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>

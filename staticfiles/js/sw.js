@@ -1,8 +1,10 @@
 // static/js/sw.js
 self.addEventListener('install', event => {
-  self.skipWaiting(); // activate immediately
+  console.log('Service Worker installed');
+  self.skipWaiting(); // optional, activates immediately
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+  console.log('Service Worker activated');
+  // no clients.claim() needed
 });

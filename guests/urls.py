@@ -11,6 +11,8 @@ urlpatterns = [
     # Guest Creation + Editing
     path('guest/create/', views.create_guest, name='create_guest'),
     path('guest/<int:pk>/edit/', views.edit_guest, name='edit_guest'),
+    path("guest/<int:guest_id>/detail/", views.guest_detail_api, name="guest_detail_api"),
+
 
     # Guest detail by custom_id
     path("reviews/submit/<int:guest_id>/<str:role>/", views.submit_review, name="submit_review"),

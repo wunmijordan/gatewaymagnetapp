@@ -12,6 +12,13 @@ class GuestEntry(models.Model):
     ('Pastor', 'Pastor'), ('Prof.', 'Prof.'),
   ]
   GENDER_CHOICES = [('Male', 'Male'), ('Female', 'Female')]
+  AGE_RANGE_CHOICES = [
+    ("Under 18", "Under 18"),
+    ("18–25", "18–25"),
+    ("26–35", "26–35"),
+    ("36–45", "36–45"),
+    ("46 and Above", "46 and Above"),
+  ]
   MARITAL_STATUS_CHOICES = [
     ('Single', 'Single'), ('Married', 'Married'),
   ]
@@ -23,9 +30,9 @@ class GuestEntry(models.Model):
     ('Billboard (Grammar School)', 'Billboard (Grammar School)'),
     ('Billboard (Kosoko)', 'Billboard (Kosoko)'),
     ('Billboard (Ojodu)', 'Billboard (Ojodu)'),
-    ('Facebook', 'Facebook'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
+    ('Facebook', 'Facebook'), ('Family & Friends', 'Family & Friends'), ('Flyer', 'Flyer'), ('Instagram', 'Instagram'),
     ('Referral', 'Referral'), ('Self', 'Self'), ('Visit', 'Visit'),
-    ('YouTube', 'YouTube'),
+    ('YouTube', 'YouTube'), ('Others', 'Others'),
   ]
   SERVICE_CHOICES = [
     ('Black Ball', 'Black Ball'), ('Breakthrough Campaign', 'Breakthrough Campaign'),
@@ -51,6 +58,7 @@ class GuestEntry(models.Model):
   phone_number = models.CharField(max_length=20, blank=True, null=True)
   email = models.EmailField(blank=True)
   date_of_birth = models.CharField(blank=True, null=True)
+  age_range = models.CharField(max_length=20, choices=AGE_RANGE_CHOICES, blank=True)
   marital_status = models.CharField(max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True)
   home_address = models.TextField(blank=True)
   occupation = models.CharField(max_length=100, blank=True)
@@ -137,10 +145,11 @@ class SocialMediaEntry(models.Model):
 
 class FollowUpReport(models.Model):
     guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name='reports')
-    report_date = models.DateField()
+    report_date = models.DateField(default=localdate)
     note = models.TextField()
     service_sunday = models.BooleanField(default=False)
     service_midweek = models.BooleanField(default=False)
+    service_others = models.BooleanField(default=False)
     reviewed = models.BooleanField(default=False)
     
     assigned_to = models.ForeignKey(
@@ -158,6 +167,7 @@ class FollowUpReport(models.Model):
 
     def __str__(self):
         return f"{self.guest.full_name} - {self.report_date}"
+
 
 class Review(models.Model):
     guest = models.ForeignKey(GuestEntry, on_delete=models.CASCADE, related_name="reviews")
