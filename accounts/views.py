@@ -278,6 +278,8 @@ def admin_dashboard(request):
         diff = ((user_planted_current_month - user_planted_last_month) / user_planted_last_month) * 100
         planted_growth_change = round(diff, 1)
 
+    other_users = User.objects.exclude(id=request.user.id)
+
     context = {
         'show_filters': False,
         'available_years': available_years,
@@ -314,6 +316,7 @@ def admin_dashboard(request):
         'special_programme_percentage': special_programme_percentage,
         'users': users,
         'guests': queryset,
+        'other_users': other_users,
         'page_title': "Admin Dashboard",
     }
 
@@ -568,37 +571,37 @@ from django.contrib.auth.decorators import login_required
 from guests.models import GuestEntry
 from .models import ChatMessage
 
-@login_required
-def chat_page(request):
-    chat_messages = ChatMessage.objects.all().order_by("-created_at")[:50]
-    chat_messages = reversed(chat_messages)
+#@login_required
+#def chat_page(request):
+#    chat_messages = ChatMessage.objects.all().order_by("-created_at")[:50]
+#    chat_messages = reversed(chat_messages)
 
-    users = request.user.__class__.objects.all()
-    other_users_qs = User.objects.exclude(id=request.user.id)
+#    users = request.user.__class__.objects.all()
+#    other_users_qs = User.objects.exclude(id=request.user.id)
 
     # Build guest mapping
-    user_guest_map = {}
-    for u in other_users_qs:
-        user_guest_map[u.id] = [
-            {
-                "id": g.id,
-                "full_name": g.full_name,
-                "phone": g.phone_number,
-                "picture_url": g.picture.url if g.picture else "",
-                "custom_id": g.custom_id,
-                "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-            }
-            for g in u.assigned_guests.all()
-        ]
+#    user_guest_map = {}
+#    for u in other_users_qs:
+#        user_guest_map[u.id] = [
+#            {
+#                "id": g.id,
+#                "full_name": g.full_name,
+#                "phone": g.phone_number,
+#                "picture_url": g.picture.url if g.picture else "",
+#                "custom_id": g.custom_id,
+#                "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
+#            }
+#            for g in u.assigned_guests.all()
+#        ]
 
-    context = {
-        "chat_messages": chat_messages,
-        "users": users,
-        "other_users": other_users_qs,   # for avatars
-        "user_guest_map": user_guest_map, # for modal population
-        "page_title": "ChatRoom",
-    }
-    return render(request, "accounts/chat_page.html", context)
+#    context = {
+#        "chat_messages": chat_messages,
+#        "users": users,
+#        "other_users": other_users_qs,   # for avatars
+#        "user_guest_map": user_guest_map, # for modal population
+#        "page_title": "ChatRoom",
+#    }
+#    return render(request, "accounts/chat_page.html", context)
 
 
 

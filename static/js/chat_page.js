@@ -416,8 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // append message to this day's wrapper
     dateWrapper.appendChild(msgEl);
-    chatContainer.appendChild(msgEl);
-    chatContainer.scrollTo({ bottom: chatContainer.scrollHeight, behavior: 'smooth' });
+    //chatContainer.appendChild(msgEl);
+    chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
   }
 
   // Make guest cards highlight on hover
@@ -525,8 +525,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  fetchMessages();
-  setInterval(fetchMessages, 1000);
+  function startChatPolling() {
+    if (chatInterval) return; // Already running
+    fetchMessages();
+    chatInterval = setInterval(fetchMessages, 10000);
+  }
+
+  function stopChatPolling() {
+    clearInterval(chatInterval);
+    chatInterval = null;
+  }
 
   // =========================
   // Live search

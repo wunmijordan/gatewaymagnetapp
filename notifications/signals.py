@@ -64,7 +64,7 @@ def notify_guest_deletion(sender, instance, **kwargs):
 
     description = (
         f"{guest_name} ({custom_id})\n"
-        f"Deleted by: {deleter_name} ({deleter_role}), at {ts}.\n"
+        f"Deleted by: {deleter_name}, at {ts}.\n"
         f"New Guests Count: {guest_count}"
     )
     link = reverse("guest_list")
