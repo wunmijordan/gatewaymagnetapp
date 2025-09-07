@@ -258,3 +258,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # WEBSOCKET SCHEME
 # =========================
 WS_SCHEME = "wss://" if ENVIRONMENT == "production" else "ws://"
+
+# =========================
+# CSRF & SECURITY
+# =========================
+csrf_origins_env = os.getenv(
+    "CSRF_TRUSTED_ORIGINS", "https://magnet.gatewaynation.org"
+)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in csrf_origins_env.split(",") if origin.strip()
+]
+
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
