@@ -12,6 +12,8 @@ __pycache__/
 *.sql
 /dump.sql
 
+/Procfile
+
 # Distribution / packaging
 .Python
 build/
