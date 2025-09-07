@@ -19,13 +19,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev \
     libcairo2 \
     libpango-1.0-0 \
+    libpangoft2-1.0-0 \
     libgdk-pixbuf-xlib-2.0-0 \
     libgobject-2.0-0 \
     libssl-dev \
     git \
     wget \
     curl \
+    shared-mime-info \
+    fonts-liberation \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 
 # =========================
 # Stage 2: Copy and Install Python Dependencies
