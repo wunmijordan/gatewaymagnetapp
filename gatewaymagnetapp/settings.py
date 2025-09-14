@@ -143,7 +143,7 @@ else:
 import os
 
 # Prefer a single REDIS_URL for simplicity (works in dev and prod)
-REDIS_URL = os.getenv("REDIS_URL", "redis://default:IIqBNcFVttmqKkKNYZyOWCJwnpKjROQi@shinkansen.proxy.rlwy.net:23122/0")
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
 
 CHANNEL_LAYERS = {
     "default": {

@@ -516,6 +516,9 @@
   position: relative;
 }
 
+#chatInput {
+    transition: height 0.15s ease;
+  }
 
 
 

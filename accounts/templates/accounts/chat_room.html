@@ -117,33 +117,35 @@
               </span>
             </div>
 
-            <!-- Message Input -->
-            <div class="card-footer border-0">
-              <div class="input-group input-group-flat rounded-2 border-0">
-                <textarea class="form-control" 
-                          id="chatInput" 
-                          placeholder="Type Message" 
-                          rows="1" 
-                          style="resize: none; overflow: hidden;"></textarea>
+            {% if not request.user|has_group:"Demo" or request.user.is_superuser %}
+              <!-- Message Input -->
+              <div class="card-footer border-0">
+                <div class="input-group input-group-flat rounded-2 border-0">
+                  <textarea class="form-control" 
+                            id="chatInput" 
+                            placeholder="Type Message" 
+                            rows="1" 
+                            style="resize: none; overflow: hidden;"></textarea>
 
-                <!--<input type="text" class="form-control" autocomplete="on" placeholder="Type Message" id="chatInput">-->
-                <span class="input-group-text">
-                  <!-- Attachment container trigger -->
-                  <a href="#" class="link-secondary dropdown me-2 text-purple" id="openUserGuestPopup">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-up">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M19 22v-6" /><path d="M22 19l-3 -3l-3 3" />
-                    </svg>
-                  </a>
-                  <a href="#" id="sendButton" class="link-secondary ms-2 text-green">
-                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-send">
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                      <path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" />
-                    </svg>
-                  </a>
-                </span>
+                  <!--<input type="text" class="form-control" autocomplete="on" placeholder="Type Message" id="chatInput">-->
+                  <span class="input-group-text">
+                    <!-- Attachment container trigger -->
+                    <a href="#" class="link-secondary dropdown me-2 text-purple" id="openUserGuestPopup">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-up">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                        <path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M19 22v-6" /><path d="M22 19l-3 -3l-3 3" />
+                      </svg>
+                    </a>
+                    <a href="#" id="sendButton" class="link-secondary ms-2 text-green">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-send">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" />
+                      </svg>
+                    </a>
+                  </span>
+                </div>
               </div>
-            </div>
+            {% endif %}
           </div>
 
         </div>
@@ -191,6 +193,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const popupBody = document.getElementById("popupBody");
   const popupSearch = document.getElementById("popupSearch");
   const closeBtn = document.getElementById("popupClose");
+
+  // ===============================
+  // After defining chatInput and sendButton
+  // ===============================
+  //document.addEventListener("DOMContentLoaded", () => {
+  //  if (CURRENT_USER_ROLE === "Demo") {
+  //    chatInput.setAttribute("disabled", "true");
+  //    chatInput.placeholder = "Demo users cannot send messages";
+  //    sendButton.style.pointerEvents = "none";
+  //    sendButton.style.opacity = "0.5";
+
+  //    chatInput.addEventListener("keydown", (e) => e.preventDefault());
+  //    chatInput.addEventListener("paste", (e) => e.preventDefault());
+  //  }
+  //});
 
   const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
   const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/`);
@@ -436,15 +453,38 @@ document.addEventListener("DOMContentLoaded", () => {
       chatInput.focus();
     }
 
+    // ========= Desktop: clickdown (long press) =========
     let pressTimer;
-    ["mousedown", "touchstart"].forEach(evt => {
-      bubble.querySelector(".chat-bubble").addEventListener(evt, () => {
-        pressTimer = setTimeout(triggerReply, 500);
+    if (!("ontouchstart" in window)) {
+      bubble.querySelector(".chat-bubble").addEventListener("mousedown", () => {
+        pressTimer = setTimeout(triggerReply, 500); // 500ms hold
       });
-    });
-    ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(evt => {
-      bubble.querySelector(".chat-bubble").addEventListener(evt, () => clearTimeout(pressTimer));
-    });
+      ["mouseup", "mouseleave"].forEach(evt => {
+        bubble.querySelector(".chat-bubble").addEventListener(evt, () => clearTimeout(pressTimer));
+      });
+    }
+
+    // ========= Mobile: swipe =========
+    if ("ontouchstart" in window) {
+      let touchStartX = 0, touchEndX = 0;
+
+      bubble.querySelector(".chat-bubble").addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+
+      bubble.querySelector(".chat-bubble").addEventListener("touchend", (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+
+      function handleSwipe() {
+        const swipeDistance = touchEndX - touchStartX;
+        if (Math.abs(swipeDistance) > 50) { 
+          // 50px threshold for swipe
+          triggerReply();
+        }
+      }
+    }
 
     // ========== Click reply preview inside bubble -> scroll & highlight ==========
     bubble.querySelectorAll(".chat-reply-preview").forEach(el => {
@@ -476,9 +516,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function sendMessage(message = "", guest=selectedGuest){
     if(!message.trim() && !guest && !replyToId) return;
-    // Construct payload
+
     const payload = {
-      message: message.trim() || "",  // allow empty string for reply-only messages
+      message: message.trim() || "",
       sender_id: CURRENT_USER_ID,
       guest_id: guest ? parseInt(guest.id, 10) : null,
       reply_to_id: replyToId || null
@@ -677,21 +717,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Auto-resize function
+  // Auto-resize function with minimum height
   function autoResizeTextarea(el) {
-    el.style.height = "auto"; // reset height
-    el.style.height = el.scrollHeight + "px"; // set height to scrollHeight
+    el.style.height = "auto"; // reset
+    const newHeight = el.scrollHeight > 40 ? el.scrollHeight : 40;
+    el.style.height = newHeight + "px";
   }
 
   // Resize on input
-  chatInput.addEventListener("input", () => {
-    autoResizeTextarea(chatInput);
-  });
+  chatInput.addEventListener("input", () => autoResizeTextarea(chatInput));
 
   // Make Enter = newline only
   chatInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); // stop "submit-like" behavior
+      e.preventDefault();
       const { selectionStart, selectionEnd } = chatInput;
 
       // Insert newline at cursor
@@ -700,9 +739,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "\n" +
         chatInput.value.substring(selectionEnd);
 
-      // Move cursor to after newline
       chatInput.selectionStart = chatInput.selectionEnd = selectionStart + 1;
-
       autoResizeTextarea(chatInput);
     }
   });
@@ -712,11 +749,14 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const text = chatInput.value.trim();
     if (text) {
-      sendMessage(text);
-      chatInput.value = ""; // clear after send
-      autoResizeTextarea(chatInput);
+      sendMessage(text); // your sendMessage function
+      chatInput.value = ""; // clear input
+      autoResizeTextarea(chatInput); // reset height smoothly
     }
   });
+
+  // Initial height set
+  autoResizeTextarea(chatInput);
 
 });
 </script>
