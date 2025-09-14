@@ -488,93 +488,33 @@
     }
 }
 
-#chat-launcher {
-  position: fixed !important;
-  bottom: 1.5rem !important;
-  right: 1.5rem !important;
-  z-index: 1060 !important;
-}
+/* Popup styling */
+#userGuestPopup { position: fixed; top: 0; left:0; right:0; bottom:0; z-index:2000; }
+#userGuestPopup .popup-backdrop { position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);}
+#userGuestPopup .popup-content { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%); background:#111827; color:#fff; width:70%; max-height:80%; border-radius:8px; overflow:hidden; display:flex; flex-direction:column; }
+#userGuestPopup .popup-header { padding:0.5rem; border-bottom:1px solid #1F2937; }
+#userGuestPopup .popup-body { flex-grow:1; overflow-y:auto; padding:0.5rem; }
+.user-item { margin-bottom:0.25rem; cursor:pointer; border-radius:4px; padding:4px; }
+/*.user-item:hover { background:#333; }*/
+.guest-list { margin-left:20px; margin-top:2px; }
+.guest-item { display:flex; align-items:center; padding:2px 4px; margin-bottom:2px; cursor:pointer; border-radius:4px; }
+/*.guest-item:hover {}*/
+.guest-avatar { width:28px; height:28px; border-radius:4px; margin-right:6px; object-fit:cover; }
+.badge-assigned { background-color:#28a745; margin-left:auto; font-size:10px; padding:2px 4px; border-radius:4px; }
+.badge-unassigned { background-color:#ffc107; margin-left:auto; font-size:10px; padding:2px 4px; border-radius:4px; }
 
-#chat-launcher button {
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 24px;
-}
-
-#replyIndicator button svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+/* Reply preview styles */
+.highlight-chat-bubble {
+  box-shadow: 0 0 12px #4ade80 !important;
+  transition: box-shadow 0.3s ease-in-out;
 }
 .reply-preview {
-  border-left: 2px solid #ccc;
-  padding-left: 5px;
-  font-style: italic;
-  font-size: 0.85em;
+  background-color: #374151;
+  border-left: 4px solid #3b82f6;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
 }
-
-/* Long press overlay */
-.user-card-longpress-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 128, 0, 0.3); /* semi-transparent green */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: bold;
-  font-size: 0.9rem;
-  border-radius: 0.25rem; /* match card radius */
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none; /* allow clicks through overlay */
-  z-index: 10;
-}
-.user-card-longpress-overlay.show {
-  opacity: 1;
-}
-
-/* stronger highlight style */
-.message-bubble.highlight {
-  box-shadow: 0 0 20px rgba(255, 115, 0, 0.9) !important; /* glowing border */
-  border-radius: 10px !important;
-  transition: all 0.3s ease;
-}
-
-.date-divider-text {
-  display: inline-block;
-  background-color: #1f2937; /* dark gray */
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 5px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.637);
-  position: sticky;
-  top: 8px;       /* distance from top of chat container */
-  z-index: 10;
-}
-
-/* Ensure the flag sits inside the input and is visible */
-.phone-input-wrapper .iti {
-    width: 100%;
-}
-
-.phone-input-wrapper .iti__flag-container {
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.phone-input-wrapper .iti__selected-flag {
-    border: none;
-}
-
-.phone-input-wrapper input.phone-input {
-    padding-left: 50px; /* Adjust so text doesn't overlap the flag */
-}
-
 
 
 

@@ -73,6 +73,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
     "notifications.middleware.CurrentUserMiddleware",
+    #"accounts.middleware.OnlineNowMiddleware",
 ]
 
 if DEBUG:
@@ -139,29 +140,23 @@ else:
 # =========================
 # REDIS CHANNEL LAYER
 # =========================
-REDIS_URL = os.getenv("REDIS_URL")
-if REDIS_URL:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [REDIS_URL]},
-        }
+import os
+
+# Prefer a single REDIS_URL for simplicity (works in dev and prod)
+REDIS_URL = os.getenv("REDIS_URL", "redis://default:IIqBNcFVttmqKkKNYZyOWCJwnpKjROQi@shinkansen.proxy.rlwy.net:23122/0")
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+            # Optional: tweak capacity/expiry to reduce disconnects
+            "capacity": 1000,
+            "expiry": 60,
+        },
     }
-else:
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [
-                    {
-                        "host": os.getenv("REDIS_HOST"),
-                        "port": int(os.getenv("REDIS_PORT", 6379)),
-                        "password": os.getenv("REDIS_PASSWORD") or None,
-                    }
-                ],
-            },
-        }
-    }
+}
+
 
 # =========================
 # STATIC & MEDIA

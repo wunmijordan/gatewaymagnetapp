@@ -15,7 +15,7 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from datetime import datetime, timedelta
 from django.db.models.functions import ExtractMonth
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 import calendar
 from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
@@ -319,7 +319,7 @@ def admin_dashboard(request):
         'other_users': other_users,
         'page_title': "Admin Dashboard",
     }
-
+    #return HttpResponseForbidden("Dashboard temporarily disabled.")
     return render(request, "accounts/admin_dashboard.html", context)
 
 
@@ -558,217 +558,168 @@ def delete_group(request, group_id):
 
 
 
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from django.utils.dateparse import parse_datetime
-from django.utils.timezone import is_naive, make_aware
-from .models import ChatMessage
-from guests.models import GuestEntry
 
+import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from .models import CustomUser, ChatMessage
+from .consumers import get_user_color
 from guests.models import GuestEntry
-from .models import ChatMessage
-
-#@login_required
-#def chat_page(request):
-#    chat_messages = ChatMessage.objects.all().order_by("-created_at")[:50]
-#    chat_messages = reversed(chat_messages)
-
-#    users = request.user.__class__.objects.all()
-#    other_users_qs = User.objects.exclude(id=request.user.id)
-
-    # Build guest mapping
-#    user_guest_map = {}
-#    for u in other_users_qs:
-#        user_guest_map[u.id] = [
-#            {
-#                "id": g.id,
-#                "full_name": g.full_name,
-#                "phone": g.phone_number,
-#                "picture_url": g.picture.url if g.picture else "",
-#                "custom_id": g.custom_id,
-#                "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-#            }
-#            for g in u.assigned_guests.all()
-#        ]
-
-#    context = {
-#        "chat_messages": chat_messages,
-#        "users": users,
-#        "other_users": other_users_qs,   # for avatars
-#        "user_guest_map": user_guest_map, # for modal population
-#        "page_title": "ChatRoom",
-#    }
-#    return render(request, "accounts/chat_page.html", context)
-
-
-
+from django.core.serializers.json import DjangoJSONEncoder
+from accounts.utils import user_in_groups
 
 
 @login_required
-def send_chat_message(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Invalid method"}, status=405)
+def chat_room(request):
+    users = CustomUser.objects.all().prefetch_related('assigned_guests')
 
-    try:
-        message = request.POST.get("message", "")
-        parent = None
-        parent_id = request.POST.get("parent_id")
-        if parent_id:
-            try:
-                parent = ChatMessage.objects.get(id=int(parent_id))
-            except (ChatMessage.DoesNotExist, ValueError):
-                parent = None
+    # Get latest 50 messages
+    last_messages = ChatMessage.objects.select_related('sender','guest_card', 'parent__sender').order_by('-created_at')[:100]
+    # take last 50, oldest first
+    last_messages = reversed(last_messages)
+    def get_effective_role(user):
+        if user.is_superuser:
+            return "Superuser"
+        if user_in_groups(user, "Admin"):
+            return "Admin"
+        if user_in_groups(user, "Pastor"):
+            return "Pastor"
+        if user_in_groups(user, "Team Lead"):
+            return "Team Lead"
+        return "Team Member"
 
-        guest_card = None
-        guest_id = request.POST.get("guest_id")
-        if guest_id:
-            try:
-                guest_card = GuestEntry.objects.get(id=int(guest_id))
-            except (GuestEntry.DoesNotExist, ValueError):
-                guest_card = None
+    user_guests = [
+        {
+            "id": u.id,
+            "name": u.full_name or u.username,
+            "role": get_effective_role(u),
+            "guests": [
+                {
+                    "id": g.id,
+                    "name": g.full_name,
+                    "custom_id": g.custom_id,
+                    "image": g.picture.url if g.picture else None,
+                    "title": g.title,
+                    "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
+                    "assigned": True
+                } for g in u.assigned_guests.all()
+            ]
+        } for u in users
+    ]
 
-        attachment = request.FILES.get("attachment")
+    # Unassigned guests
+    unassigned_guests = []
+    if get_effective_role(request.user) in ["Pastor", "Team Lead", "Admin", "Superuser"]:
+        unassigned_qs = GuestEntry.objects.filter(assigned_to__isnull=True)
+        unassigned_guests = [
+            {
+                "id": g.id,
+                "name": g.full_name,
+                "custom_id": g.custom_id,
+                "image": g.picture.url if g.picture else None,
+                "title": g.title,
+                "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
+                "assigned": False
+            } for g in unassigned_qs
+        ]
 
-        chat = ChatMessage.objects.create(
-            sender=request.user,
-            message=message,
-            parent=parent,
-            attachment=attachment,
-            guest_card=guest_card
-        )
+    context = {
+        "users": [
+            {
+                "id": u.id,
+                "full_name": u.full_name,
+                "username": u.username,
+                "title": u.title,
+                "initials": u.initials,
+                "phone_number": u.phone_number,
+                "image": u.image.url if u.image else None,
+                "last_message": u.sent_chats.first().message if u.sent_chats.exists() else "No messages yet",
+                "role": get_effective_role(u),
+                "color": get_user_color(u.id),
+                "guests": [
+                    {
+                        "id": g.id,
+                        "name": g.full_name,
+                        "custom_id": g.custom_id,
+                        "image": g.picture.url if g.picture else None,
+                        "title": g.title,
+                        "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
+                        "assigned": True
+                    } for g in u.assigned_guests.all()
+                ]
+            } for u in users
+        ],
+        "users_json": json.dumps([
+            {
+                "id": u.id,
+                "full_name": u.full_name,
+                "username": u.username,
+                "title": u.title,
+                "initials": u.initials,
+                "phone_number": u.phone_number,
+                "image": u.image.url if u.image else None,
+                "last_message": u.sent_chats.first().message if u.sent_chats.exists() else "No messages yet",
+                "role": get_effective_role(u),
+                "color": get_user_color(u.id),
+                "guests": [
+                    {
+                        "id": g.id,
+                        "name": g.full_name,
+                        "custom_id": g.custom_id,
+                        "image": g.picture.url if g.picture else None,
+                        "title": g.title,
+                        "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
+                        "assigned": True
+                    } for g in u.assigned_guests.all()
+                ]
+            } for u in users
+        ], cls=DjangoJSONEncoder),
+        "user_guests_json": json.dumps(user_guests, cls=DjangoJSONEncoder),
+        "unassigned_guests_json": json.dumps(unassigned_guests, cls=DjangoJSONEncoder),
+        "last_messages_json": json.dumps([
+            {
+                "id": m.id,
+                "message": m.message,
+                "sender_id": m.sender.id,
+                "sender_title": m.sender.title,
+                "sender_name": m.sender.full_name or m.sender.username,
+                "sender_image": m.sender.image.url if m.sender.image else None,
+                "color": get_user_color(m.sender.id),
+                "created_at": m.created_at.isoformat(),
+                "guest_id": m.guest_card.id if m.guest_card else None,
+                "guest": {
+                    "id": m.guest_card.id,
+                    "name": m.guest_card.full_name,
+                    "custom_id": m.guest_card.custom_id,
+                    "image": m.guest_card.picture.url if m.guest_card.picture else None,
+                    "title": m.guest_card.title,
+                    "date_of_visit": m.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.guest_card.date_of_visit else ""
+                } if m.guest_card else None,
+                "reply_to_id": m.parent.id if m.parent else None,
+                "parent": {
+                    "id": m.parent.id,
+                    "sender_title": m.parent.sender.title,
+                    "sender_name": m.parent.sender.full_name or m.parent.sender.username,
+                    "message": m.parent.message[:50],  # truncate preview
+                    "guest": {
+                        "id": m.parent.guest_card.id,
+                        "name": m.parent.guest_card.full_name,
+                        "title": m.parent.guest_card.title,
+                        "image": m.parent.guest_card.picture.url if m.parent.guest_card.picture else None,
+                        "date_of_visit": m.parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.parent.guest_card.date_of_visit else "",
+                    } if m.parent.guest_card else None,
+                } if m.parent else None,
+            } for m in last_messages
+        ], cls=DjangoJSONEncoder),
+        "current_user_id": request.user.id,
+        "current_user_role": get_effective_role(request.user),
+        "page_title": "ChatRoom",
+    }
+    return render(request, "accounts/chat_room.html", context)
 
-        parent_message_data = None
-        if parent:
-            parent_sender = parent.sender
-            parent_guest = parent.guest_card
-            parent_message_data = {
-                "id": parent.id,
-                "message": parent.message,
-                "sender": {
-                    "id": parent_sender.id if parent_sender else None,
-                    "full_name": getattr(parent_sender, "full_name", "Deleted User") if parent_sender else "Deleted User",
-                    "title": getattr(parent_sender, "title", "") if parent_sender else "",
-                },
-                "guest_card": {
-                    "id": parent_guest.id,
-                    "title": getattr(parent_guest, "title", getattr(parent_guest, "title", "")),
-                    "name": getattr(parent_guest, "full_name", getattr(parent_guest, "name", "")),
-                    "picture": parent_guest.picture.url if parent_guest.picture else None,
-                    "phone": getattr(parent_guest, "phone_number", getattr(parent_guest, "phone", "")),
-                    "custom_id": parent_guest.custom_id,
-                    "date_of_visit": parent_guest.date_of_visit.isoformat() if parent_guest.date_of_visit else None,
-                } if parent_guest else None
-            }
-
-        return JsonResponse({
-            "id": chat.id,
-            "message": chat.message,
-            "attachment": chat.attachment.url if chat.attachment else None,
-            "guest_card": {
-                "id": guest_card.id,
-                "title": getattr(guest_card, "title", getattr(guest_card, "title", "")),
-                "name": getattr(guest_card, "full_name", getattr(guest_card, "name", "")),
-                "picture": guest_card.picture.url if guest_card.picture else None,
-                "phone": getattr(guest_card, "phone_number", getattr(guest_card, "phone", "")),
-                "custom_id": guest_card.custom_id,
-                "date_of_visit": guest_card.date_of_visit.isoformat() if guest_card.date_of_visit else None,
-            } if guest_card else None,
-            "created_at": chat.created_at.isoformat(),
-            "is_seen_by_all": chat.is_seen_by_all(),
-            "sender": {
-                "id": chat.sender.id,
-                "full_name": getattr(chat.sender, "full_name", chat.sender.username),
-                "title": getattr(chat.sender, "title", ""),
-                "role": getattr(chat.sender, "role", ""),
-            },
-            "parent": parent.id if parent else None,
-            "parent_message": parent_message_data
-        })
-
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print(tb)
-        return JsonResponse({"error": str(e), "traceback": tb}, status=500)
 
 
 
-@login_required
-def fetch_chat_messages(request):
-    after = request.GET.get("after")
-    messages = ChatMessage.objects.all().order_by("created_at")
-
-    if after:
-        dt = parse_datetime(after)
-        if dt:
-            if is_naive(dt):
-                dt = make_aware(dt)
-            messages = messages.filter(created_at__gt=dt)
-    else:
-        messages = messages.order_by("-created_at")[:50]
-        messages = list(reversed(messages))  # fix: ensure iterable is list
-
-    data = []
-    for chat in messages:
-        # Parent message handling
-        parent_message_data = None
-        if chat.parent:
-            parent_sender = chat.parent.sender
-            parent_guest = chat.parent.guest_card
-            parent_message_data = {
-                "id": chat.parent.id,
-                "message": chat.parent.message,
-                "sender": {
-                    "id": parent_sender.id if parent_sender else None,
-                    "full_name": getattr(parent_sender, "full_name", "Deleted User") if parent_sender else "Deleted User",
-                    "title": getattr(parent_sender, "title", "") if parent_sender else "",
-                },
-                "guest_card": {
-                    "id": parent_guest.id,
-                    "title": getattr(parent_guest, "title", getattr(parent_guest, "title", "")),
-                    "name": getattr(parent_guest, "full_name", getattr(parent_guest, "name", "")),
-                    "picture": parent_guest.picture.url if parent_guest.picture else None,
-                    "phone": getattr(parent_guest, "phone_number", getattr(parent_guest, "phone", "")),
-                    "custom_id": parent_guest.custom_id,
-                    "date_of_visit": parent_guest.date_of_visit.isoformat() if parent_guest.date_of_visit else None,
-                } if parent_guest else None
-            }
-
-        # Guest card handling
-        guest_card_data = None
-        if chat.guest_card:
-            guest = chat.guest_card
-            guest_card_data = {
-                "id": guest.id,
-                "title": getattr(guest, "title", getattr(guest, "title", "")),
-                "name": getattr(guest, "full_name", getattr(guest, "name", "")),
-                "picture": guest.picture.url if getattr(guest, "picture", None) else None,
-                "phone": getattr(guest, "phone_number", getattr(guest, "phone", "")),
-                "custom_id": guest.custom_id,
-                "date_of_visit": guest.date_of_visit.isoformat() if guest.date_of_visit else None,
-            }
-
-        data.append({
-            "id": chat.id,
-            "message": chat.message,
-            "attachment": chat.attachment.url if chat.attachment else None,
-            "guest_card": guest_card_data,
-            "created_at": chat.created_at.isoformat(),
-            "is_seen_by_all": chat.is_seen_by_all(),
-            "sender": {
-                "id": chat.sender.id,
-                "full_name": getattr(chat.sender, "full_name", chat.sender.username),
-                "title": getattr(chat.sender, "title", ""),
-                "role": getattr(chat.sender, "role", ""),
-            },
-            "parent": chat.parent.id if chat.parent else None,
-            "parent_message": parent_message_data
-        })
-
-    return JsonResponse({"messages": data})
 
 
 

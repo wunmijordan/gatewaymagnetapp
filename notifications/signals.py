@@ -227,7 +227,7 @@ def create_chat_notification(sender, instance, created, **kwargs):
     sender_user = instance.sender
     message_preview = instance.message[:50] or "(Attachment)"
     ts = timezone.localtime(instance.created_at).strftime("%Y-%m-%d %H:%M:%S")
-    link = reverse("accounts:chat_page")  # your chat page url name
+    link = reverse("accounts:chat_room")  # your chat page url name
 
     recipients = User.objects.exclude(id=sender_user.id)
 

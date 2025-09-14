@@ -851,13 +851,7 @@
                                 <i><small class="text-muted">{{ field.verbose_name|capfirst }}</small></i>
                               {% endif %}
                               <p class="text-base text-warning fs-3">
-                                {% if field.choices %}
-                                  {% with display_method=field.name|add:"_display" %}
-                                    {{ guest|attr:display_method|default_if_none:"" }}
-                                  {% endwith %}
-                                {% else %}
-                                  {{ guest|attr:field.name|default_if_none:"" }}
-                                {% endif %}
+                                {{ field.value|default_if_none:"" }}
                               </p>
                               <!-- Optional description -->
                               {% if field.name == "message" and field.value %}

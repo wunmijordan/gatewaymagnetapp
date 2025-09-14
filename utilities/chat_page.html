@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load group_tags %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-wrapper">
+  <!-- BEGIN PAGE HEADER -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <!-- Dynamic Page Title -->
+          <kbd class="bg-indigo-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END PAGE HEADER -->
+
+  <div class="page-body">
+    <div class="container-xl flex-fill d-flex flex-column">
+      <div class="card flex-fill">
+        <div class="row g-0 flex-fill">
+          <div class="col-12 col-lg-5 col-xl-3 border-end d-flex flex-column">
+            <div class="card-header mb-2 justify-content-center align-items-center">
+              <!-- Avatar -->
+              <span class="avatar avatar-lg bg-purple-lt d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                  <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                  <path d="M6 19v2" /><path d="M18 19v2" />
+                </svg>
+              </span>
+
+              <!-- Text -->
+              <kbd class="ms-2 bg-warning-lt"><h5>A People <em>Helped</em> By God!</h5></kbd>
+            </div>
+            
+            <div class="card-body mt-2 ps-0 p-2 scrollable ms-0 gap-2 flex-fill align-items-center justify-content-between" 
+                style="height: 800px; overflow-y: auto;">
+              <div class="nav flex-column" role="tablist">
+                {% for user in users %}
+
+                  <!-- Left: User card (click to show guest list) -->
+                  <div class="user-card text-white text-decoration-none mb-4 ms-2 me-2 position-relative" 
+                        data-user-id="{{ user.id }}"
+                        data-can-view-guests="{% if request.user|has_group:'Pastor,Team Lead,Admin' or guest.assigned_to == request.user %}true{% else %}false{% endif %}">
+                    <div class="user-body d-flex align-items-center justify-content-between">
+                      <div class="d-flex align-items-center gap-2">
+                        {% if user.image %}
+                          <span class="avatar rounded" style="background-image:url('{{ user.image.url }}'); width:40px; height:40px; background-size:cover; background-position:center;"></span>
+                        {% else %}
+                          <span class="avatar bg-grey text-white d-flex align-items-center justify-content-center rounded" style="width:40px; height:40px; font-weight:bold;">
+                            {{ user.initials }}
+                          </span>
+                        {% endif %}
+                        <div>
+                          <div class="fw-bold text-white">{{ user.title|default:'' }} {{ user.full_name }}</div>
+                        </div>
+                      </div>
+                      <div class="d-flex align-items-center">
+                        <div class="call-card text-white text-center me-2" data-phone="{{ user.phone_number|default:'' }}">
+                          <a href="tel:{{ guest.phone_number }}" class="text-green">
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="30"  height="30"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-mobile-vibration">
+                              <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                              <path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+                              <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />
+                            </svg>
+                          </a>
+                        </div>
+                        <button class="btn btn-sm btn-light toggle-guest-list" data-target="#guest-item">Guests</button>
+                      </div>
+                    </div>
+
+                    <!-- Guest dropdown menu -->
+                    <ul class="dropdown-menu" aria-labelledby="userDropdown{{ user.id }}">
+                      {% for guest in user.assigned_guests.all %}
+                        {% if request.user|has_group:"Pastor,Team Lead,Admin" or guest.assigned_to == request.user %}
+                          <li>
+                            <a href="#" class="dropdown-item guest-item"
+                              data-userid="{{ user.id }}"
+                              data-guestid="{{ guest.id }}"
+                              data-title="{{ guest.title }}"
+                              data-fullname="{{ guest.full_name }}"
+                              data-phone="{{ guest.phone_number }}"
+                              data-picture="{{ guest.picture.url|default:'' }}"
+                              data-customid="{{ guest.custom_id }}"
+                              data-date="{{ guest.date_of_visit|date:'Y-m-d' }}">
+                              {{ guest.full_name }}
+                            </a>
+                          </li>
+                        {% endif %}
+                      {% endfor %}
+                    </ul>
+                  </div>                          
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+          <div class="col-12 col-lg-7 col-xl-9 d-flex flex-column">
+            <div class="card-header justify-content-center mb-2">
+              <div class="input-icon">
+                <span class="input-icon-addon">
+                  <!-- Download SVG icon from http://tabler.io/icons/icon/search -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                    <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+                    <path d="M21 21l-6 -6"></path>
+                  </svg>
+                </span>
+                <input type="text" id="chatSearchInput" value="" class="form-control" placeholder="Search Chat" aria-label="Search">
+              </div>
+            </div>
+            <div class="card-body" style="height: 800px; overflow-y: auto;">
+              <div class="chat-messages flex-grow-1 overflow-auto mb-4 text-end ms-4 me-2" id="chatMessagesContainer">
+                {% if chat_messages %}
+                  
+                  <!-- ChatBody Render with JS -->                  
+
+                {% endif %}
+              </div>     
+              
+              <!-- Attachment preview area -->
+              <div id="attachmentPreview" class="mt-2"></div>
+
+              <!-- Reply indicator -->
+              <div id="replyIndicator" class="mb-2 ms-4 me-1 reply-preview text-white px-2 py-1 rounded-2 justify-content-between align-items-center" 
+                    style="border-left: 8px solid #018f14ff; background-color: #93db9d34; 
+                          display:none; font-style: normal; box-shadow: 0 4px 8px #0000004d;">
+                <span id="replyToName"></span>
+                <button type="button" id="clearReplyBtn" class="btn p-0 border-0 d-flex align-items-center justify-content-center" style="width:16px; height:16px;">
+                  <!-- Cancel SVG -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Chat form -->
+            <form id="chatReplyForm" class="d-flex ms-6 me-6 mt-1 mb-4">
+              {% csrf_token %}
+              <input type="hidden" name="parent_id" id="replyToId">
+              <div class="d-flex flex-column w-100">
+
+                <!-- Textarea and buttons -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <textarea id="chatInput" rows="1" class="form-control border-0 flex-grow-1 me-2" style="width: 200px;" placeholder="Type Message" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px';"></textarea>
+                  <div class="d-flex align-items-center">
+
+                    <!-- Send button -->
+                    <button type="submit" id="sendChatBtn" class="avatar bg-gray-lt border-0 text-green p-1 d-flex align-items-center justify-content-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M4.698 4.034l16.302 7.966l-16.302 7.966a.503 .503 0 0 1 -.546 -.124a.555 .555 0 0 1 -.12 -.568l2.468 -7.274l-2.468 -7.274a.555 .555 0 0 1 .12 -.568a.503 .503 0 0 1 .546 -.124z" />
+                        <path d="M6.5 12h14.5" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Guest Detail Modal -->
+<div class="modal fade modal-blur" id="chatGuestModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header align-items-center justify-content-center">
+        <h2 class="modal-title text-warning">GUEST DETAILS</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="chatGuestModalBody">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Bootstrap last 50 messages from Django
+  window.chatMessages = {{ chat_messages_for_js|safe }};
+  window.currentUserId = {{ request.user.id }};
+</script>
+
+
+
+{% endblock %}
+
+
+
+
+<div class="page-body">
+  <div class="container-xl flex-fill d-flex flex-column">
+    <div class="card flex-fill">
+      <div class="row g-0 flex-fill">
+        <div class="col-12 col-lg-5 col-xl-3 border-end d-flex flex-column">
+          <div class="card-header d-none d-md-block">
+            <div class="input-icon">
+              <span class="input-icon-addon">
+                <!-- Download SVG icon from http://tabler.io/icons/icon/search -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+                  <path d="M21 21l-6 -6"></path>
+                </svg>
+              </span>
+              <input type="text" value="" class="form-control" placeholder="Search…" aria-label="Search">
+            </div>
+          </div>
+          <div class="card-body p-0 scrollable flex-fill">
+            <div class="nav flex-column nav-pills" role="tablist">
+              <a href="#chat-1" class="nav-link text-start mw-100 p-3 active" id="chat-1-tab" data-bs-toggle="pill" role="tab" aria-selected="true">
+                <div class="row align-items-center flex-fill">
+                  <div class="col-auto"><span class="avatar avatar-1" style="background-image: url(./static/avatars/000m.jpg)"> </span></div>
+                  <div class="col text-body">
+                    <div>Paweł Kuna</div>
+                    <div class="text-secondary text-truncate w-100">Sure Paweł, let me pull the latest updates.</div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-7 col-xl-9 d-flex flex-column">
+          <div class="card-body scrollable">
+            <div class="chat">
+              <div class="chat-bubbles">
+                <div class="chat-item">
+                  <div class="row align-items-end justify-content-end">
+                    <div class="col col-lg-6">
+                      <div class="chat-bubble chat-bubble-me">
+                        <div class="chat-bubble-title">
+                          <div class="row">
+                            <div class="col chat-bubble-author">Paweł Kuna</div>
+                            <div class="col-auto chat-bubble-date">09:32</div>
+                          </div>
+                        </div>
+                        <div class="chat-bubble-body">
+                          <p>Hey guys, I just pushed a new commit on the <code>dev</code> branch. Can you have a look and tell me what you think?</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-auto"><span class="avatar avatar-1" style="background-image: url(./static/avatars/000m.jpg)"> </span></div>
+                  </div>
+                </div>
+                <div class="chat-item">
+                  <div class="row align-items-end">
+                    <div class="col-auto"><span class="avatar avatar-1" style="background-image: url(./static/avatars/002m.jpg)"> </span></div>
+                    <div class="col col-lg-6">
+                      <div class="chat-bubble">
+                        <div class="chat-bubble-title">
+                          <div class="row">
+                            <div class="col chat-bubble-author">Mallory Hulme</div>
+                            <div class="col-auto chat-bubble-date">09:34</div>
+                          </div>
+                        </div>
+                        <div class="chat-bubble-body">
+                          <p>Sure Paweł, let me pull the latest updates.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chat-item">
+                  <div class="row align-items-end">
+                    <div class="col-auto"><span class="avatar avatar-1" style="background-image: url(./static/avatars/000f.jpg)"> </span></div>
+                    <div class="col-auto">
+                      <div class="chat-bubble">
+                        <div class="chat-bubble-body">
+                          <p class="text-secondary text-italic">typing<span class="animated-dots"></span></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="input-group input-group-flat">
+              <input type="text" class="form-control" autocomplete="off" placeholder="Type message">
+              <span class="input-group-text">
+                <a href="#" class="link-secondary" data-bs-toggle="tooltip" aria-label="Clear search" data-bs-original-title="Clear search">
+                  <!-- Download SVG icon from http://tabler.io/icons/icon/mood-smile -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path>
+                    <path d="M9 10l.01 0"></path>
+                    <path d="M15 10l.01 0"></path>
+                    <path d="M9.5 15a3.5 3.5 0 0 0 5 0"></path>
+                  </svg>
+                </a>
+                <a href="#" class="link-secondary ms-2" data-bs-toggle="tooltip" aria-label="Add notification" data-bs-original-title="Add notification">
+                  <!-- Download SVG icon from http://tabler.io/icons/icon/paperclip -->
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                    <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"></path>
+                  </svg>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+const replyPreview = document.createElement("div");
+  replyPreview.id = "replyPreview";
+  replyPreview.className = "d-flex align-items-center p-2 mb-2 rounded bg-gray text-white d-none";
+  replyPreview.innerHTML = `<div id="replyPreviewText" class="mb-2 ms-4 me-1 reply-preview text-white px-2 py-1 rounded-2 justify-content-between align-items-center"
+                                style="border-left: 4px solid #018f14ff; background-color: #11182781;">
+                            </div>
+                            <button type="button" class="btn btn-sm btn-danger" id="replyCancelBtn">X</button>`;
+  chatInput.parentElement.parentElement.insertBefore(replyPreview, chatInput.parentElement);
+  const replyPreviewText = document.getElementById("replyPreviewText");
+  const replyCancelBtn = document.getElementById("replyCancelBtn");
+  replyCancelBtn.addEventListener("click", () => {
+    replyToId = null;
+    replyPreview.classList.add("d-none");
+  });
+
+<!-- Reply preview -->
+            <div id="replyPreview" class="mb-2 ms-4 me-1 reply-preview text-white px-2 py-1 rounded-2 justify-content-between align-items-center" 
+                  style="border-left: 8px solid #018f14ff; background-color: #93db9d34; 
+                        display:none; font-style: normal; box-shadow: 0 4px 8px #0000004d;">
+              <span id="replyPreviewText"></span>
+              <span id="cancelReply" class="p-0 border-0 d-flex align-items-center justify-content-center" style="width:16px; height:16px;">
+                <!-- Cancel SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </span>
+            </div>

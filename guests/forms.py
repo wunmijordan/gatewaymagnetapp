@@ -4,6 +4,9 @@ from django.core.exceptions import ValidationError
 import datetime
 from .models import FollowUpReport
 from django.utils.timezone import localdate
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class GuestEntryForm(forms.ModelForm):
@@ -29,7 +32,7 @@ class GuestEntryForm(forms.ModelForm):
 
     class Meta:
         model = GuestEntry
-        exclude = ['assigned_to', 'status', 'custom_id']
+        exclude = ['status', 'custom_id']
         widgets = {
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
@@ -55,6 +58,7 @@ class GuestEntryForm(forms.ModelForm):
             'referrer_phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Write any additional notes about the Guest here...'}),
+            'assigned_to': forms.Select(attrs={'class': 'form-select'}),
         }
         
         
@@ -73,12 +77,14 @@ class GuestEntryForm(forms.ModelForm):
             'service_attended': 'Service Attended',
             'referrer_name': 'Referrer Name',
             'referrer_phone_number': 'Referrer Phone Number',
+            'message': 'Additional Notes',
+            'assigned_to': 'Assign to Team Member',
         }
         
 
         help_texts = {
             'title': 'Title.',
-            'picture': 'Profile Picture for the Guest.',
+            'picture': 'Guest\'s Picture.',
             'gender': 'Gender.',
             'full_name': 'Full Name.',
             'phone_number': 'Phone Number.',
@@ -95,31 +101,47 @@ class GuestEntryForm(forms.ModelForm):
             'referrer_name': 'Who referred the Guest?',
             'referrer_phone_number': 'Referrer\'s Phone Number.',
             'message': 'Additional Notes.',
+            'assigned_to': 'Assign this Guest to a Team Member.',
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)  # get request.user
         super().__init__(*args, **kwargs)
 
-        
+        # ---------------------------
+        # Conditionally show assigned_to only to allowed users
+        # ---------------------------
+        if user and (user.is_superuser or user.groups.filter(name__in=['Pastor', 'Team Lead', 'Admin']).exists()):
+            # Superuser can assign to all active users
+            if user.is_superuser:
+                self.fields['assigned_to'].queryset = User.objects.filter(is_active=True)
+            else:
+                # Non-superuser admins cannot assign to superusers
+                self.fields['assigned_to'].queryset = User.objects.filter(is_active=True, is_superuser=False)
 
+            self.fields['assigned_to'].required = True
+        else:
+            # Remove field for other users
+            self.fields.pop('assigned_to', None)
 
-        # Fields that should allow blank without showing '---------' or 'None'
+        # ---------------------------
+        # Handle select fields to allow blank choices
+        # ---------------------------
         select_fields = ['title', 'marital_status', 'gender', 'purpose_of_visit',
-                         'channel_of_visit', 'service_attended', 'status', 'age_range']
+                        'channel_of_visit', 'service_attended', 'status', 'age_range', 'assigned_to']
 
         for field_name in select_fields:
             if field_name in self.fields:
-                # Replace default empty label with a real blank choice
                 choices = list(self.fields[field_name].choices)
                 if choices and choices[0][0] == '':
-                    # Replace first choice (usually '---------') with empty
                     choices[0] = ("", "")
                 else:
-                    # If no blank exists, prepend one
                     choices = [("", "")] + choices
                 self.fields[field_name].choices = choices
 
-        # Format initial date_of_visit to ISO
+        # ---------------------------
+        # Format initial date_of_visit
+        # ---------------------------
         if self.instance and self.instance.date_of_visit:
             self.fields['date_of_visit'].initial = self.instance.date_of_visit.strftime('%Y-%m-%d')
 
@@ -147,7 +169,6 @@ class GuestEntryForm(forms.ModelForm):
             return dob_parsed.strftime("%B %d")
         except ValueError:
             raise forms.ValidationError("Enter date in format: January 01")
-
 
 
 class FollowUpReportForm(forms.ModelForm):

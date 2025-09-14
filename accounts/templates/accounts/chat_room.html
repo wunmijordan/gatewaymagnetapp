@@ -1,0 +1,724 @@
+{% extends 'base.html' %}
+{% load group_tags %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+
+<div class="page-wrapper">
+  <!-- BEGIN PAGE HEADER -->
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row g-2 align-items-center">
+        <div class="col">
+          <!-- Dynamic Page Title -->
+          <kbd class="bg-indigo-lt"><h2 class="page-title">{{ page_title }}</h2></kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- END PAGE HEADER -->
+
+  <div class="page-body">
+    <div class="container-xl flex-fill d-flex flex-column">
+      <div class="card flex-fill">
+        <div class="row g-0 flex-fill">
+          <!-- LEFT COLUMN -->
+          <div class="col-12 col-lg-5 col-xl-3 border-end d-flex flex-column">
+            <div class="card-header mb-2 justify-content-center align-items-center border-0">
+              <!-- Avatar -->
+              <span class="avatar avatar-lg bg-purple-lt d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                  <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                  <path d="M6 19v2" /><path d="M18 19v2" />
+                </svg>
+              </span>
+
+              <!-- Text -->
+              <kbd class="ms-2 bg-warning-lt"><h5>A People <em>Helped</em> By God!</h5></kbd>
+            </div>
+            <div class="card-body p-0 mt-0 scrollable flex-fill" style="height: 500px; overflow-y: auto;">
+              <div class="row g-2">
+                {% for user in users %}
+                  <div class="col-12">
+                    <div class="card shadow-sm ms-2 me-2 border-0 {{ user.color }}">
+                      <div class="card-body py-2 px-3 d-flex align-items-center">
+                        <!-- Avatar -->
+                        <div class="me-3">
+                          <a href="tel:{{ user.phone_number }}">
+                            {% if user.image %}
+                              <span class="avatar rounded"
+                                    style="background-image:url('{{ user.image }}');
+                                          width:40px; height:40px;
+                                          background-size:cover;
+                                          background-position:center;">
+                              </span>
+                            {% else %}
+                              <span class="avatar d-flex align-items-center justify-content-center rounded text-white fw-bold"
+                                    style="width:40px; height:40px; font-size:0.9rem;">
+                                {{ user.initials }}
+                              </span>
+                            {% endif %}
+                          </a>
+                        </div>
+                        <!-- Name + Last Message -->
+                        <div class="flex-grow-1">
+                          <div class="fw-bold text-truncate" style="color: var(--tblr-{{ user.color }});">
+                            {{ user.title|default:"" }} {{ user.full_name }}
+                          </div>
+                          <div id="last-message-{{ user.id }}"
+                                class="text-secondary fst-italic text-truncate" 
+                                style="font-size:0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ user.last_message|default:"No messages yet"|truncatechars:28 }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="col-12 col-lg-7 col-xl-9 d-flex flex-column">
+            <div class="card-header justify-content-center border-0">
+              <div class="input-icon">
+                <span class="input-icon-addon">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-search">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" />
+                    <path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" />
+                  </svg>
+                </span>
+                <input type="text" id="chatSearch" class="form-control" 
+                      placeholder="Search Chat" aria-label="Search">
+              </div>
+            </div>
+            <div class="card-body mt-0 p-0 d-flex flex-column flex-fill">
+              <!-- Chat Container -->
+              <div class="chat-bubbles text-start ms-2 me-2" id="chatMessagesContainer" style="overflow-y:auto; height:500px; position:relative; overflow-x:hidden;"></div>
+
+              <!-- Sticky Date Header -->
+              <div id="stickyDateHeader"></div>             
+            </div>
+
+            <!-- Reply Preview -->
+            <div id="replyPreview" class="d-none d-flex mt-3 mb-0 ms-4 me-4 reply-preview text-white p-2 rounded-2 justify-content-between align-items-center" 
+                  style="border-left: 4px solid #018f14ff; background-color: #93db9d34; 
+                        font-style: normal; box-shadow: 0 4px 8px #0000004d;">
+              <span id="replyPreviewText"></span>
+              <span id="cancelReply" class="avatar text-red p-0 border-0 d-flex align-items-center justify-content-center" style="cursor:pointer;">
+                <!-- Cancel SVG -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                </svg>
+              </span>
+            </div>
+
+            <!-- Message Input -->
+            <div class="card-footer border-0">
+              <div class="input-group input-group-flat rounded-2 border-0">
+                <textarea class="form-control" 
+                          id="chatInput" 
+                          placeholder="Type Message" 
+                          rows="1" 
+                          style="resize: none; overflow: hidden;"></textarea>
+
+                <!--<input type="text" class="form-control" autocomplete="on" placeholder="Type Message" id="chatInput">-->
+                <span class="input-group-text">
+                  <!-- Attachment container trigger -->
+                  <a href="#" class="link-secondary dropdown me-2 text-purple" id="openUserGuestPopup">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-up">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M19 22v-6" /><path d="M22 19l-3 -3l-3 3" />
+                    </svg>
+                  </a>
+                  <a href="#" id="sendButton" class="link-secondary ms-2 text-green">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-send">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" />
+                    </svg>
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Central popup container -->
+<div id="userGuestPopup" class="d-none">
+  <div class="popup-backdrop"></div>
+  <div class="popup-content">
+    <div class="popup-header d-flex justify-content-between align-items-center">
+      <input type="text" id="popupSearch" placeholder="Search Officers/Guests" class="form-control flex-grow-1 me-2">
+      <span id="popupClose">
+        <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-x">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+        </svg>
+      </span>
+    </div>
+    <div class="popup-body" id="popupBody"></div>
+  </div>
+</div>
+
+<script>
+const USERS = JSON.parse('{{ users_json|escapejs }}' || '[]');
+const USER_GUESTS = JSON.parse('{{ user_guests_json|escapejs }}' || '[]');
+const UNASSIGNED_GUESTS = JSON.parse('{{ unassigned_guests_json|escapejs }}' || '[]');
+const LAST_MESSAGES = JSON.parse('{{ last_messages_json|escapejs }}' || '[]');
+const CURRENT_USER_ID = {{ current_user_id }};
+const CURRENT_USER_ROLE = "{{ current_user_role }}";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const chatContainer = document.getElementById("chatMessagesContainer");
+  const stickyDateHeader = document.getElementById("stickyDateHeader");
+  const chatInput = document.getElementById("chatInput");
+  const sendButton = document.getElementById("sendButton");
+  const searchInput = document.getElementById("chatSearch");
+  const replyPreview = document.getElementById("replyPreview");
+  const replyPreviewText = document.getElementById("replyPreviewText");
+  const cancelReply = document.getElementById("cancelReply");
+  const openBtn = document.getElementById("openUserGuestPopup");
+  const popup = document.getElementById("userGuestPopup");
+  const popupBody = document.getElementById("popupBody");
+  const popupSearch = document.getElementById("popupSearch");
+  const closeBtn = document.getElementById("popupClose");
+
+  const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/`);
+
+  function getUserColor(userId) {
+    const colors = ["bg-blue-lt text-white","bg-green-lt text-white","bg-orange-lt text-white","bg-purple-lt text-white","bg-pink-lt text-white","bg-cyan-lt text-white","bg-yellow-lt text-white","bg-red-lt text-white","bg-indigo-lt text-white","bg-teal-lt text-white","bg-lime-lt text-white","bg-amber-lt text-white","bg-fuchsia-lt text-white","bg-emerald-lt text-white","bg-violet-lt text-white","bg-rose-lt text-white","bg-sky-lt text-white","bg-orange-200 text-white","bg-purple-200 text-white","bg-pink-200 text-white"];
+    return colors[userId % colors.length];
+  }
+
+  let selectedGuest = null;
+  let replyToId = null;
+
+  // Guest Date of Visit Formatting
+  function formatGuestDate(dateStr) {
+    if (!dateStr) return "";
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateStr).toLocaleDateString(undefined, options);
+  }
+
+  // Sticky header setup
+  //const stickyDateHeader = document.getElementById("stickyDateHeader");
+  Object.assign(stickyDateHeader.style, {
+    position: "absolute",
+    top: "0px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    display: "inline-flex",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontWeight: "600",
+    fontSize: "0.9rem",
+    color: "#f59f00", // text-yellow-800
+    backgroundColor: "#343531", // bg-yellow-lt
+    boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
+    textAlign: "center",
+    justifyContent: "center",
+    margin: "0 auto",
+    transition: "opacity 0.3s ease, transform 0.3s ease",
+    zIndex: 50,
+    pointerEvents: "none",
+    opacity: "0"
+  });
+
+  let lastMessageDate = null;
+
+  // Date text formatter
+  function getDateText(date) {
+    const now = new Date();
+    const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    if (msgDay.getTime() === today.getTime()) return "Today";
+    if (msgDay.getTime() === yesterday.getTime()) return "Yesterday";
+
+    const diffTime = today.getTime() - msgDay.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 7) {
+      return msgDay.toLocaleDateString(undefined, { weekday: "long" }); // "Monday"
+    }
+
+    return msgDay.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
+
+  // Update sticky header
+  function updateStickyHeader() {
+    const children = Array.from(chatContainer.querySelectorAll(".chat-item"));
+    let headerText = "";
+    const containerRect = chatContainer.getBoundingClientRect();
+
+    for (let i = 0; i < children.length; i++) {
+      const item = children[i];
+      const dateEl = item.querySelector(".chat-bubble-date");
+      if (!dateEl) continue;
+
+      const date = new Date(dateEl.getAttribute("data-full-date"));
+      const rect = item.getBoundingClientRect();
+
+      if (rect.top <= containerRect.top + 10) {
+        headerText = getDateText(date);
+      }
+    }
+
+    if (headerText) {
+      stickyDateHeader.textContent = headerText;
+      stickyDateHeader.style.opacity = "1";
+      stickyDateHeader.style.transform = "translate(-50%, 0)";
+    } else {
+      stickyDateHeader.style.opacity = "0";
+    }
+  }
+  chatContainer.addEventListener("scroll", updateStickyHeader);
+
+  // Append Message
+  function appendMessage(data) {
+    console.log("Incoming message:", data);
+    const isMe = data.sender_id === CURRENT_USER_ID;
+
+    const msgDateObj = new Date(data.created_at);
+    const msgDay = new Date(msgDateObj.getFullYear(), msgDateObj.getMonth(), msgDateObj.getDate());
+
+    if (!lastMessageDate || msgDay.getTime() !== lastMessageDate.getTime()) {
+      lastMessageDate = msgDay;
+      const separator = document.createElement("div");
+      separator.classList.add("chat-date-separator", "mb-2");
+      Object.assign(separator.style, {
+        display: "inline-block",
+        padding: "2px 12px",
+        borderRadius: "20px",
+        fontWeight: "500",
+        fontSize: "0.8rem",
+        color: "#f59f00",
+        backgroundColor: "#343531",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
+        textAlign: "center",
+        margin: "0 auto"
+      });
+      separator.textContent = getDateText(msgDay);
+      chatContainer.appendChild(separator);
+    }
+
+    const bubbleColorClass = isMe ? "bg-green-lt text-white" : data.color;
+
+    const bubble = document.createElement("div");
+    bubble.classList.add("chat-item");
+    bubble.id = `chat-bubble-${data.id}`;
+
+    // Reply preview (with guest if available)
+    const replyHTML = data.parent
+      ? `<div class="chat-reply-preview text-muted fs-7 mb-1 p-1 rounded"
+              data-parent-id="${data.parent.id}"
+              style="cursor:pointer; background:#1f2937; 
+              border-left:4px solid #018f14ff; max-width:90%;
+              box-shadow: 0 4px 8px #0000004d;">
+            <small class="text-muted">${data.parent.sender_title} ${data.parent.sender_name}</small><br> 
+            <span class="text-green">${data.parent.message.length > 50 ? data.parent.message.substring(0, 50) + "..." : data.parent.message}</span>
+            ${
+              data.parent.guest
+                ? `<div class="d-flex align-items-center mt-1">
+                    ${
+                      data.parent.guest.image
+                        ? `<img src="${data.parent.guest.image}" 
+                                  style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
+                        : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
+                                  style="width:35px;height:35px;border-radius:4px;">${data.parent.guest.name[0]}</span>`
+                    }
+                    <span class="ms-2 text-warning">${data.parent.guest.title} ${data.parent.guest.name}</span>
+                  </div>`
+                : ""
+            }
+        </div>`
+      : "";
+
+    let guestHTML = "";
+    if (data.guest) {
+      const formattedGuestDate = formatGuestDate(data.guest.date_of_visit);
+      guestHTML = `
+        <div class="chat-guest-card text-white px-2 py-2 rounded-2 d-flex flex-column align-items-center gap-2"
+             style="box-shadow: 0 4px 8px #0000004d; background-color: #11182781;">
+          ${data.guest.image
+              ? `<img src="${data.guest.image}" alt="${data.guest.name}" 
+                      style="width:200px; height:200px; object-fit:cover; border-radius:6px;
+                      box-shadow: 0 4px 8px #000000a1;">`
+              : `<div class="avatar bg-gray d-flex align-items-center justify-content-center fs-2 fw-bold"
+                    style="width:200px; height:200px; border-radius:6px;
+                    box-shadow: 0 4px 8px #000000a1;">
+                  ${data.guest.name ? data.guest.name[0].toUpperCase() : "?"}
+                </div>`}
+          <div class="text-center mt-2">
+            <div class="fw-bold fs-3 text-warning">${data.guest.title} ${data.guest.name}</div>
+            <div class="text-muted">${data.guest.custom_id}</div>
+            <div>${formattedGuestDate}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    const avatarHTML = data.sender_image
+      ? `<span class="avatar rounded" style="background-image:url('${data.sender_image}'); width:40px; height:40px; background-size:cover; background-position:center;"></span>`
+      : `<span class="avatar ${data.color} d-flex align-items-center justify-content-center rounded"
+              style="width:40px; height:40px; font-weight:bold;">
+          ${data.sender_name.split(' ').map(n => n[0])[0] || data.sender_name[0]}
+        </span>`;
+
+    bubble.innerHTML = `
+      <div class="d-flex align-items-end ${isMe ? "justify-content-end" : ""}">
+        ${!isMe ? `<div class="me-2">${avatarHTML}</div>` : ""}
+        <div class="chat-bubble mb-4 ${isMe ? 'chat-bubble-me' : ""} ${bubbleColorClass}"
+            style="box-shadow: 0 4px 8px #0000004d; display: inline-flex; flex-direction: 
+            column; align-items: flex-start; cursor: pointer; max-width: 75%; 
+            border-radius: 12px;">
+          <div class="chat-bubble-title">
+            <small class="chat-bubble-author text-muted">${data.sender_title} ${data.sender_name}</small>
+          </div>
+          <div class="chat-bubble-body w-100" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            ${replyHTML}
+            ${guestHTML}
+            <div class="fs-3">
+              ${data.message}
+            </div>
+            <small class="chat-bubble-date text-muted ms-2"
+                  style="white-space: nowrap; font-size: 0.75rem; align-self: flex-end;" 
+                  data-full-date="${data.created_at}">
+              ${new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+            </small>
+          </div>
+        </div>
+        ${isMe ? `<div class="ms-2">${avatarHTML}</div>` : ""}
+      </div>
+    `;
+    chatContainer.appendChild(bubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    updateStickyHeader();
+
+    // 🔥 Update last message preview in user list (left column)
+    const lastMsgEl = document.getElementById(`last-message-${data.sender_id}`);
+    if (lastMsgEl) {
+      let preview = data.message && data.message.trim() ? data.message : "(Attachment)";
+      if (preview.length > 28) preview = preview.slice(0, 28) + "…";
+      lastMsgEl.textContent = preview;
+    }
+
+    // ========== Long press to trigger reply ==========
+    function triggerReply() {
+      replyToId = data.id;
+      replyPreview.classList.remove("d-none");
+      replyPreviewText.innerHTML = `<small class="text-muted">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
+
+      if (data.guest) {
+        replyPreviewText.innerHTML += `
+          <div class="d-flex align-items-center mt-1">
+            ${
+              data.guest.image
+                ? `<img src="${data.guest.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
+                : `<span class="avatar bg-gray d-flex align-items-center justify-content-center" 
+                      style="width:35px;height:35px;border-radius:4px;">${data.guest.name[0]}</span>`
+            }
+            <span class="ms-2 text-warning">${data.guest.title} ${data.guest.name}</span>
+          </div>`;
+      }
+      chatInput.focus();
+    }
+
+    let pressTimer;
+    ["mousedown", "touchstart"].forEach(evt => {
+      bubble.querySelector(".chat-bubble").addEventListener(evt, () => {
+        pressTimer = setTimeout(triggerReply, 500);
+      });
+    });
+    ["mouseup", "mouseleave", "touchend", "touchcancel"].forEach(evt => {
+      bubble.querySelector(".chat-bubble").addEventListener(evt, () => clearTimeout(pressTimer));
+    });
+
+    // ========== Click reply preview inside bubble -> scroll & highlight ==========
+    bubble.querySelectorAll(".chat-reply-preview").forEach(el => {
+      el.addEventListener("click", () => {
+        const parentEl = document.getElementById(`chat-bubble-${el.dataset.parentId}`);
+        if (parentEl) {
+          parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
+          
+          // ✅ apply highlight directly to bubble div
+          const bubbleEl = parentEl.querySelector(".chat-bubble");
+          if (bubbleEl) {
+            bubbleEl.classList.add("highlight-chat-bubble");
+            setTimeout(() => bubbleEl.classList.remove("highlight-chat-bubble"), 2000);
+          }
+        }
+      });
+    });
+
+    if (cancelReply) {
+      cancelReply.addEventListener("click", () => {
+        replyToId = null;
+        replyPreview.classList.add("d-none");
+        replyPreviewText.innerHTML = ""; // clear text
+      });
+    }
+  }
+
+  LAST_MESSAGES.forEach(appendMessage);
+
+  function sendMessage(message = "", guest=selectedGuest){
+    if(!message.trim() && !guest && !replyToId) return;
+    // Construct payload
+    const payload = {
+      message: message.trim() || "",  // allow empty string for reply-only messages
+      sender_id: CURRENT_USER_ID,
+      guest_id: guest ? parseInt(guest.id, 10) : null,
+      reply_to_id: replyToId || null
+    };
+
+    if(guest){
+      payload.guest = {
+        id: parseInt(guest.id,10),
+        name: guest.name,
+        custom_id: guest.custom_id,
+        image: guest.image,
+        title: guest.title,
+        date_of_visit: guest.date_of_visit
+      };
+    }
+
+    console.log("Sending message payload:", payload);
+    chatSocket.send(JSON.stringify(payload));
+    chatInput.value = "";
+    removeGuestPreview();
+    replyToId = null;
+    replyPreview.classList.add("d-none");
+  }
+
+  function createGuestPreview(guest){
+    removeGuestPreview();
+    selectedGuest = guest;
+
+    const preview = document.createElement("div");
+    preview.id = "guestPreview";
+    preview.classList.add("d-flex","align-items-center","text-white","border-0","p-2","mb-2","rounded-2","bg-gray-900");
+    preview.innerHTML = `
+      ${guest.image
+        ? `<img src="${guest.image}" style="width:70px;height:70px;border-radius:4px;object-fit:cover;margin-right:10px;">`
+        : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
+                  style="width:70px;height:70px;border-radius:4px;margin-right:10px;">${guest.name[0]}</span>`}
+
+      <div class="flex-grow-1">
+        <strong class="text-warning">${guest.title} ${guest.name}</strong><br> (${guest.custom_id})<br>
+        ${guest.date_of_visit}
+      </div>
+      <span id="cancelGuestPreview" class="avatar text-red p-0 border-0 d-flex align-items-center justify-content-center" style="width:24px; height:24px; cursor:pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+        </svg>
+      </span>
+    `;
+    chatInput.parentElement.parentElement.insertBefore(preview, chatInput.parentElement);
+
+    document.getElementById("cancelGuestPreview").addEventListener("click", removeGuestPreview);
+    chatInput.focus();
+  }
+
+  function removeGuestPreview(){
+    const preview = document.getElementById("guestPreview");
+    if(preview) preview.remove();
+    selectedGuest = null;
+  }
+
+  chatInput.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(chatInput.value); });
+  sendButton.addEventListener("click", e => { e.preventDefault(); sendMessage(chatInput.value); });
+
+  chatSocket.onmessage = e => appendMessage(JSON.parse(e.data));
+
+  // ==========================
+  // Central User/Guest Popup
+  // ==========================
+  openBtn.addEventListener("click", () => { popup.classList.remove("d-none"); renderList(""); });
+  closeBtn.addEventListener("click", () => popup.classList.add("d-none"));
+  popup.querySelector(".popup-backdrop").addEventListener("click", () => popup.classList.add("d-none"));
+  popupSearch.addEventListener("input", e => renderList(e.target.value));
+
+  function renderList(filter) {
+    popupBody.innerHTML = "";
+
+    const userGuestsMap = {};
+    USER_GUESTS.forEach(u => userGuestsMap[u.id] = u.guests || []);
+
+    let visibleUsers = [];
+
+    if (CURRENT_USER_ROLE === "Superuser") {
+      visibleUsers = USERS;  // Superuser sees all
+    } else if (["Pastor","Team Lead","Admin"].includes(CURRENT_USER_ROLE)) {
+      visibleUsers = USERS.filter(u => u.role !== "Superuser");  // others see all except superusers
+    } else {
+      visibleUsers = USERS.filter(u => u.id === CURRENT_USER_ID); // regular users only see self
+    }
+
+    console.log("Current Role:", CURRENT_USER_ROLE);
+    console.log("Visible Users:", visibleUsers.map(u => `${u.full_name} (${u.role})`));
+
+    visibleUsers.forEach(user => {
+      const assignedGuests = userGuestsMap[user.id] || [];
+      let allGuests = [...assignedGuests];
+
+      // Add unassigned guests only under *self* if privileged
+      if (
+        user.id === CURRENT_USER_ID &&
+        ["Pastor","Team Lead","Admin","Superuser"].includes(CURRENT_USER_ROLE)
+      ) {
+        allGuests = allGuests.concat(UNASSIGNED_GUESTS);
+      }
+
+      const userMatches = user.full_name.toLowerCase().includes(filter.toLowerCase());
+      const filteredGuests = allGuests.filter(g =>
+        g.name.toLowerCase().includes(filter.toLowerCase())
+      );
+
+      const userColorClass = getUserColor(user.id);
+
+      if (userMatches || filteredGuests.length > 0) {
+        const userDiv = document.createElement("div");
+        userDiv.classList.add("user-item");
+        userDiv.innerHTML = `
+          <div class="d-flex align-items-center gap-2 p-2">
+            ${user.image
+              ? `<img src="${user.image}" alt="${user.full_name}" 
+                      style="width:32px; height:32px; object-fit:cover; border-radius:6px;">`
+              : `<div class="avatar ${userColorClass} bg-gray d-flex align-items-center justify-content-center fs-2 fw-bold"
+                    style="width:32px; height:32px; border-radius:6px;">
+                  ${user.full_name ? user.full_name[0].toUpperCase() : "?"}
+                </div>`}           
+            <strong class="flex-grow-1 ${userColorClass} p-1 rounded">
+              ${user.title ? user.title + " " : ""} ${user.full_name}
+            </strong>
+          </div>
+        `;
+        popupBody.appendChild(userDiv);
+
+        const guestContainer = document.createElement("div");
+        guestContainer.classList.add("guest-list");
+        guestContainer.style.display = "none";
+
+        // After creating guestContainer
+        if (filteredGuests.length > 0) {
+          filteredGuests.forEach(g => {
+            const guestItem = document.createElement("div");
+            guestItem.classList.add("guest-item");
+
+            const avatar = g.image 
+              ? `<img src="${g.image}" class="guest-avatar" style="width:50px;height:50px;border-radius:4px;object-fit:cover;margin-right:10px;">`
+              : `<div class="guest-avatar bg-gray-900 d-flex align-items-center justify-content-center" style="width:50px;height:50px;border-radius:4px;font-size:12px;font-weight:bold;color:white;">
+                  ${g.name.split(" ").map(n => n[0]).join('')}
+                </div>`;
+
+            const badge = g.assigned
+              ? '<span class="badge-assigned bg-green-lt text-white">Assigned</span>'
+              : '<span class="badge-unassigned bg-red-lt text-white">Unassigned</span>';
+
+            guestItem.innerHTML = `<div class="col-12 me-3 mb-2">
+                                    <div class="card shadow-sm border-0">
+                                      <div class="card-body py-2 px-3 d-flex align-items-center">
+                                        <div class="me-3">${avatar}</div>
+                                        <div class="flex-grow-1">
+                                          <span>${g.title ? g.title+" " : ""}${g.name}</span>
+                                          ${badge}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>`;
+            guestItem.addEventListener("click", () => {
+              createGuestPreview(g);
+              popup.classList.add("d-none");
+            });
+            guestContainer.appendChild(guestItem);
+          });
+        } else {
+          // Show "No Guests Assigned Yet"
+          const emptyMsg = document.createElement("div");
+          emptyMsg.classList.add("text-muted", "px-3", "py-2", "fst-italic");
+          emptyMsg.innerText = "No Guests Assigned Yet";
+          guestContainer.appendChild(emptyMsg);
+        }
+
+        popupBody.appendChild(guestContainer);
+
+        userDiv.addEventListener("click", () => {
+          guestContainer.style.display = guestContainer.style.display === "none" ? "block" : "none";
+        });
+      }
+    });
+  }
+
+  //Chat Live Search
+  searchInput.addEventListener("input", function () {
+    const query = this.value.toLowerCase().trim();
+    const chatItems = chatContainer.querySelectorAll(".chat-item");
+
+    chatItems.forEach(item => {
+      const text = item.innerText.toLowerCase();
+      if (text.includes(query)) {
+        item.style.display = "";   // show
+      } else {
+        item.style.display = "none"; // hide
+      }
+    });
+  });
+
+  // Auto-resize function
+  function autoResizeTextarea(el) {
+    el.style.height = "auto"; // reset height
+    el.style.height = el.scrollHeight + "px"; // set height to scrollHeight
+  }
+
+  // Resize on input
+  chatInput.addEventListener("input", () => {
+    autoResizeTextarea(chatInput);
+  });
+
+  // Make Enter = newline only
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // stop "submit-like" behavior
+      const { selectionStart, selectionEnd } = chatInput;
+
+      // Insert newline at cursor
+      chatInput.value =
+        chatInput.value.substring(0, selectionStart) +
+        "\n" +
+        chatInput.value.substring(selectionEnd);
+
+      // Move cursor to after newline
+      chatInput.selectionStart = chatInput.selectionEnd = selectionStart + 1;
+
+      autoResizeTextarea(chatInput);
+    }
+  });
+
+  // Send only with Send button
+  sendButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    const text = chatInput.value.trim();
+    if (text) {
+      sendMessage(text);
+      chatInput.value = ""; // clear after send
+      autoResizeTextarea(chatInput);
+    }
+  });
+
+});
+</script>
+
+{% endblock %}

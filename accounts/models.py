@@ -54,7 +54,6 @@ class CustomUser(AbstractUser):
     return self.assigned_guests.count() if hasattr(self, 'assigned_guests') else 0
 
 
-
 class ChatMessage(models.Model):
   sender = models.ForeignKey(
       settings.AUTH_USER_MODEL,  # explicitly using CustomUser
@@ -84,6 +83,9 @@ class ChatMessage(models.Model):
       related_name='seen_chats',
       blank=True
   )
+
+  class Meta:
+        ordering = ['-created_at']
 
   def __str__(self):
       return f"Message #{self.id} by {self.sender.full_name or self.sender.username}"

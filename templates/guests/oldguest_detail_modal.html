@@ -198,3 +198,117 @@
   <path d="M11.5 13.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
   <path d="M7 15v-6" /><path d="M15.5 12h3" /><path d="M17 10.5v3" />
 </svg>
+
+
+
+
+
+
+ <!--
+            <div class="card-body mt-2 ps-0 p-2 scrollable ms-0 flex-fill align-items-center justify-content-between" style="height: 800px; overflow-y: auto;">
+              <div class="nav flex-column" role="tablist">
+                <div class="row g-2 align-items-center flex-column">
+                  {% for user in users %}
+                    <div class="col-12 mb-2 me-2">
+                      <div class="row g-2 align-items-center">
+
+
+                        <div class="col-8">
+                          <div class="timeline w-auto">
+                            <div class="timeline-events list-unstyled">
+                              <div class="timeline-event mb-1 w-auto">
+                                
+                                !--Make whole card dropdown trigger --
+                                <a href="#" 
+                                  class="card dropup timeline-event-card user-card text-white text-decoration-none"
+                                  id="userDropdown{{ user.id }}" 
+                                  data-bs-toggle="dropdown" 
+                                  aria-expanded="false"
+                                  data-userid="{{ user.id }}"
+                                  data-can-view-guests="{% if request.user|has_group:'Pastor,Team Lead,Admin' or guest.assigned_to == request.user %}true{% else %}false{% endif %}">
+                                  <div class="card-body d-flex align-items-center gap-2">
+                                    
+                                    {% if user.image %}
+                                      <span class="avatar avatar-1 rounded mx-1"
+                                            style="background-image: url('{{ user.image.url }}');
+                                                  display:inline-block; width:36px; height:36px;
+                                                  background-size:cover; background-position:center;
+                                                  margin-right:6px; box-shadow:0 2px 8px #15945433;">
+                                      </span>
+                                    {% else %}
+                                      <span class="avatar avatar-1 bg-grey text-white d-inline-flex align-items-center justify-content-center rounded"
+                                            style="width:36px; height:36px; font-weight:bold; font-size:16px; 
+                                                  margin-right:6px; box-shadow:0 2px 8px #15945433;">
+                                        {{ user.initials }}
+                                      </span>
+                                    {% endif %}
+                                    
+                                    <h4 class="mb-1">{{ user.title|default:'' }} {{ user.full_name }}</h4>
+                                  </div>
+                                
+
+                                  !-- Dropdown menu --
+                                  <ul class="dropdown-menu" aria-labelledby="userDropdown{{ user.id }}">
+                                    {% for guest in user.assigned_guests.all %}
+                                      {% if request.user|has_group:"Pastor,Team Lead,Admin" or guest.assigned_to == request.user or guest.full_name == "Wunmi Jordan" %}
+                                        <li>
+                                          <a href="#" class="dropdown-item guest-item" 
+                                            data-userid="{{ user.id }}"
+                                            data-guestid="{{ guest.id }}"
+                                            data-title="{{ guest.title }}"
+                                            data-fullname="{{ guest.full_name }}"
+                                            data-phone="{{ guest.phone_number }}"
+                                            data-picture="{{ guest.picture.url|default:'' }}"
+                                            data-customid="{{ guest.custom_id }}"
+                                            data-date="{{ guest.date_of_visit|date:'Y-m-d' }}">
+                                            {{ guest.full_name }}
+                                          </a>
+                                        </li>
+                                      {% endif %}
+                                    {% endfor %}
+                                  </ul>
+                                </a>
+
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        !-- Right: Call card --
+                        <div class="col-auto">
+                          <div class="card call-card text-white text-center" data-phone="{{ user.phone_number|default:'' }}">
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                              <span class="avatar avatar-sm bg-green-lt">
+                                <a href="tel:{{ guest.phone_number }}" class="text-green">
+                                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-mobile-vibration">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
+                                    <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />
+                                  </svg>
+                                </a>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+            -->
+
+
+
+
+<!-- Device file attachment -->
+                    {% if request.user.is_superuser %}
+                      <label for="fileAttachment" class="avatar bg-gray-lt border-0 me-2 text-purple p-1 d-flex align-items-center justify-content-center" title="Attach File">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                          <path d="M15 7l-6.5 6.5a1.5 1.5 0 0 0 3 3l6.5 -6.5a3 3 0 0 0 -6 -6l-6.5 6.5a4.5 4.5 0 0 0 9 9l6.5 -6.5"/>
+                        </svg>
+                      </label>
+                      <input type="file" id="fileAttachment" class="d-none">
+                    {% endif %}

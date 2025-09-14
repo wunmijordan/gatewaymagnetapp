@@ -15,6 +15,15 @@ def unread_notifications(request):
     return {"unread_notifications": [], "unread_count": 0}
 
 
+def user_settings(request):
+    if request.user.is_authenticated:
+        settings = getattr(request.user, "settings", None)
+        return {
+            "settings": settings,
+            "sound_choices": UserSettings.SOUND_CHOICES,
+        }
+    return {}
+
 
 #def user_settings(request):
 #    if request.user.is_authenticated:
@@ -27,14 +36,3 @@ def unread_notifications(request):
 #            "sound_choices": UserSettings.SOUND_CHOICES,
 #        }
 #    return {}
-
-
-
-def user_settings(request):
-    if request.user.is_authenticated:
-        settings = getattr(request.user, "settings", None)
-        return {
-            "settings": settings,
-            "sound_choices": UserSettings.SOUND_CHOICES,
-        }
-    return {}

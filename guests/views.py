@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse, Http404, HttpResponseForbidden
 from .models import GuestEntry, FollowUpReport, SocialMediaEntry, Review
 from .forms import GuestEntryForm, FollowUpReportForm
 import csv
@@ -291,6 +291,7 @@ def dashboard_view(request):
         "other_users": other_users,
         "page_title": "Dashboard"
     }
+    #return HttpResponseForbidden("Dashboard temporarily disabled.")
     return render(request, "guests/dashboard.html", context)
 
 
@@ -369,6 +370,7 @@ def top_services_data(request):
     for item in data:
         item['percent'] = round((item['count'] / total) * 100, 1)
 
+    #return JsonResponse({"disabled": True})
     return JsonResponse({'services': data})
 
 
@@ -404,6 +406,7 @@ def channel_breakdown(request):
         }
         for item in qs
     ]
+    #return JsonResponse({"disabled": True})
     return JsonResponse(data, safe=False)
 
 
@@ -535,6 +538,12 @@ def guest_list_view(request):
                     dt_value = make_aware(dt_value)
                 delta = timesince(dt_value, now())
                 time_since = delta.split(",")[0]  # only the first unit (e.g., "3 days")
+
+            # if this field has choices, use the display method
+            if field.choices:
+                display_value = getattr(guest, f"get_{field.name}_display")()
+            else:
+                display_value = value
 
             fields.append({
                 "name": field.name,
@@ -698,7 +707,7 @@ def guest_detail_api(request, guest_id):
 def create_guest(request):
 
     if request.method == 'POST':
-        form = GuestEntryForm(request.POST, request.FILES)
+        form = GuestEntryForm(request.POST or None, request.FILES or None, user=request.user)
         social_media_types = request.POST.getlist('social_media_type[]')
         social_media_handles = request.POST.getlist('social_media_handle[]')
         social_media_entries = []
@@ -740,7 +749,7 @@ def create_guest(request):
         })
 
     else:
-        form = GuestEntryForm()
+        form = GuestEntryForm(user=request.user)
         return render(request, 'guests/guest_form.html', {
             'form': form,
             'edit_mode': False,
@@ -833,7 +842,7 @@ def edit_guest(request, pk):
                 return redirect('guest_list')
 
     else:
-        form = GuestEntryForm(instance=guest)
+        form = GuestEntryForm(instance=guest, user=request.user)
 
         # 🔒 Lock the field in UI (read-only)
         if guest.full_name == "Wunmi Jordan":

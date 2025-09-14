@@ -309,28 +309,21 @@ document.addEventListener('DOMContentLoaded', () => {
      1️⃣1️⃣ NOTIFICATIONS
      ========================= */
   (() => {
-    let lastNotifIds = new Set();
+    let notifSocket = null;
+    let audioUnlocked = false;
 
     const notifSound = document.getElementById("notifSound");
     const previewAudio = document.getElementById("previewSound");
-    const { userSound, soundMap } = window.djangoData || {};
-    let audioUnlocked = false;
+    const settingsForm = document.getElementById("notif-settings-form");
+    const soundSelect = document.getElementById("id_notification_sound");
+    const previewBtn = document.getElementById("preview-sound-btn");
 
-    // Unlock audio on first user interaction
-    function unlockAudio() {
-      if (audioUnlocked) return;
-      [notifSound, previewAudio].forEach(audio => {
-        audio.volume = 0;
-        audio.play()
-          .then(() => { audio.pause(); audio.currentTime = 0; audio.volume = 1; })
-          .catch(() => {});
-      });
-      audioUnlocked = true;
-      console.log("✅ Audio unlocked");
-    }
+    const { userSound, soundMap, urls, csrfToken, settings } = window.djangoData || {};
+    let vibrationEnabled = settings?.vibration_enabled || false;
 
-    ["click", "keydown", "touchstart"].forEach(evt => document.addEventListener(evt, unlockAudio, { once: true }));
-
+    // =========================
+    // SOUND HANDLING
+    // =========================
     function setNotificationSound(soundKey) {
       const src = soundMap[soundKey] || Object.values(soundMap)[0];
       notifSound.src = src;
@@ -338,116 +331,167 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     setNotificationSound(userSound);
 
+    function unlockAudio() {
+      if (audioUnlocked) return;
+      [notifSound, previewAudio].forEach(audio => {
+        audio.volume = 0;
+        audio.play()
+          .then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+            audio.volume = 1;
+          })
+          .catch(() => {});
+      });
+      audioUnlocked = true;
+      console.log("✅ Audio unlocked");
+    }
+    ["click", "keydown", "touchstart"].forEach(evt =>
+      document.addEventListener(evt, unlockAudio, { once: true })
+    );
+
     function playNotifSound() {
       if (!audioUnlocked) return;
       notifSound.currentTime = 0;
-      notifSound.play().catch(err => console.warn("🔇 Notification blocked:", err));
+      notifSound.play().catch(err =>
+        console.warn("🔇 Notification blocked:", err)
+      );
     }
 
-    // ====== Fetch and Poll Notifications ======
-    const notifCsrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-    async function fetchUnreadNotifications(playSound = true) {
-      try {
-        const res = await fetch("/notifications/api/unread/");
-        const data = await res.json();
-        const notifList = document.getElementById("notif-list");
-        let badge = document.getElementById("notif-badge");
-        if (!notifList) return;
-
-        notifList.innerHTML = data.length ? '' : '<div class="list-group-item">No new notifications</div>';
-
-        if (data.length && !badge) {
-          const bell = document.querySelector('.nav-link[data-bs-toggle="dropdown"]');
-          if (bell) {
-            badge = document.createElement("span");
-            badge.id = "notif-badge";
-            badge.className = "badge bg-red text-light";
-            bell.appendChild(badge);
-          }
-        }
-
-        let newIds = new Set(data.map(n => n.id));
-        let hasNew = [...newIds].some(id => !lastNotifIds.has(id));
-        lastNotifIds = newIds;
-
-        data.forEach(n => {
-          const item = document.createElement("div");
-          item.className = "list-group-item notif-item";
-          item.dataset.id = n.id;
-          item.innerHTML = `
-            <div class="row align-items-center">
-              <div class="col-auto">
-                <span class="status-dot status-dot-animated ${n.is_urgent ? 'bg-red' : n.is_success ? 'bg-green' : 'bg-gray'} d-block"></span>
-              </div>
-              <div class="col">
-                <a href="${n.link || '#'}" class="text-body d-block notif-link text-truncate">${n.title}</a>
-                <div class="d-block text-secondary mt-n1 notif-description" data-full="${n.description}">
-                  ${n.description.length > 150 ? n.description.slice(0, 150) + ' <a href="#" class="show-more">...more</a>' : n.description}
-                </div>
-              </div>
-            </div>
-          `;
-          notifList.appendChild(item);
-          item.querySelector(".notif-link")?.addEventListener("click", async e => {
-            e.preventDefault();
-            try {
-              const res = await fetch(`/notifications/mark-read/${n.id}/`, {
-                method: "POST",
-                headers: { "X-CSRFToken": notifCsrfToken }
-              });
-              if (res.ok) {
-                item.remove();
-                if (!notifList.children.length) {
-                  notifList.innerHTML = '<div class="list-group-item">No new notifications</div>';
-                  badge?.remove();
-                }
-                if (n.link) window.location.href = n.link;
-              }
-            } catch (err) { console.error("Failed to mark notification as read", err); }
-          });
-        });
-
-        if (badge) badge.textContent = data.length;
-
-        if (playSound && audioUnlocked && hasNew) playNotifSound();
-
-      } catch (err) { console.error("Failed to fetch notifications", err); }
-    }
-
-    let notificationInterval = null;
-
-    function startPolling() {
-      if (notificationInterval) return;
-
-      // First fetch without sound to populate existing notifications
-      fetchUnreadNotifications(false);
-
-      // Start interval for subsequent polls with sound
-      notificationInterval = setInterval(() => fetchUnreadNotifications(true), 10000);
-    }
-
-    function stopPolling() {
-      if (notificationInterval) {
-        clearInterval(notificationInterval);
-        notificationInterval = null;
+    function vibrate() {
+      if (vibrationEnabled && "vibrate" in navigator) {
+        navigator.vibrate([200, 100, 200]); // buzz–pause–buzz pattern
       }
     }
 
-    document.addEventListener("visibilitychange", () => {
-      document.hidden ? stopPolling() : startPolling();
-    });
-    startPolling();
+    // =========================
+    // WEBSOCKET HANDLING
+    // =========================
+    function connectNotifSocket() {
+      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+      const socketUrl = `${protocol}://${window.location.host}/ws/notifications/`;
+      notifSocket = new WebSocket(socketUrl);
 
+      notifSocket.onopen = () =>
+        console.log("🔌 Notifications socket connected");
+
+      notifSocket.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data.type === "notification") {
+          renderNotification(data.content);
+          playNotifSound();
+          vibrate();
+        }
+      };
+
+      notifSocket.onclose = () => {
+        console.warn("❌ Notifications socket closed. Reconnecting in 5s...");
+        setTimeout(connectNotifSocket, 5000);
+      };
+    }
+
+    function renderNotification(n) {
+      const notifList = document.getElementById("notif-list");
+      let badge = document.getElementById("notif-badge");
+      if (!notifList) return;
+
+      if (!badge) {
+        const bell = document.querySelector('.nav-link[data-bs-toggle="dropdown"]');
+        if (bell) {
+          badge = document.createElement("span");
+          badge.id = "notif-badge";
+          badge.className = "badge bg-red text-light";
+          bell.appendChild(badge);
+        }
+      }
+
+      const item = document.createElement("div");
+      item.className = "list-group-item notif-item";
+      item.dataset.id = n.id;
+      item.innerHTML = `
+        <div class="row align-items-center">
+          <div class="col-auto">
+            <span class="status-dot status-dot-animated ${
+              n.is_urgent ? "bg-red" : n.is_success ? "bg-green" : "bg-gray"
+            } d-block"></span>
+          </div>
+          <div class="col">
+            <a href="${n.link || "#"}" class="text-body d-block notif-link text-truncate">${n.title}</a>
+            <div class="d-block text-secondary mt-n1 notif-description" data-full="${n.description}">
+              ${n.description.length > 150
+                ? n.description.slice(0, 150) + ' <a href="#" class="show-more">...more</a>'
+                : n.description}
+            </div>
+          </div>
+        </div>
+      `;
+      notifList.prepend(item);
+
+      if (badge) badge.textContent = notifList.children.length;
+    }
+
+    // =========================
+    // MARK ALL READ
+    // =========================
     document.getElementById("mark-all-read-btn")?.addEventListener("click", async () => {
       try {
-        const res = await fetch("/notifications/mark-all-read/", {
+        const res = await fetch(urls.markAllRead, {
           method: "POST",
-          headers: { "X-CSRFToken": notifCsrfToken }
+          headers: { "X-CSRFToken": csrfToken }
         });
-        if (res.ok) fetchUnreadNotifications(false);
-      } catch (err) { console.error("Failed to mark all read", err); }
+        if (res.ok) {
+          document.getElementById("notif-list").innerHTML =
+            '<div class="list-group-item">No new notifications</div>';
+          document.getElementById("notif-badge")?.remove();
+        }
+      } catch (err) {
+        console.error("Failed to mark all read", err);
+      }
     });
+
+    // =========================
+    // SETTINGS FORM
+    // =========================
+    previewBtn?.addEventListener("click", () => {
+      if (!soundSelect) return;
+      const selected = soundSelect.value;
+      const src = soundMap[selected];
+      if (src) {
+        previewAudio.src = src;
+        previewAudio.currentTime = 0;
+        previewAudio.play().catch(err => console.warn("Preview blocked:", err));
+      }
+    });
+
+    settingsForm?.addEventListener("submit", async e => {
+      e.preventDefault();
+      const formData = new FormData(settingsForm);
+
+      try {
+        const res = await fetch(urls.updateSettings, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken },
+          body: formData
+        });
+        if (res.ok) {
+          alert("✅ Notification settings updated");
+          // Update sound + vibration immediately
+          setNotificationSound(soundSelect.value);
+          const formDataObj = Object.fromEntries(formData.entries());
+          vibrationEnabled = formDataObj.vibration_enabled === "on";
+        } else {
+          alert("⚠️ Failed to update settings");
+        }
+      } catch (err) {
+        console.error("Failed to save settings:", err);
+        alert("⚠️ Error saving settings");
+      }
+    });
+
+    // =========================
+    // INIT
+    // =========================
+    connectNotifSocket();
   })();
 
 });

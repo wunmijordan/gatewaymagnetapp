@@ -61,7 +61,7 @@
 
                     <div class="input-group input-group-flat">
                       {% if field.name == 'picture' %}
-                        <span class="input-group-text bg-dark text-white" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-dark text-purple" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-camera">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2" />
                             <path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
@@ -74,7 +74,7 @@
                               class="form-control bg-grey text-white border-0"
                               onchange="previewImage(this)">
                       {% elif field.name == 'full_name' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-warning border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
                             <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
@@ -82,7 +82,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'phone_number' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-red border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-mobile-vibration">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
                             <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />
@@ -90,7 +90,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'referrer_phone_number' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-red border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-mobile-vibration">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 3m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2z" />
                             <path d="M8 4l2 0" /><path d="M9 17l0 .01" /><path d="M21 6l-2 3l2 3l-2 3l2 3" />
@@ -98,7 +98,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'email' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-teal border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-at">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
                             <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />
@@ -106,7 +106,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'date_of_birth' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-violet border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-calendar">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
                             <path d="M16 3v4" /><path d="M8 3v4" />
@@ -115,7 +115,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'age_range' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-pink border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-rating-18-plus">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
                             <path d="M11.5 10.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0" />
@@ -125,7 +125,7 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'date_of_visit' %}
-                        <span class="input-group-text bg-grey text-white border-0 d-flex align-items-center justify-content-center" style="width: 38px;">
+                        <span class="input-group-text bg-grey text-violet border-0 d-flex align-items-center justify-content-center" style="width: 38px;">
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icon-tabler-calendar">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12z" />
@@ -136,7 +136,7 @@
 
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'occupation' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-emerald border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-briefcase">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" /><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2" />
                             <path d="M12 12l0 .01" /><path d="M3 13a20 20 0 0 0 18 0" />
@@ -144,7 +144,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'referrer_name' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-warning border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-heart-handshake">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M19.5 12.572l-7.5 7.428l-7.5 -7.428a5 5 0 1 1 7.5 -6.566a5 5 0 1 1 7.5 6.572" /><path d="M12 6l-3.293 3.293a1 1 0 0 0 0 1.414l.543 .543c.69 .69 1.81 .69 2.5 0l1 -1a3.182 3.182 0 0 1 4.5 0l2.25 2.25" />
                             <path d="M12.5 15.5l2 2" /><path d="M15 13l2 2" />
@@ -152,7 +152,7 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'home_address' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-amber border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-home">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M5 12l-2 0l9 -9l9 9l-2 0" /><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
                             <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
@@ -160,16 +160,15 @@
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
                       {% elif field.name == 'message' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-rose border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-note">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M13 20l7 -7" />
                             <path d="M13 20v-6a1 1 0 0 1 1 -1h6v-7a2 2 0 0 0 -2 -2h-12a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7" />
                           </svg>
                         </span>
                         {{ field|add_class:"form-control bg-grey text-white border-0" }}
-
                       {% elif field.name == 'title' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-cyan border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-tie">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 22l4 -4l-2.5 -11l.993 -2.649a1 1 0 0 0 -.936 -1.351h-3.114a1 1 0 0 0 -.936 1.351l.993 2.649l-2.5 11l4 4z" />
                             <path d="M10.5 7h3l5 5.5" />
@@ -177,7 +176,7 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'gender' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-fushcia border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-gender-male">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M10 14m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
@@ -186,7 +185,7 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'marital_status' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-green border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-friends">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M7 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 22v-5l-1 -1v-4a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4l-1 1v5" /><path d="M17 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
                             <path d="M15 22v-4h-2l2 -6a1 1 0 0 1 1 -1h2a1 1 0 0 1 1 1l2 6h-2v4" />
@@ -194,7 +193,7 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'channel_of_visit' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-indigo border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-device-tv">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z" />
                             <path d="M16 3l-4 4l-4 -4" />
@@ -202,7 +201,7 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'purpose_of_visit' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-sky border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-building-church">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M3 21l18 0" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /><path d="M10 5l4 0" />
@@ -211,10 +210,21 @@
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
                       {% elif field.name == 'service_attended' %}
-                        <span class="input-group-text bg-grey text-white border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                        <span class="input-group-text bg-grey text-yellow border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
                           <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pray">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 5m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
                             <path d="M7 20h8l-4 -4v-7l4 3l2 -2" />
+                          </svg>
+                        </span>
+                        {{ field|add_class:"form-select bg-grey text-white border-0" }}
+                      {% elif field.name == 'assigned_to' %}
+                        <span class="input-group-text bg-grey text-orange border-0" style="width: 38px; display:flex; align-items:center; justify-content:center;">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-replace-user">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M21 11v-3c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-6m0 0l3 3m-3 -3l3 -3" />
+                            <path d="M3 13.013v3c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586h6m0 0l-3 -3m3 3l-3 3" /><path d="M16 16.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M4 4.502c0 .53 .211 1.039 .586 1.414c.375 .375 .884 .586 1.414 .586c.53 0 1.039 -.211 1.414 -.586c.375 -.375 .586 -.884 .586 -1.414c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414z" />
+                            <path d="M21 21.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
+                            <path d="M9 9.499c0 -.53 -.211 -1.039 -.586 -1.414c-.375 -.375 -.884 -.586 -1.414 -.586h-2c-.53 0 -1.039 .211 -1.414 .586c-.375 .375 -.586 .884 -.586 1.414" />
                           </svg>
                         </span>
                         {{ field|add_class:"form-select bg-grey text-white border-0" }}
