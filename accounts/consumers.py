@@ -52,15 +52,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         action = data.get("action")
         sender_id = data.get("sender_id")
 
-        if action == "delete":
-            message_ids = data.get("message_ids", [])
-            deleted_ids = await self.handle_delete(message_ids, sender_id)
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {"type": "message_deleted", "message_ids": deleted_ids}
-            )
+        #if action == "delete":
+        #    message_ids = data.get("message_ids", [])
+        #    deleted_ids = await self.handle_delete(message_ids, sender_id)
+        #    await self.channel_layer.group_send(
+        #        self.room_group_name,
+        #        {"type": "message_deleted", "message_ids": deleted_ids}
+        #    )
 
-        elif action == "pin":
+        if action == "pin":
             message_ids = data.get("message_ids", [])
             pinned = await self.handle_pin(message_ids, sender_id)
             await self.channel_layer.group_send(
@@ -68,14 +68,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 {"type": "message_pinned", "message_ids": message_ids, "pinned": pinned}
             )
 
-        elif action == "edit":
-            message_id = data.get("message_id")
-            new_text = data.get("new_text", "")
-            success = await self.handle_edit(message_id, new_text, sender_id)
-            if success:
-                payload = await self.get_message_payload(message_id)
-                payload.update({"type": "message_edited"})
-                await self.channel_layer.group_send(self.room_group_name, payload)
+        #elif action == "edit":
+        #    message_id = data.get("message_id")
+        #    new_text = data.get("new_text", "")
+        #    success = await self.handle_edit(message_id, new_text, sender_id)
+        #    if success:
+        #        payload = await self.get_message_payload(message_id)
+        #        payload.update({"type": "message_edited"})
+        #        await self.channel_layer.group_send(self.room_group_name, payload)
 
         elif action == "reply":
             # client handles reply preview
@@ -103,14 +103,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event))
 
-    async def message_deleted(self, event):
-        await self.send(text_data=json.dumps(event))
+    #async def message_deleted(self, event):
+    #    await self.send(text_data=json.dumps(event))
 
     async def message_pinned(self, event):
         await self.send(text_data=json.dumps(event))
 
-    async def message_edited(self, event):
-        await self.send(text_data=json.dumps(event))
+    #async def message_edited(self, event):
+    #    await self.send(text_data=json.dumps(event))
 
     # =================== Database / Sync Handlers ===================
     @sync_to_async(thread_sensitive=False)
@@ -164,6 +164,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return parent_data
 
     # ---------- Action Handlers ----------
+    """
     @sync_to_async
     def handle_delete(self, message_ids, sender_id):
         from .models import ChatMessage
@@ -182,6 +183,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             except Exception:
                 logger.exception("Failed to delete message %s", mid)
         return deleted
+    """
 
     @sync_to_async
     def handle_pin(self, message_ids, sender_id):
@@ -198,6 +200,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 logger.exception("Failed to toggle pin %s", mid)
         return res
 
+    """
     @sync_to_async
     def handle_edit(self, message_id, new_text, sender_id):
         from .models import ChatMessage
@@ -215,6 +218,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception:
             logger.exception("Failed to edit message %s", message_id)
             return False
+    """
 
     # ---------- Build Broadcast Payload ----------
     @sync_to_async
@@ -236,8 +240,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "guest": None,
             "parent": None,
             "pinned": getattr(m, "pinned", False),
-            "deleted": getattr(m, "deleted", False),
-            "edited": getattr(m, "edited", False),
+            #"deleted": getattr(m, "deleted", False),
+            #"edited": getattr(m, "edited", False),
             "color": get_user_color(m.sender.id),
         }
 
@@ -308,8 +312,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "parent": None,
                 "reply_to_id": parent.id if parent else None,
                 "pinned": getattr(saved, "pinned", False),
-                "deleted": getattr(saved, "deleted", False),
-                "edited": getattr(saved, "edited", False),
+                #"deleted": getattr(saved, "deleted", False),
+                #"edited": getattr(saved, "edited", False),
                 "color": get_user_color(sender.id),
             }
 

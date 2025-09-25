@@ -692,8 +692,8 @@ def chat_room(request):
             "created_at": m.created_at.isoformat(),
             "guest_id": m.guest_card.id if m.guest_card else None,
             "pinned": getattr(m, "pinned", False),
-            "deleted": getattr(m, "deleted", False),
-            "edited": getattr(m, "edited", False),
+            #"deleted": getattr(m, "deleted", False),
+            #"edited": getattr(m, "edited", False),
             "mentions": mentions_payload,
             "guest": {
                 "id": m.guest_card.id,

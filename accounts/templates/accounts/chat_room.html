@@ -642,9 +642,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const bubble = document.createElement("div");
     bubble.classList.add("chat-item");
     bubble.id = `chat-bubble-${data.id}`;
-    bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
+    //bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
     bubble.dataset.color = data.color || "";   // helpful for reply handler
-    bubble.dataset.edited = data.edited ? "true" : "false"; // if already edited
+    //bubble.dataset.edited = data.edited ? "true" : "false"; // if already edited
 
     function escapeRegex(string) {
       return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
@@ -1076,38 +1076,38 @@ document.addEventListener("DOMContentLoaded", () => {
     manualMentions.forEach(m => mentions.push(m));
 
     // Edit mode
-    if (chatInput.dataset.editingId) {
-      const editId = parseInt(chatInput.dataset.editingId, 10);
-      const node = document.getElementById(`chat-bubble-${editId}`);
-      if (node) {
-        node.dataset.edited = "true";
-        const body = node.querySelector(".chat-bubble-body .fs-4");
-        if (body) body.textContent = message.trim();
+    //if (chatInput.dataset.editingId) {
+    //  const editId = parseInt(chatInput.dataset.editingId, 10);
+    //  const node = document.getElementById(`chat-bubble-${editId}`);
+    //  if (node) {
+    //    node.dataset.edited = "true";
+    //    const body = node.querySelector(".chat-bubble-body .fs-4");
+    //    if (body) body.textContent = message.trim();
 
-        let editedTag = node.querySelector(".edited-flag");
-        if (!editedTag) {
-          const dateEl = node.querySelector(".chat-bubble-date");
-          if (dateEl) {
-            editedTag = document.createElement("span");
-            editedTag.className = "edited-flag text-muted ms-1";
-            editedTag.style.fontSize = "0.7rem";
-            editedTag.textContent = "(Edited)";
-            dateEl.appendChild(editedTag);
-          }
-        }
-      }
+    //    let editedTag = node.querySelector(".edited-flag");
+    //    if (!editedTag) {
+    //      const dateEl = node.querySelector(".chat-bubble-date");
+    //      if (dateEl) {
+    //        editedTag = document.createElement("span");
+    //        editedTag.className = "edited-flag text-muted ms-1";
+    //        editedTag.style.fontSize = "0.7rem";
+    //        editedTag.textContent = "(Edited)";
+    //        dateEl.appendChild(editedTag);
+    //      }
+    //    }
+    //  }
 
-      chatSocket.send(JSON.stringify({
-        action: "edit",
-        message_id: editId,
-        new_text: message.trim(),
-        sender_id: CURRENT_USER_ID
-      }));
+    //  chatSocket.send(JSON.stringify({
+    //    action: "edit",
+    //    message_id: editId,
+    //    new_text: message.trim(),
+    //    sender_id: CURRENT_USER_ID
+    //  }));
 
-      chatInput.value = "";
-      delete chatInput.dataset.editingId;
-      return;
-    }
+    //  chatInput.value = "";
+    //  delete chatInput.dataset.editingId;
+    //  return;
+    //}
 
     const payload = {
       message: message.trim(),

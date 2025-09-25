@@ -79,9 +79,9 @@ class ChatMessage(models.Model):
       related_name='chat_messages'
   )
   created_at = models.DateTimeField(auto_now_add=True)
-  edited = models.BooleanField(default=False)
-  edited_at = models.DateTimeField(null=True, blank=True)
-  deleted = models.BooleanField(default=False)
+  #edited = models.BooleanField(default=False)
+  #edited_at = models.DateTimeField(null=True, blank=True)
+  #deleted = models.BooleanField(default=False)
   seen_by = models.ManyToManyField(
       settings.AUTH_USER_MODEL,  # explicitly using CustomUser
       related_name='seen_chats',
