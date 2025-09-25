@@ -54,6 +54,7 @@ class CustomUser(AbstractUser):
     return self.assigned_guests.count() if hasattr(self, 'assigned_guests') else 0
 
 
+
 class ChatMessage(models.Model):
   sender = models.ForeignKey(
       settings.AUTH_USER_MODEL,  # explicitly using CustomUser
@@ -78,11 +79,16 @@ class ChatMessage(models.Model):
       related_name='chat_messages'
   )
   created_at = models.DateTimeField(auto_now_add=True)
+  edited = models.BooleanField(default=False)
+  edited_at = models.DateTimeField(null=True, blank=True)
+  deleted = models.BooleanField(default=False)
   seen_by = models.ManyToManyField(
       settings.AUTH_USER_MODEL,  # explicitly using CustomUser
       related_name='seen_chats',
       blank=True
   )
+  pinned = models.BooleanField(default=False)  # New field to pin messages
+
 
   class Meta:
         ordering = ['-created_at']

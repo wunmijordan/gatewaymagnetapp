@@ -573,8 +573,32 @@ from accounts.utils import user_in_groups
 def chat_room(request):
     users = CustomUser.objects.all().prefetch_related('assigned_guests')
 
+    # --- NEW: check for guest_id from query string ---
+    guest_id = request.GET.get("guest_id")
+    attached_guest = None
+    if guest_id:
+        attached_guest = GuestEntry.objects.filter(id=guest_id).first()
+
+    # helper to resolve mentions tokens in a message by matching "Title Full Name"
+    def resolve_mentions_for_message(text):
+        """
+        Scan message text for occurrences of '@Title Full Name' that match existing users.
+        Returns list of User objects (or dicts - we produce dicts below).
+        """
+        if not text:
+            return []
+        # build candidates from all users (small optimization possible)
+        mentions = []
+        # We'll try to find strings like '@Bro. Wunmi Jordan' or '@Mr. Segun Ajayi'
+        # Approach: check for each user whether the display string appears in the text.
+        for u in CustomUser.objects.all():
+            display = f"@{ (u.title + ' ') if getattr(u, 'title', None) else '' }{ (u.full_name or u.username) }".strip()
+            if display in text:
+                mentions.append(u)
+        return mentions
+
     # Get latest 50 messages
-    last_messages = ChatMessage.objects.select_related('sender','guest_card', 'parent__sender').order_by('-created_at')[:100]
+    last_messages = ChatMessage.objects.select_related('sender','guest_card', 'parent__sender').order_by('-created_at')[:500]
     # take last 50, oldest first
     last_messages = reversed(last_messages)
     def get_effective_role(user):
@@ -623,6 +647,72 @@ def chat_room(request):
             } for g in unassigned_qs
         ]
 
+    # Build last_messages_json but resolve mentions for existing messages by scanning text
+    last_messages_payload = []
+    for m in last_messages:
+        # resolve mentions for message text (returns User queryset list)
+        found_users = resolve_mentions_for_message(m.message)
+        mentions_payload = [
+            {
+                "id": u.id,
+                "username": u.username,
+                "title": getattr(u, "title", ""),
+                "fullname": u.full_name or u.username,
+                "color": get_user_color(u.id)
+            } for u in found_users
+        ]
+
+        parent_payload = None
+        if m.parent:
+            parent_payload = {
+                "id": m.parent.id,
+                "sender_id": m.parent.sender.id,
+                "sender_title": getattr(m.parent.sender, "title", ""),
+                "sender_name": m.parent.sender.full_name or m.parent.sender.username,
+                "sender_color": get_user_color(m.parent.sender.id),
+                "message": m.parent.message[:50],
+            }
+            if m.parent.guest_card:
+                parent_payload["guest"] = {
+                    "id": m.parent.guest_card.id,
+                    "name": m.parent.guest_card.full_name,
+                    "title": m.parent.guest_card.title,
+                    "image": m.parent.guest_card.picture.url if m.parent.guest_card.picture else None,
+                    "date_of_visit": m.parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.parent.guest_card.date_of_visit else "",
+                }
+
+        last_messages_payload.append({
+            "id": m.id,
+            "message": m.message,
+            "sender_id": m.sender.id,
+            "sender_title": getattr(m.sender, "title", ""),
+            "sender_name": m.sender.full_name or m.sender.username,
+            "sender_image": m.sender.image.url if m.sender.image else None,
+            "color": get_user_color(m.sender.id),
+            "created_at": m.created_at.isoformat(),
+            "guest_id": m.guest_card.id if m.guest_card else None,
+            "pinned": getattr(m, "pinned", False),
+            "deleted": getattr(m, "deleted", False),
+            "edited": getattr(m, "edited", False),
+            "mentions": mentions_payload,
+            "guest": {
+                "id": m.guest_card.id,
+                "name": m.guest_card.full_name,
+                "custom_id": m.guest_card.custom_id,
+                "image": m.guest_card.picture.url if m.guest_card.picture else None,
+                "title": m.guest_card.title,
+                "date_of_visit": m.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.guest_card.date_of_visit else "",
+                "assigned_user": {  # << add this
+                    "id": m.guest_card.assigned_to.id,
+                    "title": m.guest_card.assigned_to.title,
+                    "full_name": m.guest_card.assigned_to.full_name,
+                    "image": m.guest_card.assigned_to.image.url if m.guest_card.assigned_to.image else None,
+                } if m.guest_card.assigned_to else None
+            } if m.guest_card else None,
+            "reply_to_id": m.parent.id if m.parent else None,
+            "parent": parent_payload
+        })
+
     context = {
         "users": [
             {
@@ -644,7 +734,12 @@ def chat_room(request):
                         "image": g.picture.url if g.picture else None,
                         "title": g.title,
                         "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-                        "assigned": True
+                        "assigned_user": {  # add this
+                            "id": g.assigned_to.id,
+                            "title": g.assigned_to.title,
+                            "full_name": g.assigned_to.full_name,
+                            "image": g.assigned_to.image.url if g.assigned_to.image else None,
+                        } if g.assigned_to else None
                     } for g in u.assigned_guests.all()
                 ]
             } for u in users
@@ -669,50 +764,31 @@ def chat_room(request):
                         "image": g.picture.url if g.picture else None,
                         "title": g.title,
                         "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-                        "assigned": True
+                        "assigned_user": {  # add this
+                            "id": g.assigned_to.id,
+                            "title": g.assigned_to.title,
+                            "full_name": g.assigned_to.full_name,
+                            "image": g.assigned_to.image.url if g.assigned_to.image else None,
+                        } if g.assigned_to else None
                     } for g in u.assigned_guests.all()
                 ]
             } for u in users
         ], cls=DjangoJSONEncoder),
         "user_guests_json": json.dumps(user_guests, cls=DjangoJSONEncoder),
         "unassigned_guests_json": json.dumps(unassigned_guests, cls=DjangoJSONEncoder),
-        "last_messages_json": json.dumps([
-            {
-                "id": m.id,
-                "message": m.message,
-                "sender_id": m.sender.id,
-                "sender_title": m.sender.title,
-                "sender_name": m.sender.full_name or m.sender.username,
-                "sender_image": m.sender.image.url if m.sender.image else None,
-                "color": get_user_color(m.sender.id),
-                "created_at": m.created_at.isoformat(),
-                "guest_id": m.guest_card.id if m.guest_card else None,
-                "guest": {
-                    "id": m.guest_card.id,
-                    "name": m.guest_card.full_name,
-                    "custom_id": m.guest_card.custom_id,
-                    "image": m.guest_card.picture.url if m.guest_card.picture else None,
-                    "title": m.guest_card.title,
-                    "date_of_visit": m.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.guest_card.date_of_visit else ""
-                } if m.guest_card else None,
-                "reply_to_id": m.parent.id if m.parent else None,
-                "parent": {
-                    "id": m.parent.id,
-                    "sender_title": m.parent.sender.title,
-                    "sender_name": m.parent.sender.full_name or m.parent.sender.username,
-                    "message": m.parent.message[:50],  # truncate preview
-                    "guest": {
-                        "id": m.parent.guest_card.id,
-                        "name": m.parent.guest_card.full_name,
-                        "title": m.parent.guest_card.title,
-                        "image": m.parent.guest_card.picture.url if m.parent.guest_card.picture else None,
-                        "date_of_visit": m.parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.parent.guest_card.date_of_visit else "",
-                    } if m.parent.guest_card else None,
-                } if m.parent else None,
-            } for m in last_messages
-        ], cls=DjangoJSONEncoder),
+        "last_messages_json": json.dumps(last_messages_payload, cls=DjangoJSONEncoder),
         "current_user_id": request.user.id,
         "current_user_role": get_effective_role(request.user),
+        "attached_guest": {
+            "id": attached_guest.id,
+            "name": attached_guest.full_name,
+            "custom_id": attached_guest.custom_id,
+            "image": attached_guest.picture.url if attached_guest.picture else None,
+            "title": attached_guest.title,
+            "initials": attached_guest.initials,
+            "date_of_visit": attached_guest.date_of_visit.strftime("%Y-%m-%d") if attached_guest.date_of_visit else "",
+            "assigned": bool(attached_guest.assigned_to)
+        } if attached_guest else None,
         "page_title": "ChatRoom",
     }
     return render(request, "accounts/chat_room.html", context)

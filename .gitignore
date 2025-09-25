@@ -11,6 +11,8 @@ __pycache__/
 # Database dumps
 *.sql
 /dump.sql
+/dump.rdb
+utilities/
 
 # Distribution / packaging
 .Python

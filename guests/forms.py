@@ -8,8 +8,12 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-
 class GuestEntryForm(forms.ModelForm):
+    assigned_to = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select bg-grey text-white border-0'})
+    )
 
     date_of_birth = forms.CharField(
         required=False,
@@ -26,6 +30,7 @@ class GuestEntryForm(forms.ModelForm):
             'class': 'form-control',
             'autocomplete': 'off',
         }),
+        help_text="Date of Visit.",
         input_formats=['%Y-%m-%d', '%d/%m/%Y'],  # support input formats for validation
         required=False,
     )
@@ -37,7 +42,7 @@ class GuestEntryForm(forms.ModelForm):
             'picture': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'title': forms.Select(attrs={'class': 'form-select'}),
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'John Doe'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'johndoe@guest.gatewaynation'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'johndoe@guest.gatewaynation.org'}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08123xxxx89'}),
             'date_of_birth': forms.TextInput(attrs={
                 'type': 'text',
@@ -104,25 +109,26 @@ class GuestEntryForm(forms.ModelForm):
             'assigned_to': 'Assign this Guest to a Team Member.',
         }
 
+
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)  # get request.user
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        # ---------------------------
-        # Conditionally show assigned_to only to allowed users
-        # ---------------------------
+        # Conditionally show assigned_to
         if user and (user.is_superuser or user.groups.filter(name__in=['Pastor', 'Team Lead', 'Admin']).exists()):
-            # Superuser can assign to all active users
             if user.is_superuser:
-                self.fields['assigned_to'].queryset = User.objects.filter(is_active=True)
+                qs = User.objects.filter(is_active=True)
             else:
-                # Non-superuser admins cannot assign to superusers
-                self.fields['assigned_to'].queryset = User.objects.filter(is_active=True, is_superuser=False)
-
+                qs = User.objects.filter(is_active=True, is_superuser=False)
+            self.fields['assigned_to'].queryset = qs
             self.fields['assigned_to'].required = True
+
+            # Use title + full_name as label, default title to ""
+            self.fields['assigned_to'].label_from_instance = lambda obj: f"{obj.title or ''} {obj.full_name}".strip()
+
         else:
-            # Remove field for other users
             self.fields.pop('assigned_to', None)
+
 
         # ---------------------------
         # Handle select fields to allow blank choices

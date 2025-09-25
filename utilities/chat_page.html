@@ -1,3 +1,1242 @@
+/* ============================
+   4. Header base styles
+   ============================ */
+.navbar .navbar * {
+  z-index: 3000;                        /* navbar items always on top */
+  background-color: #1F2937 !important;
+  min-height: 3.5rem !important;
+  height: 3.5rem !important;
+  display: flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+  position: sticky;
+}
+
+.navbar-brand {
+  background: transparent !important;
+}
+
+.navbar-brand img {
+  display: block;
+  height: 3.5rem;
+  width: auto;
+  pointer-events: none;
+  margin-top: -2px;
+}
+
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.3);
+  height: 2.5rem;
+  width: 2.5rem;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255, 0.9%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar .avatar.avatar-sm {
+  height: 2.2rem;
+  width: 2.2rem;
+  margin-top: 0;
+}
+
+/* ============================
+   5. Dropdown menu animation
+   ============================ */
+.dropdown-menu {
+  border-radius: 0.4rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease-in-out;
+  visibility: hidden;
+  z-index: 2500;                        /* Page header filter dropdowns above guest cards */
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.navbar .dropdown-menu {
+  margin-top: 0.25rem;
+  z-index: 3000;                        /* Navbar dropdowns above everything */
+}
+
+/* ============================
+   6. Dropend fixes for desktop
+   ============================ */
+@media (min-width: 768px) {
+  .navbar-nav .dropend {
+    position: relative;
+  }
+
+  .navbar-nav .dropend .dropdown-menu {
+    position: absolute !important;
+    top: 0;
+    left: 100%;
+    margin-top: 0;
+    margin-left: 0.1rem;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: none;
+    z-index: 3000 !important;           /* navbar dropends above page header */
+  }
+
+  .navbar-nav .dropend:hover > .dropdown-menu {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .dropend > .dropdown-toggle::after {
+    transform: rotate(90deg);
+  }
+}
+
+/* Nested dropend inside page header dropdowns */
+@media (min-width: 768px) {
+  .dropdown-menu .dropend {
+    position: relative;
+  }
+
+  .dropdown-menu .dropend .dropdown-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-top: 0;
+    margin-left: 0.1rem;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    background-color: #1F2937 !important;
+    z-index: 2500 !important;           /* inside page header dropdowns */
+  }
+
+  .dropdown-menu .dropend:hover > .dropdown-menu {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+/* ============================
+   7. Dropup fix
+   ============================ */
+.dropup .dropdown-menu {
+  margin-bottom: 0.5rem;
+}
+
+/* ============================
+   8. Mobile responsiveness
+   ============================ */
+@media (max-width: 767px) {
+  .navbar-nav {
+    padding: 0.5rem 0;
+  }
+
+  .nav-link {
+    padding: 0.5rem 1rem;
+  }
+
+  .navbar {
+    height: auto !important;
+    position: relative;
+    z-index: 1050;
+    min-height: 3.5rem !important;
+  }
+
+  .navbar-brand img {
+    height: 2.4rem;
+    margin-top: -2px;
+  }
+
+  .navbar .avatar.avatar-sm {
+    height: 1.8rem;
+    width: 2rem;
+  }
+
+  .navbar-toggler {
+    height: 2rem;
+    width: 2.2rem;
+  }
+
+  .navbar-collapse.collapse {
+    transition: height 0.35s ease;
+    overflow: visible;
+    position: relative;
+    z-index: 1060;
+    background-color: #1F2937 !important;
+    color: #fff !important;
+  }
+
+  .navbar-collapse .dropdown-menu {
+    transform: none;
+    visibility: visible;
+    display: none;
+    z-index: 1070 !important;
+    position: static;
+    background-color: #1F2937 !important;
+    color: #fff !important;
+    border: none;
+  }
+
+  .navbar-collapse .dropdown-menu.show {
+    display: block;
+  }
+
+  .navbar-collapse .dropdown-menu .dropdown-menu {
+    background-color: #1F2937 !important;
+    border: none;
+  }
+
+  .navbar-collapse .dropdown-item {
+    color: #fff !important;
+  }
+
+  .navbar-collapse .dropdown-item:hover {
+    background-color: #374151 !important;
+  }
+
+  /* Logo centering fix on mobile */
+  .navbar > .container-xl {
+    position: relative;
+  }
+
+  .navbar-brand.navbar-brand-autodark {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1000;
+  }
+
+  .navbar-nav.flex-row.order-md-last {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-brand.navbar-brand-autodark {
+    position: static !important;
+    transform: none !important;
+  }
+}
+
+
+
+<div class="container-fluid">
+          <!-- Mobile row: toggler (left), logo (center), icons (right) -->
+          <div class="d-flex w-100 d-md-none justify-content-between align-items-center mb-2 position-relative">
+            <!-- Navbar toggler -->
+            <button class="navbar-toggler position-absolute start-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu"
+                    aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f59f00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-menu-deep">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 6h16" />
+                <path d="M7 12h13" /><path d="M10 18h10" />
+              </svg>
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f59f00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-x d-none">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M18 6l-12 12" /><path d="M6 6l12 12" />
+              </svg>
+            </button>
+
+            <!-- Mobile logo (centered absolutely) -->
+            <a href="{% url 'store' %}" class="navbar-brand position-absolute top-50 start-50 translate-middle">
+              <img src="{% static 'images/nlologo.png' %}" alt="NLO Logo" width="60" height="60">
+            </a>
+
+            <!-- Right icons -->
+            <div class="navbar-nav flex-row ms-auto">
+              <!-- Chat icon -->
+              <div class="nav-item me-2">
+                <a href="{% url 'store' %}" class="nav-link px-0" aria-label="ChatRoom">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                    <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                    <path d="M6 19v2" /><path d="M18 19v2" />
+                  </svg>
+                </a>
+              </div>
+
+              <!-- Notifications dropdown -->
+              <div class="nav-item dropdown">
+                <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                    <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                    <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                  </svg>
+                  {% if unread_count > 0 %}
+                    <span class="badge bg-red text-light" id="notif-badge">{{ unread_count }}</span>
+                  {% endif %}
+                </a>
+                <div class="dropdown-menu dropdown-menu-end dropdown-menu-card">
+                  <div class="card">
+                    <div class="card-header d-flex">
+                      <h3 class="card-title">Notifications</h3>
+                      <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                    </div>
+
+                    <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                      {% for notif in unread_notifications %}
+                      <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                        <div class="row align-items-center">
+                          <div class="col-auto">
+                            <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                          </div>
+                          <div class="col">
+                            <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
+                            <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
+                              {{ notif.description|truncatechars:150 }}
+                              {% if notif.description|length > 150 %}
+                                <a href="#" class="show-more">...more</a>
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div class="col-auto">
+                            <a href="#" class="list-group-item-actions notif-star">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                class="icon text-light icon-2">
+                                <path
+                                  d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                              </svg>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                      {% empty %}
+                      <div class="list-group-item">No new notifications</div>
+                      {% endfor %}
+                    </div>
+
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col">
+                          <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Desktop logo (classic style, hidden on mobile) -->
+          <a href="{% url 'store' %}" class="navbar-brand d-none d-md-flex align-items-center">
+            <img src="{% static 'images/nlologo.png' %}" alt="NLO Logo" width="80" height="80">
+          </a>
+
+          <!-- Desktop right icons (classic style, hidden on mobile since duplicated above) -->
+          <div class="navbar-nav flex-row order-md-last d-none d-md-flex">
+            <div class="nav-item d-flex align-items-center me-2">
+              <a href="{% url 'store' %}" class="nav-link px-0" aria-label="ChatRoom">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                  <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                  <path d="M6 19v2" /><path d="M18 19v2" />
+                </svg>
+              </a>
+            </div>
+
+            <div class="nav-item dropdown d-flex align-items-center ms-2 me-2">
+              <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+                <!-- Tabler bell icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                  <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                </svg>
+                {% if unread_count > 0 %}
+                  <span class="badge bg-red text-light" id="notif-badge">{{ unread_count }}</span>
+                {% endif %}
+              </a>
+              <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
+                <div class="card">
+                  <div class="card-header d-flex">
+                    <h3 class="card-title">Notifications</h3>
+                    <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                  </div>
+                  <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                    {% for notif in unread_notifications %}
+                    <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                      <div class="row align-items-center">
+                        <div class="col-auto">
+                          <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                        </div>
+                        <div class="col">
+                          <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
+                          <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
+                            {{ notif.description|truncatechars:150 }}
+                            {% if notif.description|length > 150 %}
+                              <a href="#" class="show-more">...more</a>
+                            {% endif %}
+                          </div>
+                        </div>
+                        <div class="col-auto">
+                          <a href="#" class="list-group-item-actions notif-star">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                              class="icon text-light icon-2">
+                              <path
+                                d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                            </svg>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item">No new notifications</div>
+                    {% endfor %}
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col">
+                        <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Collapsible menu -->
+          <div class="collapse navbar-collapse ms-4" id="navbar-menu">
+            <ul class="navbar-nav">
+              <li class="nav-item"><a href="{% url 'store' %}" class="nav-link">Store</a></li>
+              <li class="nav-item"><a href="{% url 'kitchen' %}" class="nav-link">Kitchen</a></li>
+              <li class="nav-item"><a href="{% url 'pos' %}" class="nav-link">POS</a></li>
+              <li class="nav-item"><a href="/admin/" class="nav-link">Admin</a></li>
+            </ul>
+          </div>
+        </div>
+
+
+
+
+
+
+.navbar {
+  background: transparent !important;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1030;
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1rem 1rem;   /* keep inner spacing instead of margin */
+}
+
+.navbar.scrolled {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;               /* makes centering easier */
+  width: 90%;             /* or max-width if you want it tighter */
+  max-width: 1200px;      /* keeps consistent size on wide screens */
+  margin: 0 auto;         /* centers horizontally */  
+  background: rgb(12, 20, 32) !important;
+  border-radius: 2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.747);
+  transition: all 0.2s ease-in-out;
+  padding: 0.25rem 2rem;        /* even padding left & right */
+  animation: slideDown 0.2s ease forwards;
+  z-index: 1030;
+}
+
+/* Default nav links (before scroll) */
+.navbar .nav-link {
+  color: #ffffff !important; /* bright white */
+  transition: color 0.1s ease;
+  margin: 0 0.5rem;
+}
+
+/* On scroll, change nav link colors */
+.navbar.scrolled .nav-link {
+  color: #f59f00 !important; /* amber/yellow */
+  margin: 0 0.5rem;
+}
+
+.navbar.scrolled .nav-link:hover {
+  color: #ffb733 !important; /* lighter amber on hover */
+}
+
+.messages-container {
+  position: fixed;
+  top: 4.5rem;                /* just below navbar height */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1055;              /* above navbar background, below modals */
+  width: 90%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.alert {
+  margin: 0.5rem 0;
+  text-align: center;
+}
+
+/* Slide-down animation */
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+
+/* Navbar brand / logo */
+.navbar-brand {
+  background: transparent !important;
+}
+
+.navbar-brand img {
+  display: block;
+  height: 3.5rem;
+  width: auto;
+  pointer-events: none;
+  margin-top: -2px;
+  transition: height 0.3s ease; /* shrink on scroll */
+}
+
+/* Shrink logo when scrolled */
+.navbar.scrolled .navbar-brand img {
+  height: 2.6rem;
+}
+
+/* Navbar items */
+.navbar * {
+  z-index: 3000;
+  background: transparent !important; /* keep items transparent */
+  color: #fff;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Toggler */
+.navbar-toggler {
+  border-color: rgba(255, 255, 255, 0.3);
+  height: 2.5rem;
+  width: 2.5rem;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255,255,255,0.9%29' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar .avatar.avatar-sm {
+  height: 2.2rem;
+  width: 2.2rem;
+}
+
+/* ============================
+   Dropdown styles
+   ============================ */
+.dropdown-menu {
+  border-radius: 0.4rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease-in-out;
+  visibility: hidden;
+  z-index: 2500;
+  background-color: #1F2937 !important;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+}
+
+.navbar .dropdown-menu {
+  margin-top: 0.25rem;
+  z-index: 3000;
+}
+
+/* ============================
+   Dropend fixes for desktop
+   ============================ */
+@media (min-width: 768px) {
+  .navbar-nav .dropend {
+    position: relative;
+  }
+
+  .navbar-nav .dropend .dropdown-menu {
+    position: absolute !important;
+    top: 0;
+    left: 100%;
+    margin-left: 0.1rem;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    z-index: 3000 !important;
+  }
+
+  .navbar-nav .dropend:hover > .dropdown-menu {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .dropend > .dropdown-toggle::after {
+    transform: rotate(90deg);
+  }
+}
+
+/* Nested dropend inside page header dropdowns */
+@media (min-width: 768px) {
+  .dropdown-menu .dropend .dropdown-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 0.1rem;
+    display: none;
+    opacity: 0;
+    visibility: hidden;
+    background-color: #1F2937 !important;
+    z-index: 2500 !important;
+  }
+
+  .dropdown-menu .dropend:hover > .dropdown-menu {
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+/* ============================
+   Dropup fix
+   ============================ */
+.dropup .dropdown-menu {
+  margin-bottom: 0.5rem;
+}
+
+/* ============================
+   Mobile responsiveness
+   ============================ */
+@media (max-width: 767px) {
+  .navbar {
+    height: auto !important;
+    position: relative;
+    min-height: 3.5rem;
+  }
+
+  .navbar-brand img {
+    height: 2.4rem;
+  }
+
+  .navbar-toggler svg {
+    pointer-events: none; /* make sure clicks go to button */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    position: absolute;
+  }
+
+  .icon-tabler-menu-deep,
+  .icon-tabler-x {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+
+  .icon-tabler-menu-deep.hidden,
+  .icon-tabler-x.hidden {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.8);
+    pointer-events: none;
+  }
+
+  .navbar-collapse {
+    transition: height 0.2s ease;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    position: relative; /* allow it to flow below header */
+  }
+
+  .navbar-collapse .nav-link {
+    color: #fff !important;
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-collapse .nav-link:hover {
+    color: #f59f00 !important; /* yellow accent on hover */
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 0.5rem;
+  }
+
+  .navbar-collapse .dropdown-menu {
+    display: none;
+    background-color: #1F2937 !important;
+    color: #fff !important;
+    border: none;
+  }
+
+  .navbar-collapse .dropdown-menu.show {
+    display: block;
+  }
+
+  .navbar-collapse .dropdown-item {
+    color: #fff !important;
+  }
+
+  .navbar-collapse .dropdown-item:hover {
+    background-color: #111827 !important;
+  }
+
+
+  /* Logo centering fix on mobile */
+  .navbar {
+    position: relative;
+  }
+
+  .navbar-brand.navbar-brand-autodark {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1000;
+  }
+
+  .navbar-nav.flex-row.order-md-last {
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 768px) {
+  .navbar-brand.navbar-brand-autodark {
+    position: static !important;
+    transform: none !important;
+  }
+}
+
+
+
+
+
+
+
+<div class="container-xl">
+        <!-- BEGIN NAVBAR TOGGLER -->
+        <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <!-- END NAVBAR TOGGLER -->
+
+        <!-- BEGIN NAVBAR LOGO -->
+        <div class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+          {% if request.user.is_superuser or request.user.is_staff %}
+            <a href="{% url 'accounts:admin_dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-flex align-items-center">
+              <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            </a>
+          {% else %}
+            <a href="{% url 'dashboard' %}" aria-label="Gateway Nation" class="navbar-brand d-flex align-items-center">
+              <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="80" height="80" class="me-2">
+            </a>
+          {% endif %}
+        </div>
+        <!-- END NAVBAR LOGO -->
+        <div class="navbar-nav flex-row order-md-last">
+          <div class="d-none d-md-flex">
+            <div class="nav-item">
+              <a href="?theme=dark" class="nav-link px-0 hide-theme-dark" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Enable dark mode" data-bs-original-title="Enable dark mode">
+                <!-- Download SVG icon from http://tabler.io/icons/icon/moon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z"></path>
+                </svg>
+              </a>
+              <a href="?theme=light" class="nav-link px-0 hide-theme-light" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Enable light mode" data-bs-original-title="Enable light mode">
+                <!-- Download SVG icon from http://tabler.io/icons/icon/sun -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"></path>
+                  <path d="M3 12h1m8 -9v1m8 8h1m-9 8v1m-6.4 -15.4l.7 .7m12.1 -.7l-.7 .7m0 11.4l.7 .7m-12.1 -.7l-.7 .7"></path>
+                </svg>
+              </a>
+            </div>
+            <div class="nav-item dropdown d-none d-md-flex me-3">
+              <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" tabindex="-1" aria-label="Show app menu" data-bs-auto-close="outside" aria-expanded="false">
+                <!-- Download SVG icon from http://tabler.io/icons/icon/apps -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                  <path d="M4 4m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                  <path d="M4 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                  <path d="M14 14m0 1a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v4a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1z"></path>
+                  <path d="M14 7l6 0"></path>
+                  <path d="M17 4l0 6"></path>
+                </svg>
+              </a>
+              <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card">
+                <div class="card">
+                  <div class="card-header">
+                    <div class="card-title">My Apps</div>
+                    <div class="card-actions btn-actions">
+                      <a href="#" class="btn-action">
+                        <!-- Download SVG icon from http://tabler.io/icons/icon/settings -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                          <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"></path>
+                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                  <div class="card-body scroll-y p-2" style="max-height: 50vh">
+                    <div class="row g-0">
+                      <div class="col-4">
+                        <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#FFBA00"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-google-drive">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 10l-6 10l-3 -5l6 -10z" /><path d="M9 15h12l-3 5h-12" />
+                            <path d="M15 15l-6 -10h6l6 10z" />
+                          </svg>
+                          <span class="h5">Google Drive</span>
+                        </a>
+                      </div>
+                      <div class="col-4">
+                        <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
+                            <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
+                            <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
+                          </svg>
+                          <span class="h5">GMail</span>
+                        </a>
+                      </div>
+                      <div class="col-4">
+                        <a href="#" class="d-flex flex-column flex-center text-center text-secondary py-2 px-2 link-hoverable">
+                          <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+                            <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+                          </svg>
+                          <span class="h5">WhatsApp</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-item d-flex align-items-center">
+            <a href="{% url 'accounts:chat_room' %}" class="nav-link px-0" aria-label="ChatRoom">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#f703d7ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z" />
+                <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5" />
+                <path d="M6 19v2" /><path d="M18 19v2" />
+              </svg>
+            </a>
+          </div>
+
+          <div class="nav-item dropdown d-flex align-items-center">
+            <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+              <!-- Tabler bell icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+              </svg>
+              {% if unread_count > 0 %}
+                <span class="badge bg-red text-light" id="notif-badge">{{ unread_count }}</span>
+              {% endif %}
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
+              <div class="card">
+                <div class="card-header d-flex">
+                  <h3 class="card-title">Notifications</h3>
+                  <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                </div>
+
+                <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                  {% for notif in unread_notifications %}
+                  <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                    <div class="row align-items-center">
+                      <div class="col-auto">
+                        <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                      </div>
+                      <div class="col">
+                        <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
+                        <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
+                          {{ notif.description|truncatechars:150 }}
+                          {% if notif.description|length > 150 %}
+                            <a href="#" class="show-more">...more</a>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-auto">
+                        <a href="#" class="list-group-item-actions notif-star">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="icon text-light icon-2">
+                            <path
+                              d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  {% empty %}
+                  <div class="list-group-item">No new notifications</div>
+                  {% endfor %}
+                </div>
+
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-item dropdown">
+            <a href="#" class="nav-link d-flex lh-1 p-0 px-0 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
+              {% if user.image %}
+                <img src="{{ user.image.url }}" class="avatar avatar-sm" 
+                    style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
+              {% else %}
+                <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                      style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
+                  {{ user.initials }}
+                </span>
+              {% endif %}
+
+              <div class="ps-2 d-flex flex-column justify-content-center">
+                <!--<div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile -->
+                <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div> <!-- Show on xl+ -->
+
+                <!--
+                <div class="d-block d-xl-none mt-1 fs-6 text-secondary">
+                  {% if user.is_superuser %}
+                    <span class="bg-warning-lt">Superuser</span>
+                  {% elif user.groups.all.0.name == "Admin" %}
+                    <span class="bg-green-lt">Admin</span>
+                  {% elif user.groups.all.0.name == "Team Member" %}
+                    <span class="bg-azure-lt">Team Member</span>
+                  {% else %}
+                    <span class="badge bg-gray-lt">Sign-In</span>
+                  {% endif %}
+                </div>
+                -->
+
+                <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
+                  {% if user.is_superuser %}
+                    <span class="bg-warning-lt">Superuser</span>
+                  {% elif user|has_group:"Pastor" %}
+                    <span class="bg-green-lt">Pastor</span>
+                  {% elif user|has_group:"Team Lead" %}
+                    <span class="bg-green-lt">Team Lead</span>
+                  {% elif user|has_group:"Admin" %}
+                    <span class="bg-secondary-lt">Admin</span>
+                  {% elif user|has_group:"Registrant" %}
+                    <span class="bg-pink-lt">Registrant</span>
+                  {% elif user|has_group:"Message Manager" %}
+                    <span class="bg-purple-lt">Message Manager</span>
+                  {% elif user|has_group:"Team Member" %}
+                    <span class="bg-blue-lt">Team Member</span>
+                  {% else %}
+                    <span class="bg-red-lt">Demo</span>
+                  {% endif %}
+                </div>
+              </div>
+            </a>
+            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+              <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
+                  <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
+                  <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
+                  <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
+                </svg>
+                Preferences
+              </a>
+              <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
+                </svg>
+                Gateway Nation
+                <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
+              </a>
+              <div class="dropdown-divider"></div>
+              <a href="{% url 'login' %}" class="dropdown-item text-danger">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                  <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
+                </svg>
+                Logout
+              </a>
+            </div>
+          </div>
+
+        </div>
+        <div class="navbar-collapse collapse" id="navbar-menu" style="">
+          <!-- BEGIN NAVBAR MENU -->
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              {% if request.user|has_group:"Pastor,Team Lead,Admin,Registrant,Message Manager" %}
+                <a class="nav-link text-white" href="{% url 'accounts:admin_dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Dashboard </span>
+                </a>
+              {% else %}
+                <a class="nav-link text-white" href="{% url 'dashboard' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                      <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                      <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Dashboard </span>
+                </a>
+              {% endif %}
+            </li>
+            {% if request.user.is_superuser %}
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{% url 'accounts:manage_groups' %}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-hierarchy">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M5 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                    <path d="M6.5 17.5l5.5 -4.5l5.5 4.5" /><path d="M12 7l0 6" />
+                  </svg>
+                  <span class="nav-link-title"> Groups </span>
+                </a>
+              </li>
+            {% endif %}
+            {% if request.user|has_group:"Pastor,Team Lead,Admin" %}
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{% url 'accounts:user_list' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users-group">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
+                      <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M17 10h2a2 2 0 0 1 2 2v1" />
+                      <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Team </span>
+                </a>
+              </li>
+            {% endif %}
+            {% if not request.user.is_superuser %}
+              <li class="nav-item">
+                <a class="nav-link text-white" href="{% url 'guest_list' %}">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Guests </span>
+                </a>
+              </li>
+            {% else %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown text-white" href="#navbar-share" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                      </svg>
+                    </span>
+                    <span class="nav-link-title"> Guests </span>
+                </a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="{% url 'guest_list' %}">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-users">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" /><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" /><path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                    </svg>
+                    View Guests
+                  </a>
+                  <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#bulkDeleteModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-cancel">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                      <path d="M18.364 5.636l-12.728 12.728" />
+                    </svg>
+                    Delete Guest(s)
+                  </a>
+                </div>
+              </li>
+            {% endif %}
+            {% if request.user.is_superuser %}
+              <li class="nav-item dropdown">
+                <!-- Bulk Message Trigger Button -->
+                <a class="nav-link text-white" href="#" data-bs-toggle="modal" data-bs-target="#bulkMessageModal">
+                  <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/home -->
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-message">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 9h8" /><path d="M8 13h6" />
+                      <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1 -3 3h-5l-5 3v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12z" />
+                    </svg>
+                  </span>
+                  <span class="nav-link-title"> Message </span>
+                </a>
+              </li>
+            {% endif %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown text-white" href="#navbar-share" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/checkbox -->
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-share">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M6 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M18 6m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" />
+                    <path d="M8.7 10.7l6.6 -3.4" /><path d="M8.7 13.3l6.6 3.4" />
+                  </svg>
+                </span>
+                <span class="nav-link-title"> Share </span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="{% url 'export_guests_excel' %}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#37b307ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-excel">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" />
+                    <path d="M10 12l4 5" /><path d="M10 17l4 -5" />
+                  </svg>
+                  Excel
+                </a>
+                <a class="dropdown-item"
+                  href="mailto:?subject=Guest%20Entries&body=Download%20the%20guest%20list%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#EA4335"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-gmail">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M16 20h3a1 1 0 0 0 1 -1v-14a1 1 0 0 0 -1 -1h-3v16z" />
+                    <path d="M5 20h3v-16h-3a1 1 0 0 0 -1 1v14a1 1 0 0 0 1 1z" />
+                    <path d="M16 4l-4 4l-4 -4" /><path d="M4 6.5l8 7.5l8 -7.5" />
+                  </svg>
+                  Mail
+                </a>
+                <a class="dropdown-item"
+                  target="_blank"
+                  href="https://wa.me/?text=Download%20guest%20entries%20Excel%20here:%20{{ request.build_absolute_uri|cut:request.get_full_path }}{% url 'export_guests_excel' %}">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#03f74cff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-brand-whatsapp">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21l1.65 -3.8a9 9 0 1 1 3.4 2.9l-5.05 .9" />
+                    <path d="M9 10a.5 .5 0 0 0 1 0v-1a.5 .5 0 0 0 -1 0v1a5 5 0 0 0 5 5h1a.5 .5 0 0 0 0 -1h-1a.5 .5 0 0 0 0 1" />
+                  </svg>
+                  WhatsApp
+                </a>
+                {% if request.user.is_superuser %}
+                  <form action="{% url 'import_guests_csv' %}" method="post" enctype="multipart/form-data" class="dropdown-item p-0 m-0">
+                    {% csrf_token %}
+                    <label for="csvUpload" class="d-flex align-items-center px-3 py-2 cursor-pointer mb-0" style="width:100%;">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="#806885ff"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-file-import">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                        <path d="M5 13v-8a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-5.5m-9.5 -2h7m-3 -3l3 3l-3 3" />
+                      </svg>
+                      Import CSV
+                    </label>
+                    <input type="file" id="csvUpload" name="csv_file" accept=".csv" class="d-none" onchange="this.form.submit()">
+                  </form>
+                {% endif %}
+              </div>
+            </li>
+            
+            {% if show_filters %}
+            <li class="nav-item dropdown me-2">
+              <a class="nav-link dropdown text-white" href="#navbar-filter" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block"><!-- Download SVG icon from http://tabler.io/icons/icon/package -->
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-filters">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M12 8m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" />
+                    <path d="M8 11a5 5 0 1 0 3.998 1.997" /><path d="M12.002 19.003a5 5 0 1 0 3.998 -8.003" />
+                  </svg>
+                </span>
+                <span class="nav-link-title"> Filters </span>
+              </a>
+              
+              <ul class="dropdown-menu">  
+                <li class="dropend dropdown">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    Channel of Visit
+                  </a>
+                  <ul class="dropdown-menu">
+                    {% for channel in channels %}
+                      <li><a href="?channel={{ channel|urlencode }}" class="dropdown-item">{{ channel }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </li>
+                <li class="dropend dropdown">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    Guest Status
+                  </a>
+                  <ul class="dropdown-menu">
+                    {% for status in statuses %}
+                      <li><a href="?status={{ status|urlencode }}" class="dropdown-item">{{ status }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </li>
+                <li class="dropend dropdown">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    Purpose of Visit
+                  </a>
+                  <ul class="dropdown-menu">
+                    {% for purpose in purposes %}
+                      <li><a href="?purpose={{ purpose|urlencode }}" class="dropdown-item">{{ purpose }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </li>
+                <li class="dropend dropdown">
+                  <a class="dropdown-item dropdown" href="#" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                    Service Attended
+                  </a>
+                  <ul class="dropdown-menu">
+                    {% for service in services %}
+                      <li><a href="?service={{ service|urlencode }}" class="dropdown-item">{{ service }}</a></li>
+                    {% endfor %}
+                  </ul>
+                </li>  
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+          <!-- END NAVBAR MENU -->
+        </div>
+      </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 {% extends 'base.html' %}
 {% load group_tags %}
 {% load static %}
@@ -340,3 +1579,102 @@ const replyPreview = document.createElement("div");
                 </svg>
               </span>
             </div>
+
+
+
+document.getElementById("deleteBtn").addEventListener("click", () => {
+    if (selectedBubbles.size === 0) return;
+    if (!confirm("Delete the selected message(s)? This will mark them deleted for everyone.")) return;
+    const ids = Array.from(selectedBubbles);
+
+    // optimistic UI: mark deleted text
+    ids.forEach(id => {
+      const node = document.getElementById(`chat-bubble-${id}`);
+      if (!node) return;
+      const body = node.querySelector(".chat-bubble-body .fs-4");
+      body.textContent = "[message deleted]";
+      node.dataset.deleted = "true";
+    });
+
+    // send WS action
+    chatSocket.send(JSON.stringify({
+      action: "delete",
+      message_ids: ids,
+      sender_id: CURRENT_USER_ID
+    }));
+
+    clearSelections();
+  });
+
+  // === EDIT BUTTON HANDLER (restricted) ===
+  document.getElementById("editBtn").addEventListener("click", () => {
+    if (selectedBubbles.size !== 1) {
+      alert("Select exactly one message to edit.");
+      return;
+    }
+
+    const id = Array.from(selectedBubbles)[0];
+    const node = document.getElementById(`chat-bubble-${id}`);
+    if (!node) return;
+
+    const senderId = parseInt(node.dataset.senderId, 10);
+    const createdAt = new Date(node.querySelector(".chat-bubble-date").dataset.fullDate);
+    const editedAlready = node.dataset.edited === "true";
+
+    // Restrict: only current user, within 10 minutes, not edited before
+    if (senderId !== CURRENT_USER_ID) {
+      alert("You can only edit your own messages.");
+      clearSelections();
+      return;
+    }
+    const diffMinutes = (Date.now() - createdAt.getTime()) / 60000;
+    if (diffMinutes > 10) {
+      alert("You can only edit within 10 minutes of sending.");
+      clearSelections();
+      return;
+    }
+    if (editedAlready) {
+      alert("This message has already been edited once.");
+      clearSelections();
+      return;
+    }
+
+    // put text in main textarea
+    const body = node.querySelector(".chat-bubble-body .fs-4");
+    const orig = body ? body.textContent : "";
+    chatInput.value = orig;
+    chatInput.focus();
+
+    chatInput.dataset.editingId = id; // mark for sendMessage
+    clearSelections();
+  });
+
+
+  // === REPLY BUTTON HANDLER ===
+  document.getElementById("replyBtn").addEventListener("click", () => {
+    if (selectedBubbles.size === 0) return;
+
+    // pick the last selected bubble
+    const id = Array.from(selectedBubbles).pop();
+    const node = document.getElementById(`chat-bubble-${id}`);
+    if (!node) return;
+
+    // grab the same data structure already stored on the bubble
+    const messageData = {
+      id,
+      sender_id: parseInt(node.dataset.senderId, 10),
+      sender_title: node.querySelector(".chat-bubble-author")?.textContent.split(" ")[0] || "",
+      sender_name: node.querySelector(".chat-bubble-author")?.textContent.split(" ").slice(1).join(" ") || "",
+      color: node.dataset.color || "text-primary",
+      message: node.querySelector(".chat-bubble-body .fs-4")?.textContent || "",
+      guest: node.dataset.guest ? JSON.parse(node.dataset.guest) : null,
+    };
+
+    // ✅ use exactly the same reply preview HTML as swipe-to-reply
+    replyToId = id;
+    replyPreview.classList.remove("d-none");
+    replyPreviewText.innerHTML = createReplyPreviewHTML({ parent: messageData });
+
+    chatInput.focus();
+    clearSelections();
+  });

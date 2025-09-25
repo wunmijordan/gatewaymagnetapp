@@ -556,9 +556,9 @@ def guest_list_view(request):
 
         guest.field_data = fields
 
-        # Flag guests assigned in the last 7 days
+        # Flag guests assigned in the last 14 days
         guest.is_new = False
-        if guest.assigned_at and (now() - guest.assigned_at <= timedelta(days=7)):
+        if guest.assigned_at and (now() - guest.assigned_at <= timedelta(days=14)):
             guest.is_new = True
 
         guest.has_unread_reviews = guest.reviews.filter(is_read=False).exists()

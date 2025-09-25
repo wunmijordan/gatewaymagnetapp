@@ -38,7 +38,7 @@
               <!-- Text -->
               <kbd class="ms-2 bg-warning-lt"><h5>A People <em>Helped</em> By God!</h5></kbd>
             </div>
-            <div class="card-body p-0 mt-0 scrollable flex-fill" style="height: 500px; overflow-y: auto;">
+            <div class="card-body p-0 mt-0 mb-3 scrollable flex-fill" style="height: 500px; overflow-y: auto;">
               <div class="row g-2">
                 {% for user in users %}
                   <div class="col-12">
@@ -98,14 +98,58 @@
             </div>
             <div class="card-body mt-0 p-0 d-flex flex-column flex-fill">
               <!-- Chat Container -->
-              <div class="chat-bubbles text-start ms-2 me-2" id="chatMessagesContainer" style="overflow-y:auto; height:500px; position:relative; overflow-x:hidden;"></div>
-
+              <div class="chat-bubbles text-start ps-3 pe-2" id="chatMessagesContainer" style="overflow-y:auto; height:500px; position:relative; overflow-x:hidden;">
+                <!-- Messages will be dynamically loaded here -->
+              </div>
+              <!-- Options Panel -->
+              <div id="chatOptionsPanel" class="options-panel hidden" aria-hidden="true">
+                <button id="replyBtn" title="Reply">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#ff5e01ff" class="bi bi-reply-all-fill" viewBox="0 0 16 16">
+                    <path d="M8.021 11.9 3.453 8.62a.72.72 0 0 1 0-1.238L8.021 4.1a.716.716 0 0 1 1.079.619V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
+                    <path d="M5.232 4.293a.5.5 0 0 1-.106.7L1.114 7.945l-.042.028a.147.147 0 0 0 0 .252l.042.028 4.012 2.954a.5.5 0 1 1-.593.805L.539 9.073a1.147 1.147 0 0 1 0-1.946l3.994-2.94a.5.5 0 0 1 .699.106"/>
+                  </svg>
+                </button>
+                <!--<button id="editBtn" title="Edit">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pen" viewBox="0 0 16 16">
+                    <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
+                  </svg>
+                </button>-->
+                <button id="copyBtn" title="Copy">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="#02bd12ff"  class="icon icon-tabler icons-tabler-filled icon-tabler-copy-check">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667v-8.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.333 -4c1.094 0 1.828 .533 2.374 1.514a1 1 0 1 1 -1.748 .972c-.221 -.398 -.342 -.486 -.626 -.486h-10c-.548 0 -1 .452 -1 1v9.998c0 .32 .154 .618 .407 .805l.1 .065a1 1 0 1 1 -.99 1.738a3 3 0 0 1 -1.517 -2.606v-10c0 -1.652 1.348 -3 3 -3zm1.293 9.293l-3.293 3.292l-1.293 -1.292a1 1 0 0 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414" />
+                  </svg>
+                </button>
+                <button id="pinBtn" title="Pin">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f703d7ff" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
+                    <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
+                  </svg>
+                </button>
+                <!--
+                <button id="deleteBtn" title="Delete">
+                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-trash">
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </button>
+                -->
+              </div>
               <!-- Sticky Date Header -->
-              <div id="stickyDateHeader"></div>             
+              <div id="stickyDateHeader"></div>
+
+              <!--<div id="scrollToBottomBtn" class="scroll-to-bottom" title="Scroll to bottom">⬇️</div>-->
+              <!-- Floating scroll-to-bottom -->
+              <div id="scrollToBottomBtn" class="scroll-to-bottom hidden" title="Scroll to bottom">
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="48"  height="48"  viewBox="0 0 24 24"  fill="currentColor"  class="icon icon-tabler icons-tabler-filled icon-tabler-square-rounded-arrow-down">
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                  <path d="M12 2c-.218 0 -.432 .002 -.642 .005l-.616 .017l-.299 .013l-.579 .034l-.553 .046c-4.785 .464 -6.732 2.411 -7.196 7.196l-.046 .553l-.034 .579c-.005 .098 -.01 .198 -.013 .299l-.017 .616l-.004 .318l-.001 .324c0 .218 .002 .432 .005 .642l.017 .616l.013 .299l.034 .579l.046 .553c.464 4.785 2.411 6.732 7.196 7.196l.553 .046l.579 .034c.098 .005 .198 .01 .299 .013l.616 .017l.642 .005l.642 -.005l.616 -.017l.299 -.013l.579 -.034l.553 -.046c4.785 -.464 6.732 -2.411 7.196 -7.196l.046 -.553l.034 -.579c.005 -.098 .01 -.198 .013 -.299l.017 -.616l.005 -.642l-.005 -.642l-.017 -.616l-.013 -.299l-.034 -.579l-.046 -.553c-.464 -4.785 -2.411 -6.732 -7.196 -7.196l-.553 -.046l-.579 -.034a28.058 28.058 0 0 0 -.299 -.013l-.616 -.017l-.318 -.004l-.324 -.001zm0 5a1 1 0 0 1 .993 .883l.007 .117v5.585l2.293 -2.292a1 1 0 0 1 1.32 -.083l.094 .083a1 1 0 0 1 .083 1.32l-.083 .094l-4 4a1.008 1.008 0 0 1 -.112 .097l-.11 .071l-.114 .054l-.105 .035l-.149 .03l-.117 .006l-.075 -.003l-.126 -.017l-.111 -.03l-.111 -.044l-.098 -.052l-.092 -.064l-.094 -.083l-4 -4a1 1 0 0 1 1.32 -1.497l.094 .083l2.293 2.292v-5.585a1 1 0 0 1 1 -1z" fill="currentColor" stroke-width="0" />
+                </svg>
+              </div>
             </div>
 
             <!-- Reply Preview -->
-            <div id="replyPreview" class="d-none d-flex mt-3 mb-0 ms-4 me-4 reply-preview text-white p-2 rounded-2 justify-content-between align-items-center" 
+            <div id="replyPreview" class="d-none d-flex mt-0 mb-0 ms-4 me-4 reply-preview text-white p-2 rounded-2 justify-content-between align-items-center" 
                   style="border-left: 4px solid #018f14ff; background-color: #93db9d34; 
                         font-style: normal; box-shadow: 0 4px 8px #0000004d;">
               <span id="replyPreviewText"></span>
@@ -117,34 +161,36 @@
               </span>
             </div>
 
-            {% if not request.user|has_group:"Demo" or request.user.is_superuser %}
-              <!-- Message Input -->
-              <div class="card-footer border-0">
-                <div class="input-group input-group-flat rounded-2 border-0">
-                  <textarea class="form-control" 
-                            id="chatInput" 
-                            placeholder="Type Message" 
-                            rows="1" 
-                            style="resize: none; overflow: hidden;"></textarea>
-
-                  <!--<input type="text" class="form-control" autocomplete="on" placeholder="Type Message" id="chatInput">-->
-                  <span class="input-group-text">
-                    <!-- Attachment container trigger -->
-                    <a href="#" class="link-secondary dropdown me-2 text-purple" id="openUserGuestPopup">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-up">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
-                        <path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M19 22v-6" /><path d="M22 19l-3 -3l-3 3" />
-                      </svg>
-                    </a>
-                    <a href="#" id="sendButton" class="link-secondary ms-2 text-green">
-                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-send">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10 14l11 -11" /><path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" />
-                      </svg>
-                    </a>
-                  </span>
-                </div>
-              </div>
+            {% if not request.user|has_group:"Demo" or request.user.is_superuser %} 
+              <!-- Message Input --> 
+              <div class="card-footer border-0"> 
+                <div class="input-group input-group-flat rounded-2 border-0 d-flex align-items-end justify-content-center p-2" 
+                      style="box-shadow: 0 4px 8px #000000d2; border-radius: 24px; background: #111827;"> 
+                  <!-- Attachment container trigger --> 
+                  <a href="#" class="link-secondary dropdown p-2 text-purple d-flex align-items-center justify-content-center" 
+                              id="openUserGuestPopup"
+                              style="flex: 0 0 auto;"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-user-up"> 
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /> 
+                      <path d="M6 21v-2a4 4 0 0 1 4 -4h4" /><path d="M19 22v-6" /><path d="M22 19l-3 -3l-3 3" /> 
+                    </svg> 
+                  </a> 
+                  <textarea class="form-control border-0 flex-grow-1" id="chatInput" 
+                            placeholder="Type Message" rows="1" 
+                            style="resize: none; overflow: hidden; background: transparent;"></textarea> 
+                  <!--<input type="text" class="form-control" autocomplete="on" placeholder="Type Message" id="chatInput">--> 
+                  <!-- Send Button --> 
+                  <a href="#" id="sendButton" class="link-secondary p-2 text-green d-flex align-items-center justify-content-center"
+                      style="flex: 0 0 auto;"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-send"> 
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/> <path d="M10 14l11 -11" />
+                      <path d="M21 3l-6.5 18a.55 .55 0 0 1 -1 0l-3.5 -7l-7 -3.5a.55 .55 0 0 1 0 -1l18 -6.5" /> 
+                    </svg> 
+                  </a> 
+                  <!-- Mention dropdown -->
+                  <div id="mentionDropdown" class="mention-dropdown d-none"></div>
+                </div> 
+              </div> 
             {% endif %}
           </div>
 
@@ -171,6 +217,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/textarea-caret@3.1.0/index.min.js"></script>
+
 <script>
 const USERS = JSON.parse('{{ users_json|escapejs }}' || '[]');
 const USER_GUESTS = JSON.parse('{{ user_guests_json|escapejs }}' || '[]');
@@ -193,24 +241,38 @@ document.addEventListener("DOMContentLoaded", () => {
   const popupBody = document.getElementById("popupBody");
   const popupSearch = document.getElementById("popupSearch");
   const closeBtn = document.getElementById("popupClose");
+  const optionsPanel = document.getElementById("chatOptionsPanel");
+  const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
+  const mentionDropdown = document.getElementById("mentionDropdown");
 
-  // ===============================
-  // After defining chatInput and sendButton
-  // ===============================
-  //document.addEventListener("DOMContentLoaded", () => {
-  //  if (CURRENT_USER_ROLE === "Demo") {
-  //    chatInput.setAttribute("disabled", "true");
-  //    chatInput.placeholder = "Demo users cannot send messages";
-  //    sendButton.style.pointerEvents = "none";
-  //    sendButton.style.opacity = "0.5";
+  let chatSocket = null;
 
-  //    chatInput.addEventListener("keydown", (e) => e.preventDefault());
-  //    chatInput.addEventListener("paste", (e) => e.preventDefault());
-  //  }
-  //});
+  function connectSocket() {
+    const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/`);
 
-  const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-  const chatSocket = new WebSocket(`${wsScheme}://${window.location.host}/ws/chat/`);
+    chatSocket.onopen = () => {
+      console.log("✅ Connected to WebSocket");
+    };
+
+    chatSocket.onclose = (e) => {
+      console.log("❌ Socket closed. Reconnecting in 3s...", e.reason);
+      setTimeout(connectSocket, 3000); // 🔄 auto-reconnect
+    };
+
+    chatSocket.onerror = (err) => {
+      console.error("Socket error:", err);
+      chatSocket.close();
+    };
+
+    chatSocket.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      appendMessage(data); // 👈 your existing handler
+    };
+  }
+
+  // Call this once when the page loads
+  connectSocket();
 
   function getUserColor(userId) {
     const colors = ["bg-blue-lt text-white","bg-green-lt text-white","bg-orange-lt text-white","bg-purple-lt text-white","bg-pink-lt text-white","bg-cyan-lt text-white","bg-yellow-lt text-white","bg-red-lt text-white","bg-indigo-lt text-white","bg-teal-lt text-white","bg-lime-lt text-white","bg-amber-lt text-white","bg-fuchsia-lt text-white","bg-emerald-lt text-white","bg-violet-lt text-white","bg-rose-lt text-white","bg-sky-lt text-white","bg-orange-200 text-white","bg-purple-200 text-white","bg-pink-200 text-white"];
@@ -219,6 +281,183 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedGuest = null;
   let replyToId = null;
+  let selectedBubbles = new Set(); // selected message IDs
+  let lastSelectionClick = null;    // for detecting single-selection for edit/reply
+  const isTouch = ("ontouchstart" in window);
+
+  // --- Input listener for "@" ---
+  // Use users JSON from Django
+  const usersList = USERS.map(u => ({
+      id: u.id,
+      full_name: u.full_name || u.username,
+      title: u.title || "",
+      username: u.username,
+      image: u.image || null,
+      color: (u.color && u.color.trim() !== "") ? u.color : "#00aeff71"
+  }));
+
+  let mentions = [];
+  let filteredUsers = [];
+  let currentSelection = 0;
+
+  // --- Show dropdown above the input ---
+  function showMentionDropdown() {
+      if (!filteredUsers.length) return hideMentionDropdown();
+
+      mentionDropdown.innerHTML = filteredUsers.map((u, idx) => `
+          <div class="mention-item ${idx === currentSelection ? 'active' : ''}" data-id="${u.id}">
+              <span class="avatar" style="${u.image ? 'background-image:url(' + u.image + ')' : ''}">
+                  ${!u.image ? (u.full_name || u.username).slice(0,2).toUpperCase() : ''}
+              </span>
+              <div class="user-info d-flex">
+                  <span class="title">${u.title || ''}</span>
+                  <span class="name">${u.full_name}</span>
+              </div>
+          </div>
+      `).join('');
+
+      mentionDropdown.classList.remove("d-none");
+      mentionDropdown.style.display = "block";
+
+      // --- DROP-UP POSITIONING ---
+      const parentRect = chatInput.offsetParent.getBoundingClientRect();
+      const inputRect = chatInput.getBoundingClientRect();
+      const dropdownHeight = mentionDropdown.offsetHeight;
+
+      // Position above the input field
+      mentionDropdown.style.left = (inputRect.left - parentRect.left) + "px";
+      mentionDropdown.style.top = (inputRect.top - parentRect.top - dropdownHeight - 4) + "px"; // 4px gap
+      mentionDropdown.style.minWidth = chatInput.offsetWidth + "px";
+  }
+
+  // --- Hide dropdown ---
+  function hideMentionDropdown() {
+      mentionDropdown.classList.add("d-none");
+      mentionDropdown.style.display = "none";
+      currentSelection = 0;
+  }
+
+  // --- Update highlighted item ---
+  function updateActive() {
+      const items = mentionDropdown.querySelectorAll("div");
+      items.forEach((el, idx) => el.classList.toggle("active", idx === currentSelection));
+  }
+
+  // --- Select a mention ---
+  function selectMention(item) {
+      const userId = item.dataset.id;
+      const user = filteredUsers.find(u => u.id == userId);
+      if (!user) return;
+
+      const cursorPos = chatInput.selectionStart;
+      const textBefore = chatInput.value.slice(0, cursorPos);
+      const textAfter = chatInput.value.slice(cursorPos);
+
+      // Replace last @query with full mention
+      const newText = textBefore.replace(/@([^\s@]*)$/, `@${user.title || ''} ${user.full_name}`) + textAfter;
+      chatInput.value = newText;
+      chatInput.focus();
+      hideMentionDropdown();
+  }
+
+  // --- Input listener ---
+  chatInput.addEventListener("input", () => {
+      const cursorPos = chatInput.selectionStart;
+      const textBeforeCursor = chatInput.value.slice(0, cursorPos);
+
+      const match = textBeforeCursor.match(/@([^\s@]*)$/);
+      if (match) {
+          const query = match[1].toLowerCase();
+          filteredUsers = USERS.filter(u => {
+              const fullName = (u.full_name || u.username).toLowerCase();
+              const title = (u.title || "").toLowerCase();
+              return `${title} ${fullName}`.includes(query);
+          });
+          currentSelection = 0;
+          showMentionDropdown();
+      } else {
+          hideMentionDropdown();
+      }
+  });
+
+  // --- Keyboard navigation ---
+  chatInput.addEventListener("keydown", (e) => {
+      const items = mentionDropdown.querySelectorAll("div");
+      if (!items.length) return;
+
+      if (e.key === "ArrowDown") {
+          e.preventDefault();
+          currentSelection = (currentSelection + 1) % items.length;
+          updateActive();
+      } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          currentSelection = (currentSelection - 1 + items.length) % items.length;
+          updateActive();
+      } else if (e.key === "Enter" || e.key === "Tab") {
+          if (currentSelection >= 0) {
+              e.preventDefault();
+              selectMention(items[currentSelection]);
+          }
+      } else if (e.key === "Escape") {
+          hideMentionDropdown();
+      }
+  });
+
+  // --- Click on mention ---
+  mentionDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest("div[data-id]");
+      if (item) selectMention(item);
+  });
+
+  // --- Expose mentions array for sendMessage ---
+  //window.getCurrentMentions = () => mentions;
+  //window.clearMentions = () => { mentions = []; };
+
+
+  // Format timestamp to "Sept. 15, 2025 - 11:10"
+  function formatForCopy(iso) {
+    const d = new Date(iso);
+    const months = ["Jan.","Feb.","Mar.","Apr.","May","Jun.","Jul.","Aug.","Sept.","Oct.","Nov.","Dec."];
+    const datePart = `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    const timePart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    return `${datePart} - ${timePart}`;
+  }
+
+  function updateOptionsPanelVisibility() {
+    if (selectedBubbles.size > 0) {
+      optionsPanel.classList.remove("hidden");
+      optionsPanel.setAttribute("aria-hidden", "false");
+    } else {
+      optionsPanel.classList.add("hidden");
+      optionsPanel.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  // Utility: gather selected bubble DOM nodes
+  function getSelectedNodes() {
+    return Array.from(selectedBubbles).map(id => document.getElementById(`chat-bubble-${id}`)).filter(Boolean);
+  }
+
+  // Toggle selection (highlight) for a single bubble
+  function toggleBubbleSelection(bubbleEl, messageId) {
+    if (selectedBubbles.has(messageId)) {
+      selectedBubbles.delete(messageId);
+      bubbleEl.classList.remove("selected");
+    } else {
+      selectedBubbles.add(messageId);
+      bubbleEl.classList.add("selected");
+    }
+    updateOptionsPanelVisibility();
+    // focus input on reply candidate (UX)
+    chatInput.focus();
+  }
+
+  // Clear all selections
+  function clearSelections() {
+    getSelectedNodes().forEach(node => node.querySelector(".chat-bubble")?.classList.remove("selected"));
+    selectedBubbles.clear();
+    updateOptionsPanelVisibility();
+  }
 
   // Guest Date of Visit Formatting
   function formatGuestDate(dateStr) {
@@ -303,9 +542,74 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   chatContainer.addEventListener("scroll", updateStickyHeader);
 
+  // Attach from Guest list to Chat handler
+  document.querySelectorAll(".attach-to-chat").forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.preventDefault();
+      const guest = JSON.parse(e.currentTarget.getAttribute("data-guest"));
+      createGuestPreview(guestData);
+      chatInput.focus();
+      chatInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+
+  // Reply preview HTML (used for both reply bar + inside bubbles)
+  function createReplyPreviewHTML(data, inBubble = false) {
+    let replyOwner = "";
+
+    if (data.parent) {
+      if (data.parent.sender_id === CURRENT_USER_ID) {
+        replyOwner = "You";
+      } else {
+        replyOwner = `${data.parent.sender_title} ${data.parent.sender_name}`;
+      }
+    }
+
+    const innerHTML = data.parent
+      ? `
+        <small style="color: inherit;">${replyOwner}</small><br>
+        <span class="text-muted">
+          ${data.parent.message.length > 50
+            ? data.parent.message.substring(0, 50) + "..."
+            : data.parent.message}
+        </span>
+        ${
+          data.parent.guest
+            ? `<div class="d-flex align-items-center mt-1">
+                ${
+                  data.parent.guest.image
+                    ? `<img src="${data.parent.guest.image}"
+                            style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
+                    : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
+                            style="width:35px;height:35px;border-radius:4px;">
+                        ${data.parent.guest.name[0]}
+                      </span>`
+                }
+                <span class="ms-2 text-warning">
+                  ${data.parent.guest.title} ${data.parent.guest.name}
+                </span>
+              </div>`
+            : ""
+        }
+      `
+      : "";
+
+    // Wrap in container only if it's for a bubble
+    return inBubble
+      ? `<div class="chat-reply-preview fs-7 mb-1 p-1 rounded"
+                data-parent-id="${data.parent.id}"
+                style="cursor:pointer; background:#1f2937;
+                      border-left:4px solid #018f14ff; width:auto;
+                      box-shadow: 0 4px 8px #0000004d;">
+            ${innerHTML}
+        </div>`
+      : innerHTML;
+  }
+
+
   // Append Message
   function appendMessage(data) {
-    console.log("Incoming message:", data);
+    //console.log("Incoming message:", data);
     const isMe = data.sender_id === CURRENT_USER_ID;
 
     const msgDateObj = new Date(data.created_at);
@@ -331,44 +635,70 @@ document.addEventListener("DOMContentLoaded", () => {
       chatContainer.appendChild(separator);
     }
 
+    const replyHTML = data.parent ? createReplyPreviewHTML({ parent: data.parent }, true) : "";
+
     const bubbleColorClass = isMe ? "bg-green-lt text-white" : data.color;
 
     const bubble = document.createElement("div");
     bubble.classList.add("chat-item");
     bubble.id = `chat-bubble-${data.id}`;
+    bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
+    bubble.dataset.color = data.color || "";   // helpful for reply handler
+    bubble.dataset.edited = data.edited ? "true" : "false"; // if already edited
 
-    // Reply preview (with guest if available)
-    const replyHTML = data.parent
-      ? `<div class="chat-reply-preview text-muted fs-7 mb-1 p-1 rounded"
-              data-parent-id="${data.parent.id}"
-              style="cursor:pointer; background:#1f2937; 
-              border-left:4px solid #018f14ff; max-width:90%;
-              box-shadow: 0 4px 8px #0000004d;">
-            <small class="text-muted">${data.parent.sender_title} ${data.parent.sender_name}</small><br> 
-            <span class="text-green">${data.parent.message.length > 50 ? data.parent.message.substring(0, 50) + "..." : data.parent.message}</span>
-            ${
-              data.parent.guest
-                ? `<div class="d-flex align-items-center mt-1">
-                    ${
-                      data.parent.guest.image
-                        ? `<img src="${data.parent.guest.image}" 
-                                  style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
-                        : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
-                                  style="width:35px;height:35px;border-radius:4px;">${data.parent.guest.name[0]}</span>`
-                    }
-                    <span class="ms-2 text-warning">${data.parent.guest.title} ${data.parent.guest.name}</span>
-                  </div>`
-                : ""
-            }
-        </div>`
-      : "";
+    function escapeRegex(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
+    }
+
+    function renderMessageWithMentions(message, mentionsList) {
+      if (!mentionsList || !mentionsList.length) return message;
+
+      let renderedMsg = message;
+
+      mentionsList.forEach(m => {
+        const titlePrefix = m.title ? m.title + ' ' : '';
+        const name = m.name || m.fullname; // fallback
+
+        const regex = new RegExp(`@${escapeRegex(titlePrefix + name)}`, 'gi');
+
+        // Use the user's color (fall back to default if undefined)
+        const mentionColor = m.color || "#00aeffff";
+
+        renderedMsg = renderedMsg.replace(
+          regex,
+          `<span class="mention" style="color:${mentionColor}">@${titlePrefix}${name}</span>`
+        );
+      });
+
+      return renderedMsg;
+    }
 
     let guestHTML = "";
     if (data.guest) {
+      bubble.dataset.guest = JSON.stringify(data.guest);
       const formattedGuestDate = formatGuestDate(data.guest.date_of_visit);
+
+      // Check if guest has an assigned user
+      const assignedUser = data.guest.assigned_user; // make sure your guest object includes assigned user
+      let assignedHTML = "";
+      if (assignedUser) {
+        assignedHTML = `
+          <div class="assigned-user d-flex align-items-center gap-2">
+            <div class="avatar rounded"
+                style="width:32px; height:32px; background-color: #11182781; overflow:hidden; 
+                        display:flex; align-items:center; justify-content:center; box-shadow: 0 4px 8px #000000a1;"">
+              ${assignedUser.image
+                  ? `<img src="${assignedUser.image}" alt="${assignedUser.full_name}" style="width:100%; height:100%; object-fit:cover;">`
+                  : `${assignedUser.full_name ? assignedUser.full_name[0].toUpperCase() : "?"}`}
+            </div>
+            <span class="text-white small">${assignedUser.title || ''} ${assignedUser.full_name}</span>
+          </div>
+        `;
+      }
+
       guestHTML = `
-        <div class="chat-guest-card text-white px-2 py-2 rounded-2 d-flex flex-column align-items-center gap-2"
-             style="box-shadow: 0 4px 8px #0000004d; background-color: #11182781;">
+        <div class="chat-guest-card text-white px-2 py-2 mb-2 rounded-2 d-flex flex-column align-items-center gap-2"
+            style="box-shadow: 0 4px 8px #000000a1; background-color: #11182781;">
           ${data.guest.image
               ? `<img src="${data.guest.image}" alt="${data.guest.name}" 
                       style="width:200px; height:200px; object-fit:cover; border-radius:6px;
@@ -383,6 +713,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="text-muted">${data.guest.custom_id}</div>
             <div>${formattedGuestDate}</div>
           </div>
+          ${assignedHTML}
         </div>
       `;
     }
@@ -394,35 +725,72 @@ document.addEventListener("DOMContentLoaded", () => {
           ${data.sender_name.split(' ').map(n => n[0])[0] || data.sender_name[0]}
         </span>`;
 
+    const messageHTML = renderMessageWithMentions(data.message, data.mentions);
     bubble.innerHTML = `
       <div class="d-flex align-items-end ${isMe ? "justify-content-end" : ""}">
         ${!isMe ? `<div class="me-2">${avatarHTML}</div>` : ""}
         <div class="chat-bubble mb-4 ${isMe ? 'chat-bubble-me' : ""} ${bubbleColorClass}"
-            style="box-shadow: 0 4px 8px #0000004d; display: inline-flex; flex-direction: 
-            column; align-items: flex-start; cursor: pointer; max-width: 75%; 
-            border-radius: 12px;">
-          <div class="chat-bubble-title">
-            <small class="chat-bubble-author text-muted">${data.sender_title} ${data.sender_name}</small>
-          </div>
-          <div class="chat-bubble-body w-100" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            style="box-shadow: 0 4px 8px #0000004d; display: flex; flex-direction: column;
+                    align-items: stretch; cursor: pointer; max-width: 75%; border-radius: 12px; width: fit-content;">
+          ${!isMe ? `
+            <div class="chat-bubble-title" style="font-size: 0.75rem;">
+              <small><i class="chat-bubble-author" style="color: inherit;">
+                ${data.sender_title} ${data.sender_name}
+              </i></small>
+            </div>` : ""}
+          <div class="chat-bubble-body" style="display: block; gap: 0.5rem; padding: 0;">
             ${replyHTML}
             ${guestHTML}
-            <div class="fs-3">
-              ${data.message}
+
+            <div class="message-row" style="display: block; margin: 0;">
+              <div class="fs-4 text-white"
+                  style="white-space: pre-wrap; word-break: break-word; margin:0; padding:0;">${messageHTML}</div>
+              <div style="display:flex; justify-content:flex-end; width:100%;">
+                <small class="chat-bubble-date text-muted"
+                      style="white-space: nowrap; font-size: 0.6rem;" 
+                      data-full-date="${data.created_at}">
+                  ${new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                </small>
+              </div>
             </div>
-            <small class="chat-bubble-date text-muted ms-2"
-                  style="white-space: nowrap; font-size: 0.75rem; align-self: flex-end;" 
-                  data-full-date="${data.created_at}">
-              ${new Date(data.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-            </small>
-          </div>
+          <div class="chat-bubble-flags"></div>
         </div>
-        ${isMe ? `<div class="ms-2">${avatarHTML}</div>` : ""}
       </div>
     `;
     chatContainer.appendChild(bubble);
     chatContainer.scrollTop = chatContainer.scrollHeight;
     updateStickyHeader();
+
+    //📌 Add flags if pinned/mentioned
+    const flags = bubble.querySelector(".chat-bubble-flags");
+      if (data.pinned) {
+        const pin = document.createElement("span");
+        pin.classList.add("pin-flag");
+        pin.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
+            <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
+          </svg>`;
+        flags.appendChild(pin);
+      }
+      if (data.mentions && data.mentions.some(m => parseInt(m.id) === CURRENT_USER_ID)) {
+        const flag = document.createElement("span");
+        flag.classList.add("mention-flag");
+        flag.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" 
+              fill="none" stroke="currentColor" stroke-width="2" 
+              stroke-linecap="round" stroke-linejoin="round" 
+              class="icon icon-tabler icons-tabler-outline icon-tabler-at bounce-flag">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+            <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />
+          </svg>`;
+        flags.appendChild(flag);
+      }
+
+    // Set message text and preserve newlines
+    //const msgDiv = bubble.querySelector(".fs-3");
+    //msgDiv.style.whiteSpace = "pre-wrap"; // preserves \n
+    //msgDiv.textContent = data.message;
 
     // 🔥 Update last message preview in user list (left column)
     const lastMsgEl = document.getElementById(`last-message-${data.sender_id}`);
@@ -432,58 +800,58 @@ document.addEventListener("DOMContentLoaded", () => {
       lastMsgEl.textContent = preview;
     }
 
-    // ========== Long press to trigger reply ==========
-    function triggerReply() {
-      replyToId = data.id;
-      replyPreview.classList.remove("d-none");
-      replyPreviewText.innerHTML = `<small class="text-muted">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
 
-      if (data.guest) {
-        replyPreviewText.innerHTML += `
-          <div class="d-flex align-items-center mt-1">
-            ${
-              data.guest.image
-                ? `<img src="${data.guest.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
-                : `<span class="avatar bg-gray d-flex align-items-center justify-content-center" 
-                      style="width:35px;height:35px;border-radius:4px;">${data.guest.name[0]}</span>`
-            }
-            <span class="ms-2 text-warning">${data.guest.title} ${data.guest.name}</span>
-          </div>`;
-      }
-      chatInput.focus();
-    }
+    // ---------- selection handlers ----------
+    const chatBubbleEl = bubble.querySelector(".chat-bubble");
 
-    // ========= Desktop: clickdown (long press) =========
-    let pressTimer;
-    if (!("ontouchstart" in window)) {
-      bubble.querySelector(".chat-bubble").addEventListener("mousedown", () => {
-        pressTimer = setTimeout(triggerReply, 500); // 500ms hold
+    // Desktop: right-click opens selection/option panel
+    if (!isTouch) {
+      chatBubbleEl.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault();
+        toggleBubbleSelection(chatBubbleEl, data.id);
       });
-      ["mouseup", "mouseleave"].forEach(evt => {
-        bubble.querySelector(".chat-bubble").addEventListener(evt, () => clearTimeout(pressTimer));
-      });
-    }
-
-    // ========= Mobile: swipe =========
-    if ("ontouchstart" in window) {
-      let touchStartX = 0, touchEndX = 0;
-
-      bubble.querySelector(".chat-bubble").addEventListener("touchstart", (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      });
-
-      bubble.querySelector(".chat-bubble").addEventListener("touchend", (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-      });
-
-      function handleSwipe() {
-        const swipeDistance = touchEndX - touchStartX;
-        if (Math.abs(swipeDistance) > 50) { 
-          // 50px threshold for swipe
-          triggerReply();
+      // left-click toggles selection if options are open (so user can multi-select easily)
+      chatBubbleEl.addEventListener("click", (ev) => {
+        if (selectedBubbles.size > 0) {
+          ev.preventDefault();
+          toggleBubbleSelection(chatBubbleEl, data.id);
         }
-      }
+      });
+    }
+
+    // Mobile: long-press opens selection/option panel (500ms)
+    if (isTouch) {
+      let pressTimer;
+      chatBubbleEl.addEventListener("touchstart", (ev) => {
+        pressTimer = setTimeout(() => toggleBubbleSelection(chatBubbleEl, data.id), 500);
+      });
+      ["touchend","touchmove","touchcancel"].forEach(e => chatBubbleEl.addEventListener(e, ()=> clearTimeout(pressTimer)));
+      // swipe to reply (left/right) - preserved
+      let touchStartX = 0, touchEndX = 0;
+      chatBubbleEl.addEventListener("touchstart", (e)=> touchStartX = e.changedTouches[0].screenX);
+      chatBubbleEl.addEventListener("touchend", (e)=> {
+        touchEndX = e.changedTouches[0].screenX;
+        if (Math.abs(touchEndX - touchStartX) > 50) {
+          // trigger reply preview for single bubble
+          replyToId = data.id;
+          replyPreview.classList.remove("d-none");
+          replyPreviewText.innerHTML = `<small class="text-muted">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
+
+          if (data.guest) {
+            replyPreviewText.innerHTML += `
+              <div class="d-flex align-items-center mt-1">
+                ${
+                  data.guest.image
+                    ? `<img src="${data.guest.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
+                    : `<span class="avatar bg-gray d-flex align-items-center justify-content-center" 
+                          style="width:35px;height:35px;border-radius:4px;">${data.guest.name[0]}</span>`
+                }
+                <span class="ms-2 text-warning">${data.guest.title} ${data.guest.name}</span>
+              </div>`;
+          }
+          chatInput.focus();
+        }
+      });
     }
 
     // ========== Click reply preview inside bubble -> scroll & highlight ==========
@@ -512,21 +880,246 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  LAST_MESSAGES.forEach(appendMessage);
+  // escape HTML to prevent injection when using textContent-like replacement in innerHTML
+  function escapeHtml(unsafe) {
+    if (unsafe == null) return "";
+    return String(unsafe)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-  function sendMessage(message = "", guest=selectedGuest){
-    if(!message.trim() && !guest && !replyToId) return;
+  // ---------- Options actions (frontend + WS emits) ----------
+  // Get current user's full name from USERS array
+  const currentUser = USERS.find(u => u.id === CURRENT_USER_ID);
+  const CURRENT_USER_NAME = currentUser ? currentUser.full_name : "Unknown";
 
-    const payload = {
-      message: message.trim() || "",
-      sender_id: CURRENT_USER_ID,
-      guest_id: guest ? parseInt(guest.id, 10) : null,
-      reply_to_id: replyToId || null
+  // When copying messages
+  document.getElementById("copyBtn").addEventListener("click", async () => {
+    if (!selectedBubbles.size) return;
+
+    const parts = [];
+
+    for (const id of selectedBubbles) {
+        const node = document.getElementById(`chat-bubble-${id}`);
+        if (!node) continue;
+
+        const text = node.querySelector(".chat-bubble-body .fs-4")?.textContent || "";
+        const iso = node.querySelector(".chat-bubble-date")?.dataset?.fullDate || new Date().toISOString();
+
+        const ownerId = parseInt(node.dataset.senderId, 10);
+        const owner = ownerId === CURRENT_USER_ID
+            ? CURRENT_USER_NAME   // <-- full name of current user
+            : node.querySelector(".chat-bubble-author")?.textContent || "Unknown";
+
+        parts.push(`${formatForCopy(iso)} — ${owner}:\n${text}\n`);
+    }
+
+    const final = parts.join("\n");
+    await navigator.clipboard.writeText(final);
+
+    // show SVG checkmark for feedback
+    const btn = document.getElementById("copyBtn");
+    btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="green" viewBox="0 0 16 16">
+      <path d="M13.485 1.929a.5.5 0 0 1 .07.707l-7 8a.5.5 0 0 1-.714.03l-3-3a.5.5 0 0 1 .708-.708L6 9.293l6.778-7.778a.5.5 0 0 1 .707-.07z"/>
+    </svg>`;
+    
+    setTimeout(() => {
+      // restore original copy SVG
+      btn.innerHTML = `
+      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="#02bd12ff"  class="icon icon-tabler icons-tabler-filled icon-tabler-copy-check">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+        <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667v-8.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.333 -4c1.094 0 1.828 .533 2.374 1.514a1 1 0 1 1 -1.748 .972c-.221 -.398 -.342 -.486 -.626 -.486h-10c-.548 0 -1 .452 -1 1v9.998c0 .32 .154 .618 .407 .805l.1 .065a1 1 0 1 1 -.99 1.738a3 3 0 0 1 -1.517 -2.606v-10c0 -1.652 1.348 -3 3 -3zm1.293 9.293l-3.293 3.292l-1.293 -1.292a1 1 0 0 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414" />
+      </svg>`;
+    }, 900);
+
+    clearSelections();
+  });
+
+
+  document.getElementById("pinBtn").addEventListener("click", () => {
+    if (!selectedBubbles.size) return;
+
+    const ids = Array.from(selectedBubbles);
+
+    ids.forEach(id => {
+      const node = document.getElementById(`chat-bubble-${id}`);
+      if (!node) return;
+
+      const bubble = node.querySelector(".chat-bubble");
+      const flags = bubble.querySelector(".chat-bubble-flags");
+
+      if (node.dataset.pinned === "true") {
+        // remove pin
+        const el = flags.querySelector(".pin-flag");
+        if (el) el.remove();
+        node.dataset.pinned = "false";
+      } else {
+        // add pin
+        const s = document.createElement("span");
+        s.className = "pin-flag";
+        s.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
+            <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
+          </svg>`;
+        flags && flags.prepend(s);
+        node.dataset.pinned = "true";
+      }
+    });
+
+    // persist pin state via WebSocket
+    chatSocket.send(JSON.stringify({
+      action: "pin",
+      message_ids: ids,
+      sender_id: CURRENT_USER_ID
+    }));
+
+    // flash pin button for feedback
+    const btn = document.getElementById("pinBtn");
+    btn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="gold" viewBox="0 0 16 16">
+        <path d="M4 1.5a.5.5 0 0 1 .5.5v7.793l2.146-2.147a.5.5 0 0 1 .708.708L5.207 10.207H12.5a.5.5 0 0 1 0 1H5.207l2.147 2.146a.5.5 0 0 1-.708.708L4.5 11.207V19.5a.5.5 0 0 1-1 0V2a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+    `;
+
+    setTimeout(() => {
+      // restore original SVG
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#f703d7ff" class="bi bi-pin-angle-fill" viewBox="0 0 16 16">
+          <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707s.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a3 3 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146"/>
+        </svg>
+      `;
+    }, 900);
+
+    clearSelections();
+  });
+
+
+  // === REPLY BUTTON HANDLER ===
+  document.getElementById("replyBtn").addEventListener("click", () => {
+    if (selectedBubbles.size === 0) return;
+
+    // pick the last selected bubble
+    const id = Array.from(selectedBubbles).pop();
+    const node = document.getElementById(`chat-bubble-${id}`);
+    if (!node) return;
+
+    // grab the same data structure already stored on the bubble
+    const messageData = {
+      id,
+      sender_id: parseInt(node.dataset.senderId, 10),
+      sender_title: node.querySelector(".chat-bubble-author")?.textContent.split(" ")[0] || "",
+      sender_name: node.querySelector(".chat-bubble-author")?.textContent.split(" ").slice(1).join(" ") || "",
+      color: node.dataset.color || "text-primary",
+      message: node.querySelector(".chat-bubble-body .fs-4")?.textContent || "",
+      guest: node.dataset.guest ? JSON.parse(node.dataset.guest) : null,
     };
 
-    if(guest){
+    // ✅ use exactly the same reply preview HTML as swipe-to-reply
+    replyToId = id;
+    replyPreview.classList.remove("d-none");
+    replyPreviewText.innerHTML = createReplyPreviewHTML({ parent: messageData });
+
+    chatInput.focus();
+    clearSelections();
+  });
+
+  // Clicking outside panel clears selection
+  document.addEventListener("click", (e) => {
+    if (!optionsPanel.contains(e.target) && !e.target.closest(".chat-bubble")) {
+      clearSelections();
+    }
+  });
+
+  // scroll-to-bottom behavior
+  function updateScrollButton() {
+    const atBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 60;
+    if (!atBottom) scrollToBottomBtn.classList.add("show"); else scrollToBottomBtn.classList.remove("show");
+  }
+  chatContainer.addEventListener("scroll", updateScrollButton);
+  scrollToBottomBtn.addEventListener("click", ()=> chatContainer.scrollTo({top: chatContainer.scrollHeight, behavior:"smooth"}));
+
+  LAST_MESSAGES.forEach(appendMessage);
+
+  function detectMentionsFromText(text) {
+    const detected = [];
+    usersList.forEach(u => {
+      const regex = new RegExp(`@(${u.title ? u.title + '\\s' : ''})?${u.full_name}`, 'i');
+      if (regex.test(text) && !mentions.some(m => m.id == u.id)) {
+        detected.push({ id: u.id, title: u.title, name: u.full_name });
+      }
+    });
+    return detected;
+  }
+
+  function sendMessage(message = "", guest = selectedGuest) {
+    if (!message.trim() && !guest && !replyToId) return;
+
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+      console.warn("⚠️ Cannot send message, WebSocket not connected.");
+      return;
+    }
+
+    // Detect manually typed mentions
+    const manualMentions = detectMentionsFromText(message).map(m => {
+      const user = USERS.find(u => u.id === m.id); // get the full user object
+      return {
+        ...m,
+        color: user?.color || "#00aeffff" // assign their chat bubble color
+      };
+    });
+
+    // Push to mentions array
+    manualMentions.forEach(m => mentions.push(m));
+
+    // Edit mode
+    if (chatInput.dataset.editingId) {
+      const editId = parseInt(chatInput.dataset.editingId, 10);
+      const node = document.getElementById(`chat-bubble-${editId}`);
+      if (node) {
+        node.dataset.edited = "true";
+        const body = node.querySelector(".chat-bubble-body .fs-4");
+        if (body) body.textContent = message.trim();
+
+        let editedTag = node.querySelector(".edited-flag");
+        if (!editedTag) {
+          const dateEl = node.querySelector(".chat-bubble-date");
+          if (dateEl) {
+            editedTag = document.createElement("span");
+            editedTag.className = "edited-flag text-muted ms-1";
+            editedTag.style.fontSize = "0.7rem";
+            editedTag.textContent = "(Edited)";
+            dateEl.appendChild(editedTag);
+          }
+        }
+      }
+
+      chatSocket.send(JSON.stringify({
+        action: "edit",
+        message_id: editId,
+        new_text: message.trim(),
+        sender_id: CURRENT_USER_ID
+      }));
+
+      chatInput.value = "";
+      delete chatInput.dataset.editingId;
+      return;
+    }
+
+    const payload = {
+      message: message.trim(),
+      sender_id: CURRENT_USER_ID,
+      guest_id: guest ? parseInt(guest.id, 10) : null,
+      reply_to_id: replyToId || null,
+      mentions: mentions.map(m => m.id)
+    };
+
+    if (guest) {
       payload.guest = {
-        id: parseInt(guest.id,10),
+        id: parseInt(guest.id, 10),
         name: guest.name,
         custom_id: guest.custom_id,
         image: guest.image,
@@ -535,12 +1128,16 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
 
-    console.log("Sending message payload:", payload);
+    //console.log("Sending message payload:", payload);
     chatSocket.send(JSON.stringify(payload));
+
+    // Cleanup
     chatInput.value = "";
     removeGuestPreview();
     replyToId = null;
     replyPreview.classList.add("d-none");
+    //window.clearMentions();
+    mentions = [];
   }
 
   function createGuestPreview(guest){
@@ -607,8 +1204,8 @@ document.addEventListener("DOMContentLoaded", () => {
       visibleUsers = USERS.filter(u => u.id === CURRENT_USER_ID); // regular users only see self
     }
 
-    console.log("Current Role:", CURRENT_USER_ROLE);
-    console.log("Visible Users:", visibleUsers.map(u => `${u.full_name} (${u.role})`));
+    //console.log("Current Role:", CURRENT_USER_ROLE);
+    //console.log("Visible Users:", visibleUsers.map(u => `${u.full_name} (${u.role})`));
 
     visibleUsers.forEach(user => {
       const assignedGuests = userGuestsMap[user.id] || [];
@@ -717,11 +1314,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Auto-resize function with minimum height
+  // Auto-resize function with min + max height (≈ 5 lines)
   function autoResizeTextarea(el) {
-    el.style.height = "auto"; // reset
-    const newHeight = el.scrollHeight > 40 ? el.scrollHeight : 40;
+    el.style.height = "auto"; // reset so scrollHeight is accurate
+
+    const lineHeight = 20; // adjust to match your textarea CSS line-height
+    const minHeight = lineHeight * 2;  // ~2 lines minimum
+    const maxHeight = lineHeight * 5;  // ~5 lines maximum
+
+    const newHeight = Math.min(el.scrollHeight, maxHeight);
+
     el.style.height = newHeight + "px";
+
+    // Enable vertical scrollbar only if content exceeds maxHeight
+    el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
   }
 
   // Resize on input
@@ -733,7 +1339,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const { selectionStart, selectionEnd } = chatInput;
 
-      // Insert newline at cursor
       chatInput.value =
         chatInput.value.substring(0, selectionStart) +
         "\n" +
@@ -749,14 +1354,21 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     const text = chatInput.value.trim();
     if (text) {
-      sendMessage(text); // your sendMessage function
+      sendMessage(text);
       chatInput.value = ""; // clear input
-      autoResizeTextarea(chatInput); // reset height smoothly
+      autoResizeTextarea(chatInput); // reset height
     }
   });
 
   // Initial height set
   autoResizeTextarea(chatInput);
+
+  // Attach Guest from Guest List page
+  const guestData = localStorage.getItem("attachGuest");
+  if (guestData) {
+    createGuestPreview(JSON.parse(guestData));
+    localStorage.removeItem("attachGuest"); // clear after use
+  }
 
 });
 </script>

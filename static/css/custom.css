@@ -58,16 +58,58 @@
 /* ============================
    4. Header base styles
    ============================ */
-.navbar .navbar * {
-  z-index: 3000;                        /* navbar items always on top */
-  background-color: #1F2937 !important;
-  min-height: 3.5rem !important;
-  height: 3.5rem !important;
+.navbar {
+  background: transparent !important;
+  transition: all 0.2s ease-in-out;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1030;
+  min-height: 3.5rem;
   display: flex;
   align-items: center;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 1rem 1rem;   /* keep inner spacing instead of margin */
+}
+
+.navbar.scrolled {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;               /* makes centering easier */
+  width: 90%;             /* or max-width if you want it tighter */
+  max-width: 1200px;      /* keeps consistent size on wide screens */
+  margin: 0 auto;         /* centers horizontally */  
+  background: #0c1420 !important;
+  border-radius: 2rem;
+  box-shadow: 0 6px 10px #000000ea;
+  transition: all 0.2s ease-in-out;
+  padding: 0.25rem 2rem;        /* even padding left & right */
+  animation: slideDown 0.2s ease forwards;
+  z-index: 1030;
+}
+
+/* Navbar items */
+.navbar * {
+  z-index: 3000;
+  background: transparent !important; /* keep items transparent */
+  color: #fff;
   padding-top: 0;
   padding-bottom: 0;
-  position: sticky;
+}
+
+.navbar .nav-item.dropdown .dropdown-menu {
+  background: #0c1420ee !important;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* Slide-down animation */
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
 }
 
 .navbar-brand {
@@ -80,6 +122,12 @@
   width: auto;
   pointer-events: none;
   margin-top: -2px;
+  transition: height 0.3s ease; /* shrink on scroll */
+}
+
+/* Shrink logo when scrolled */
+.navbar.scrolled .navbar-brand img {
+  height: 2.6rem;
 }
 
 .navbar-toggler {
@@ -198,6 +246,13 @@
     padding: 0.5rem 0;
   }
 
+  /* Shrink logo when scrolled */
+  .navbar.scrolled .navbar-nav {
+    padding: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
   .nav-link {
     padding: 0.5rem 1rem;
   }
@@ -224,12 +279,31 @@
     width: 2.2rem;
   }
 
+  .navbar-toggler svg {
+    pointer-events: none; /* make sure clicks go to button */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    position: absolute;
+  }
+
+  .icon-tabler-menu-deep,
+  .icon-tabler-x {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+
+  .icon-tabler-menu-deep.hidden,
+  .icon-tabler-x.hidden {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.8);
+    pointer-events: none;
+  }
+
   .navbar-collapse.collapse {
     transition: height 0.35s ease;
     overflow: visible;
     position: relative;
     z-index: 1060;
-    background-color: #1F2937 !important;
+    background: transparent !important;
     color: #fff !important;
   }
 
@@ -239,9 +313,10 @@
     display: none;
     z-index: 1070 !important;
     position: static;
-    background-color: #1F2937 !important;
+    background: #111827b0 !important;
     color: #fff !important;
     border: none;
+    padding: 0.5rem 0;
   }
 
   .navbar-collapse .dropdown-menu.show {
@@ -520,8 +595,248 @@
     transition: height 0.15s ease;
   }
 
+.data.message {
+  white-space: pre-wrap; /* preserves newlines and wraps text */
+  word-break: break-word; /* optional: prevents overflow */
+}
 
 
+.chat-bubble-date {
+  position: absolute;
+  bottom: 2px;
+  right: 6px;
+}
+
+/*.chat-bubble { position: relative; }*/
+
+.mention-dropdown {
+  position: absolute;
+  background: #1f2937;  /* dark background */
+  color: white;
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 2000;
+  display: none;
+  max-width: 80px;
+  font-size: 0.875rem;
+  transition: opacity 0.15s ease;
+}
+.mention-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+.mention-dropdown::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 3px;
+}
+.mention-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  cursor: pointer;
+  gap: 8px;
+}
+.mention-item:hover,
+.mention-item.active {
+  background: #111827;
+}
+.mention-item .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+.mention-item .user-info {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  align-items: center;
+  gap: 6px;
+}
+.mention-item .user-info .name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mention-item .user-info .title {
+  font-style: italic;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* -------------- Chat options / selection / flags -------------- */
+
+/* Selected bubble highlight */
+.chat-bubble.selected {
+  outline: 2px solid #f59f00;
+  box-shadow: 0 0 12px #f59f009a;
+  transform: translateZ(0);
+}
+
+/* Flags container (outside bubble, bottom-left) */
+.chat-bubble-flags {
+  position: absolute;
+  bottom: -14px;
+  left: 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.85rem;
+  z-index: 20;
+  pointer-events: none;
+}
+
+
+.chat-bubble-flags .mention-flag {
+  color: #00aeff;
+  background: rgba(16,185,129,0.08);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+  animation: mention-bounce 1.2s infinite ease-in-out;
+}
+
+.chat-bubble-flags .pin-flag {
+  color: #e703fc;
+  background: rgba(16,185,129,0.08);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+@keyframes mention-bounce {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+
+/* Options panel (vertical, right sticky inside chat container) */
+.options-panel {
+  position: absolute;        /* absolute inside chat container */
+  top: 50%;                  /* center vertically */
+  right: 12px;               /* stick to the right */
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;    /* stack buttons vertically */
+  gap: 10px;
+  padding: 10px 6px;
+  background: #111827;
+  color: #f59f00;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  transition: opacity 180ms ease, transform 200ms cubic-bezier(.2,.9,.3,1);
+  z-index: 1000;
+  opacity: 1;
+}
+
+.options-panel.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(0.95);
+}
+
+.options-panel button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #e6eef6;
+  padding: 8px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+}
+.options-panel button:hover { background: rgba(255,255,255,0.08); }
+
+
+/* Inline edit textarea */
+.chat-edit-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+  color: inherit;
+  resize: vertical;
+}
+
+/* floating scroll-to-bottom arrow */
+.scroll-to-bottom {
+  position: absolute;
+  right: 10px;
+  bottom: 66px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #111827;
+  color: #f59f00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.815);
+  cursor: pointer;
+  z-index: 1200;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 180ms, transform 180ms;
+}
+.scroll-to-bottom.show { opacity: 1; transform: translateY(0); }
+.scroll-to-bottom:hover { background: #111827; }
+
+/* Bounce for new guest */
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+  60% { transform: translateY(-4px); }
+}
+
+.badge-bounce {
+  display: inline-block;
+  animation: bounce 1s infinite;
+}
+
+/* Wiggle for review badge */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  50% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+
+.badge-wiggle {
+  display: inline-block;
+  animation: wiggle 0.6s infinite;
+  transform-origin: center;
+}
+
+/* Optional: make wrapper align badge correctly */
+.badge-wrapper {
+  transform: translate(-50%, -50%);
+}
+
+.chat-bubble-body .mention {
+  font-weight: 600;             /* slightly bold */
+  background-color: transparent !important; /* remove gray bg */
+  border: none !important;      /* remove any border */
+  outline: none !important;     /* remove outline */
+  box-shadow: none !important;  /* remove box-shadow if any */
+  padding: 0;                   /* optional: remove extra spacing */
+  margin: 0;                    /* optional: remove extra spacing */
+}
 
 
 
