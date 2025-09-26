@@ -406,3 +406,74 @@ document.getElementById('voiceNoteBtn')?.addEventListener('click', async () => {
             </div>
           </div>
         </div>
+
+
+// ===============================
+  // After defining chatInput and sendButton
+  // ===============================
+  //document.addEventListener("DOMContentLoaded", () => {
+  //  if (CURRENT_USER_ROLE === "Demo") {
+  //    chatInput.setAttribute("disabled", "true");
+  //    chatInput.placeholder = "Demo users cannot send messages";
+  //    sendButton.style.pointerEvents = "none";
+  //    sendButton.style.opacity = "0.5";
+
+  //    chatInput.addEventListener("keydown", (e) => e.preventDefault());
+  //    chatInput.addEventListener("paste", (e) => e.preventDefault());
+  //  }
+  //});
+
+
+// ========== Long press to trigger reply ==========
+    function triggerReply() {
+      replyToId = data.id;
+      replyPreview.classList.remove("d-none");
+      replyPreviewText.innerHTML = `<small class="text-muted">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
+
+      if (data.guest) {
+        replyPreviewText.innerHTML += `
+          <div class="d-flex align-items-center mt-1">
+            ${
+              data.guest.image
+                ? `<img src="${data.guest.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
+                : `<span class="avatar bg-gray d-flex align-items-center justify-content-center" 
+                      style="width:35px;height:35px;border-radius:4px;">${data.guest.name[0]}</span>`
+            }
+            <span class="ms-2 text-warning">${data.guest.title} ${data.guest.name}</span>
+          </div>`;
+      }
+      chatInput.focus();
+    }
+
+    // ========= Desktop: clickdown (long press) =========
+    let pressTimer;
+    if (!("ontouchstart" in window)) {
+      bubble.querySelector(".chat-bubble").addEventListener("mousedown", () => {
+        pressTimer = setTimeout(triggerReply, 500); // 500ms hold
+      });
+      ["mouseup", "mouseleave"].forEach(evt => {
+        bubble.querySelector(".chat-bubble").addEventListener(evt, () => clearTimeout(pressTimer));
+      });
+    }
+
+    // ========= Mobile: swipe =========
+    if ("ontouchstart" in window) {
+      let touchStartX = 0, touchEndX = 0;
+
+      bubble.querySelector(".chat-bubble").addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      });
+
+      bubble.querySelector(".chat-bubble").addEventListener("touchend", (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+      });
+
+      function handleSwipe() {
+        const swipeDistance = touchEndX - touchStartX;
+        if (Math.abs(swipeDistance) > 50) { 
+          // 50px threshold for swipe
+          triggerReply();
+        }
+      }
+    }

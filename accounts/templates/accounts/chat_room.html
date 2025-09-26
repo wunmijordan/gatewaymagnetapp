@@ -69,8 +69,8 @@
                           </div>
                           <div id="last-message-{{ user.id }}"
                                 class="text-secondary fst-italic text-truncate" 
-                                style="font-size:0.7rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            {{ user.last_message|default:"No messages yet"|truncatechars:28 }}
+                                style="font-size:0.65rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ user.last_message|default:"No messages yet"|truncatechars:30 }}
                           </div>
                         </div>
                       </div>
@@ -568,7 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const innerHTML = data.parent
       ? `
         <small style="color: inherit;">${replyOwner}</small><br>
-        <span class="text-muted">
+        <span class="text-secondary">
           ${data.parent.message.length > 50
             ? data.parent.message.substring(0, 50) + "..."
             : data.parent.message}
@@ -835,7 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
           // trigger reply preview for single bubble
           replyToId = data.id;
           replyPreview.classList.remove("d-none");
-          replyPreviewText.innerHTML = `<small class="text-muted">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
+          replyPreviewText.innerHTML = `<small class="text-secondary">${data.sender_title} ${data.sender_name}</small><br> ${data.message}`;
 
           if (data.guest) {
             replyPreviewText.innerHTML += `

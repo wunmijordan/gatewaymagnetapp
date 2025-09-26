@@ -1,3 +1,8 @@
+${isMe ? `<div class="ms-2">${avatarHTML}</div>` : ""}
+
+📌
+
+
 function appendMessage(msg) {
     console.log("Appending message:", msg);
     console.log("chatContainer:", chatContainer);
