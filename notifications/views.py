@@ -6,8 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.views.decorators.http import require_POST
 from .models import PushSubscription
-from .utils import send_push
-
+from .utils import notify_users
+from .models import UserSettings
 
 
 # Get unread notifications
@@ -51,7 +51,7 @@ from .forms import UserSettingsForm
 
 @login_required
 def user_settings(request):
-    settings = request.user.settings
+    settings = UserSettings.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
         form = UserSettingsForm(request.POST, instance=settings)
@@ -65,32 +65,25 @@ def user_settings(request):
     return JsonResponse({"success": True})
 
 
-
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from .models import UserSettings
-
-import json
-from django.views.decorators.csrf import csrf_exempt  # not needed if CSRF token is sent
-
 @login_required
 @require_POST
 def update_user_settings(request):
+    settings, _ = UserSettings.objects.get_or_create(user=request.user)
     try:
         data = json.loads(request.body)
     except:
         data = request.POST
 
-    sound = data.get("notification_sound", "chime1")
-    vibration = data.get("vibration_enabled", False)
-
-    settings, _ = UserSettings.objects.get_or_create(user=request.user)
-    settings.notification_sound = sound
-    settings.vibration_enabled = vibration
+    settings.notification_sound = data.get("notification_sound", settings.notification_sound)
+    settings.vibration_enabled = data.get("vibration_enabled") in [True, "true", "on", "1"]
     settings.save()
 
-    return JsonResponse({"status": "ok", "sound": sound, "vibration": vibration})
+    return JsonResponse({
+        "status": "ok",
+        "sound": settings.notification_sound,
+        "vibration": settings.vibration_enabled
+    })
+
 
 
 @csrf_exempt

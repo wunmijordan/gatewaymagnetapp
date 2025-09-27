@@ -369,22 +369,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const soundSelect = document.getElementById("id_notification_sound");
     const previewBtn = document.getElementById("preview-sound-btn");
 
-    const { userSound, soundMap, urls, csrfToken, settings } = window.djangoData || {};
+    const { userSound, soundMap, urls, csrfToken, settings } = window.APP_CONFIG || {};
     let vibrationEnabled = settings?.vibration_enabled || false;
 
     // =========================
     // SOUND HANDLING
     // =========================
     function setNotificationSound(soundKey) {
-      const src = soundMap[soundKey] || Object.values(soundMap)[0];
+      const map = window.APP_CONFIG?.sound?.soundMap || {};
+      const defaultSrc = Object.values(map)[0] || "";
+      const src = map[soundKey] || defaultSrc;
+
+      if (!src) {
+        console.warn("⚠️ No sound source found for:", soundKey);
+        return;
+      }
+
       notifSound.src = src;
       notifSound.load();
     }
-    setNotificationSound(userSound);
+
+    // Initialize with user’s saved sound
+    const initialSound = window.APP_CONFIG?.sound?.userSound || "chime1";
+    setNotificationSound(initialSound);
 
     function unlockAudio() {
       if (audioUnlocked) return;
       [notifSound, previewAudio].forEach(audio => {
+        if (!audio) return;
         audio.volume = 0;
         audio.play()
           .then(() => {
@@ -410,8 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function vibrate() {
+      const vibrationEnabled = window.APP_CONFIG?.sound?.vibrationEnabled || false;
       if (vibrationEnabled && "vibrate" in navigator) {
-        navigator.vibrate([200, 100, 200]); // buzz–pause–buzz pattern
+        navigator.vibrate([200, 100, 200]); // buzz–pause–buzz
       }
     }
 
@@ -506,38 +519,50 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // SETTINGS FORM
     // =========================
+    // PREVIEW BUTTON
     previewBtn?.addEventListener("click", () => {
       if (!soundSelect) return;
+
       const selected = soundSelect.value;
-      const src = soundMap[selected];
+      const map = window.APP_CONFIG?.sound?.soundMap || {};
+      const src = map[selected];
+
       if (src) {
         previewAudio.src = src;
         previewAudio.currentTime = 0;
-        previewAudio.play().catch(err => console.warn("Preview blocked:", err));
+        previewAudio.play().catch(err =>
+          console.warn("🔇 Preview blocked:", err)
+        );
+      } else {
+        console.warn("⚠️ No preview sound found for:", selected);
       }
     });
 
+    // SAVE SETTINGS
     settingsForm?.addEventListener("submit", async e => {
       e.preventDefault();
       const formData = new FormData(settingsForm);
 
       try {
-        const res = await fetch(urls.updateSettings, {
+        const res = await fetch(window.APP_CONFIG.urls.updateSettings, {
           method: "POST",
-          headers: { "X-CSRFToken": csrfToken },
+          headers: { "X-CSRFToken": window.APP_CONFIG.csrfToken },
           body: formData
         });
+
         if (res.ok) {
           alert("✅ Notification settings updated");
+
           // Update sound + vibration immediately
           setNotificationSound(soundSelect.value);
           const formDataObj = Object.fromEntries(formData.entries());
-          vibrationEnabled = formDataObj.vibration_enabled === "on";
+          window.APP_CONFIG.sound.vibrationEnabled =
+            formDataObj.vibration_enabled === "on";
         } else {
           alert("⚠️ Failed to update settings");
         }
       } catch (err) {
-        console.error("Failed to save settings:", err);
+        console.error("❌ Error saving settings:", err);
         alert("⚠️ Error saving settings");
       }
     });

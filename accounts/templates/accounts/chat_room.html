@@ -295,6 +295,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const limit = 50;
   let lastMessageDate = null;
 
+  // --- Utility: escape user-provided strings for RegExp ---
+  function escapeRegex(str) {
+    if (str == null) return "";
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
   // --- Input listener for "@" ---
   // Use users JSON from Django
   const usersList = USERS.map(u => ({
@@ -355,19 +361,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Select a mention ---
   function selectMention(item) {
-      const userId = item.dataset.id;
-      const user = filteredUsers.find(u => u.id == userId);
-      if (!user) return;
+    const userId = item.dataset.id;
+    const user = filteredUsers.find(u => u.id == userId);
+    if (!user) return;
 
-      const cursorPos = chatInput.selectionStart;
-      const textBefore = chatInput.value.slice(0, cursorPos);
-      const textAfter = chatInput.value.slice(cursorPos);
+    const cursorPos = chatInput.selectionStart;
+    const textBefore = chatInput.value.slice(0, cursorPos);
+    const textAfter = chatInput.value.slice(cursorPos);
 
-      // Replace last @query with full mention
-      const newText = textBefore.replace(/@([^\s@]*)$/, `@${user.title || ''} ${user.full_name}`) + textAfter;
-      chatInput.value = newText;
-      chatInput.focus();
-      hideMentionDropdown();
+    const titlePrefix = user.title ? (user.title + ' ') : '';
+    // Replace last @query with full mention (no accidental extra space)
+    const newText = textBefore.replace(/@([^\s@]*)$/, `@${titlePrefix}${user.full_name}`) + textAfter;
+    chatInput.value = newText;
+    chatInput.focus();
+    hideMentionDropdown();
   }
 
   // --- Input listener ---
@@ -591,36 +598,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.dataset.createdAt = data.created_at;
     bubble.classList.add("chat-item");
     bubble.id = `chat-bubble-${data.id}`;
-    //bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
+    bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
     bubble.dataset.color = data.color || "";   // helpful for reply handler
     //bubble.dataset.edited = data.edited ? "true" : "false"; // if already edited
-
-    function escapeRegex(string) {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special regex chars
-    }
-
-    function renderMessageWithMentions(message, mentionsList) {
-      if (!mentionsList || !mentionsList.length) return message;
-
-      let renderedMsg = message;
-
-      mentionsList.forEach(m => {
-        const titlePrefix = m.title ? m.title + ' ' : '';
-        const name = m.name || m.fullname; // fallback
-
-        const regex = new RegExp(`@${escapeRegex(titlePrefix + name)}`, 'gi');
-
-        // Use the user's color (fall back to default if undefined)
-        const mentionColor = m.color || "#00aeffff";
-
-        renderedMsg = renderedMsg.replace(
-          regex,
-          `<span class="mention" style="color:${mentionColor}">@${titlePrefix}${name}</span>`
-        );
-      });
-
-      return renderedMsg;
-    }
 
     let guestHTML = "";
     if (data.guest) {
@@ -689,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ${!isMe ? `
             <div class="chat-bubble-title" style="font-size: 0.75rem;">
               <small><i class="chat-bubble-author" style="color: inherit;">
-                ${data.sender_title} ${data.sender_name}
+                ${data.sender_title || ""} ${data.sender_name}
               </i></small>
             </div>` : ""}
           <div class="chat-bubble-body" style="display: block; gap: 0.5rem; padding: 0;">
@@ -839,10 +819,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ✅ Keep backend order (oldest → newest)
     messages.forEach(msg => {
+      // Skip duplicates silently
       if (!document.getElementById(`chat-bubble-${msg.id}`)) {
         chatContainer.prepend(renderMessage(msg, true));
-      } else {
-        console.warn("Duplicate skipped (prepend):", msg.id);
       }
     });
 
@@ -980,15 +959,63 @@ document.addEventListener("DOMContentLoaded", () => {
 
   LAST_MESSAGES.forEach(appendMessage);
 
+  /***********************
+  * Mentions Utilities *
+  ***********************/
+
+  // Utility to safely escape regex special chars
+  function escapeRegex(string) {
+    if (!string) return "";
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Detect manually typed mentions in message text
   function detectMentionsFromText(text) {
+    if (!text) return [];
     const detected = [];
+
     usersList.forEach(u => {
-      const regex = new RegExp(`@(${u.title ? u.title + '\\s' : ''})?${u.full_name}`, 'i');
+      const fullName = escapeRegex(u.full_name || u.username);
+      const title = u.title ? escapeRegex(u.title) : "";
+
+      // If title exists, allow optional "Title " before the name
+      const pattern = title
+        ? `@(?:${title}\\s+)?${fullName}`
+        : `@${fullName}`;
+
+      const regex = new RegExp(pattern, "i"); // case-insensitive
       if (regex.test(text) && !mentions.some(m => m.id == u.id)) {
         detected.push({ id: u.id, title: u.title, name: u.full_name });
       }
     });
+
     return detected;
+  }
+
+  // Render mentions in message with styled spans
+  function renderMessageWithMentions(message, mentionsList) {
+    if (!mentionsList || !mentionsList.length) return message;
+
+    let renderedMsg = message;
+
+    mentionsList.forEach(m => {
+      const titlePrefix = m.title ? m.title + " " : "";
+      const name = m.name || m.fullname; // fallback
+
+      const regex = new RegExp(
+        `@${escapeRegex(titlePrefix + name)}`,
+        "gi"
+      );
+
+      const mentionColor = m.color || "#00aeffff";
+
+      renderedMsg = renderedMsg.replace(
+        regex,
+        `<span class="mention" style="color:${mentionColor}">@${titlePrefix}${name}</span>`
+      );
+    });
+
+    return renderedMsg;
   }
 
   function sendMessage(message = "", guest = selectedGuest) {
@@ -1083,19 +1110,20 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Guest object:", guest);
     console.log("Assigned user:", guest?.assigned_user);
     console.log("Message content:", message.trim());
+    console.log("Final payload:", JSON.stringify(payload, null, 2)); // ✅ full JSON preview
     console.groupEnd();
 
-    if (guest) {
-      payload.guest = {
-        id: parseInt(guest.id, 10),
-        name: guest.name,
-        custom_id: guest.custom_id,
-        image: guest.image,
-        title: guest.title,
-        date_of_visit: guest.date_of_visit,
+    //if (guest) {
+    //  payload.guest = {
+    //    id: parseInt(guest.id, 10),
+    //    name: guest.name,
+    //    custom_id: guest.custom_id,
+    //    image: guest.image,
+    //    title: guest.title,
+    //    date_of_visit: guest.date_of_visit,
         //assigned_user: guest.assigned_user || null
-      };
-    }
+    //  };
+    //}
 
     chatSocket.send(JSON.stringify(payload));
 
@@ -1121,8 +1149,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ---------- Options actions (frontend + WS emits) ----------
   // Get current user's full name from USERS array
+  // Build the current user's display name (with title + full name)
   const currentUser = USERS.find(u => u.id === CURRENT_USER_ID);
-  const CURRENT_USER_NAME = currentUser ? currentUser.full_name : "Unknown";
+  const CURRENT_USER_DISPLAY = currentUser
+    ? `${currentUser.title ? currentUser.title + " " : ""}${currentUser.full_name || currentUser.username}`
+    : "Unknown";
 
   // When copying messages
   document.getElementById("copyBtn").addEventListener("click", async () => {
@@ -1131,37 +1162,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const parts = [];
 
     for (const id of selectedBubbles) {
-        const node = document.getElementById(`chat-bubble-${id}`);
-        if (!node) continue;
+      const node = document.getElementById(`chat-bubble-${id}`);
+      if (!node) continue;
 
-        const text = node.querySelector(".chat-bubble-body .fs-4")?.textContent || "";
-        const iso = node.querySelector(".chat-bubble-date")?.dataset?.fullDate || new Date().toISOString();
+      const text = node.querySelector(".chat-bubble-body .fs-4")?.textContent.trim() || "";
+      const iso = node.querySelector(".chat-bubble-date")?.dataset?.fullDate || new Date().toISOString();
 
-        const ownerId = parseInt(node.dataset.senderId, 10);
-        const owner = ownerId === CURRENT_USER_ID
-            ? CURRENT_USER_NAME   // <-- full name of current user
-            : node.querySelector(".chat-bubble-author")?.textContent || "Unknown";
+      const ownerId = parseInt(node.dataset.senderId, 10);
+      const owner = ownerId === CURRENT_USER_ID
+        ? CURRENT_USER_DISPLAY
+        : (node.querySelector(".chat-bubble-author")?.textContent.trim() || "Unknown");
 
-        parts.push(`${formatForCopy(iso)} — ${owner}:\n${text}\n`);
+      parts.push(`${formatForCopy(iso)} — ${owner}: ${text}`);
     }
 
     const final = parts.join("\n");
     await navigator.clipboard.writeText(final);
 
-    // show SVG checkmark for feedback
+    // ✅ Feedback icon
     const btn = document.getElementById("copyBtn");
     btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="green" viewBox="0 0 16 16">
-      <path d="M13.485 1.929a.5.5 0 0 1 .07.707l-7 8a.5.5 0 0 1-.714.03l-3-3a.5.5 0 0 1 .708-.708L6 9.293l6.778-7.778a.5.5 0 0 1 .707-.07z"/>
-    </svg>`;
-    
-    setTimeout(() => {
-      // restore original copy SVG
-      btn.innerHTML = `
-      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="#02bd12ff"  class="icon icon-tabler icons-tabler-filled icon-tabler-copy-check">
-        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-        <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667v-8.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.333 -4c1.094 0 1.828 .533 2.374 1.514a1 1 0 1 1 -1.748 .972c-.221 -.398 -.342 -.486 -.626 -.486h-10c-.548 0 -1 .452 -1 1v9.998c0 .32 .154 .618 .407 .805l.1 .065a1 1 0 1 1 -.99 1.738a3 3 0 0 1 -1.517 -2.606v-10c0 -1.652 1.348 -3 3 -3zm1.293 9.293l-3.293 3.292l-1.293 -1.292a1 1 0 0 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414" />
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="green" viewBox="0 0 16 16">
+        <path d="M13.485 1.929a.5.5 0 0 1 .07.707l-7 8a.5.5 0 0 1-.714.03l-3-3a.5.5 0 0 1 .708-.708L6 9.293l6.778-7.778a.5.5 0 0 1 .707-.07z"/>
       </svg>`;
+
+    setTimeout(() => {
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" 
+            viewBox="0 0 24 24" fill="#02bd12ff" 
+            class="icon icon-tabler icons-tabler-filled icon-tabler-copy-check">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M18.333 6a3.667 3.667 0 0 1 3.667 3.667v8.666a3.667 3.667 0 0 1 -3.667 3.667h-8.666a3.667 3.667 0 0 1 -3.667 -3.667v-8.666a3.667 3.667 0 0 1 3.667 -3.667zm-3.333 -4c1.094 0 1.828 .533 2.374 1.514a1 1 0 1 1 -1.748 .972c-.221 -.398 -.342 -.486 -.626 -.486h-10c-.548 0 -1 .452 -1 1v9.998c0 .32 .154 .618 .407 .805l.1 .065a1 1 0 1 1 -.99 1.738a3 3 0 0 1 -1.517 -2.606v-10c0 -1.652 1.348 -3 3 -3zm1.293 9.293l-3.293 3.292l-1.293 -1.292a1 1 0 0 0 -1.414 1.414l2 2a1 1 0 0 0 1.414 0l4 -4a1 1 0 0 0 -1.414 -1.414" />
+        </svg>`;
     }, 900);
 
     clearSelections();

@@ -52,6 +52,7 @@ def user_full_name(user):
     return f"{title} {name}".strip() if title else name
 
 
+
 def push_realtime_notification(notification):
     """
     Send a real-time notification to the user's WebSocket group.
@@ -76,9 +77,11 @@ def push_realtime_notification(notification):
 
 def notify_users(users, title, description, link="#", is_urgent=False, is_success=False):
     """
-    Create in-app notifications for a set of users and push real-time updates.
+    Create in-app notifications for a set of users and push both WebSocket
+    and Web Push notifications (system notifications).
     """
     for user in users:
+        # 1️⃣ Create DB notification
         notif = Notification.objects.create(
             user=user,
             title=title,
@@ -87,7 +90,32 @@ def notify_users(users, title, description, link="#", is_urgent=False, is_succes
             is_urgent=is_urgent,
             is_success=is_success,
         )
+
+        # 2️⃣ Push via WebSocket
         push_realtime_notification(notif)
+
+        # 3️⃣ Push via Web Push
+        for sub in user.push_subscriptions.all():
+            try:
+                webpush(
+                    subscription_info=sub.subscription_data,
+                    data=json.dumps({
+                        "title": title,
+                        "body": description,
+                        "url": link,
+                        "sound": getattr(user.settings, "notification_sound", "chime1"),
+                        "vibration": getattr(user.settings, "vibration_enabled", True),
+                    }),
+                    vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": "mailto:magnet@gatewaynation.org"},
+                )
+            except WebPushException as e:
+                # Remove expired subscriptions
+                if "410" in str(e) or "404" in str(e):
+                    sub.delete()
+                else:
+                    print(f"Web Push failed for {user}: {repr(e)}")
+
 
 
 
@@ -109,18 +137,3 @@ def get_user_role(user):
     else:
         return "Team Member"
 
-
-def send_push(subscription_info, title, body, url="/"):
-    try:
-        webpush(
-            subscription_info=subscription_info,
-            data=json.dumps({
-                "title": title,
-                "body": body,
-                "url": url
-            }),
-            vapid_private_key=settings.VAPID_PRIVATE_KEY,
-            vapid_claims={"sub": "mailto:magnet@gatewaynation.org"},
-        )
-    except WebPushException as e:
-        print("Push failed:", repr(e))

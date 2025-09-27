@@ -9,7 +9,7 @@ from django.urls import reverse
 from notifications.middleware import get_current_user
 from django.utils import timezone
 from accounts.utils import user_in_groups
-from .utils import send_push
+from .utils import notify_users
 from pywebpush import WebPushException
 from notifications.utils import (
     notify_users,
@@ -298,7 +298,7 @@ def create_user_settings(sender, instance, created, **kwargs):
         UserSettings.objects.create(user=instance)
 
 
-
+"""
 @receiver(post_save, sender=Notification)
 def push_on_notification(sender, instance, created, **kwargs):
     if created:
@@ -317,4 +317,5 @@ def push_on_notification(sender, instance, created, **kwargs):
                     sub.delete()
                 else:
                     print("Push failed:", repr(e))
+"""
 

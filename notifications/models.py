@@ -45,7 +45,7 @@ class UserSettings(models.Model):
 
 
 class PushSubscription(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="push_subscriptions")
     subscription_data = models.JSONField()  # stores endpoint + keys
     created_at = models.DateTimeField(auto_now_add=True)
 

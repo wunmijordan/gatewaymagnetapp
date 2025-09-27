@@ -958,20 +958,6 @@
     </div>
   </div>
 
-  <script>
-    window.APP_CONFIG = {
-      urls: {
-        topServicesData: "{% url 'top_services_data' %}",
-        channelBreakdown: "{% url 'channel_breakdown' %}",
-      },
-      csrfToken: "{{ csrf_token }}",
-      user: {
-        id: {{ request.user.id|default:'null' }},
-        isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
-      },
-    };
-  </script>
-
 
   <!-- Notification Settings Modal -->
   <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-labelledby="notifSettingsLabel" aria-hidden="true">
@@ -1033,17 +1019,26 @@
 
   <!-- JS: Map sound keys → static URLs & URLs -->
   <script>
-    window.djangoData = {
-      csrfToken: "{{ csrf_token }}",
-      userSound: "{{ settings.notification_sound|default:'chime1' }}",
-      soundMap: {
-        {% for value,label in sound_choices %}
-        "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
-        {% endfor %}
-      },
+    window.APP_CONFIG = {
       urls: {
+        topServicesData: "{% url 'top_services_data' %}",
+        channelBreakdown: "{% url 'channel_breakdown' %}",
         updateSettings: "{% url 'notifications:update_user_settings' %}",
         markAllRead: "{% url 'notifications:mark_all_read' %}"
+      },
+      csrfToken: "{{ csrf_token }}",
+      user: {
+        id: {{ request.user.id|default:'null' }},
+        isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
+      },
+      sound: {
+        userSound: "{{ settings.notification_sound|default:'chime1' }}",
+        vibrationEnabled: {{ settings.vibration_enabled|yesno:'true,false' }},
+        soundMap: {
+          {% for value,label in sound_choices %}
+          "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        }
       }
     };
   </script>

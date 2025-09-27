@@ -23,8 +23,12 @@ self.addEventListener("push", function (event) {
     body: data.body || "You have a new message",
     icon: "/static/images/icons/icon-192x192.png",
     badge: "/static/images/icons/icon-192x192.png",
+    vibrate: data.vibration ? [200, 100, 200] : undefined,
     data: data.url || "/",
   };
+
+  // iOS ignores sound, but Android may respect it if allowed
+  if (data.sound) options.sound = `/static/sounds/${data.sound}.mp3`;
 
   event.waitUntil(
     self.registration.showNotification(data.title || "Notification", options)
