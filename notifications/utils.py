@@ -5,6 +5,9 @@ from channels.layers import get_channel_layer
 from guests.models import GuestEntry
 from accounts.utils import user_in_groups
 from django.utils import timezone
+from pywebpush import webpush, WebPushException
+import json
+from django.conf import settings
 
 
 
@@ -105,3 +108,19 @@ def get_user_role(user):
         return "Registrant"
     else:
         return "Team Member"
+
+
+def send_push(subscription_info, title, body, url="/"):
+    try:
+        webpush(
+            subscription_info=subscription_info,
+            data=json.dumps({
+                "title": title,
+                "body": body,
+                "url": url
+            }),
+            vapid_private_key=settings.VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": "mailto:magnet@gatewaynation.org"},
+        )
+    except WebPushException as e:
+        print("Push failed:", repr(e))

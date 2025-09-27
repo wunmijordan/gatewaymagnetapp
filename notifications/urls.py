@@ -10,4 +10,6 @@ urlpatterns = [
     path("api/unread/", views.unread_notifications, name="notifications_unread_api"),
     path("update-settings/", views.update_user_settings, name="update_user_settings"),
     path("settings/", views.user_settings, name="user_settings"),
+    path("save-subscription/", views.save_subscription, name="save_subscription"),
+    path("test/", views.test_push, name="test_push"),
 ]

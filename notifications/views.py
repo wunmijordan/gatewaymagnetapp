@@ -5,13 +5,10 @@ from .models import Notification, UserSettings
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.views.decorators.http import require_POST
+from .models import PushSubscription
+from .utils import send_push
 
 
-
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .models import Notification
 
 # Get unread notifications
 @login_required
@@ -94,4 +91,31 @@ def update_user_settings(request):
     settings.save()
 
     return JsonResponse({"status": "ok", "sound": sound, "vibration": vibration})
+
+
+@csrf_exempt
+@login_required
+def save_subscription(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        PushSubscription.objects.update_or_create(
+            user=request.user,
+            defaults={"subscription_data": data}
+        )
+        return JsonResponse({"status": "ok"})
+    return JsonResponse({"error": "invalid request"}, status=400)
+
+@login_required
+def test_push(request):
+    sub = PushSubscription.objects.filter(user=request.user).first()
+    if not sub:
+        return JsonResponse({"error": "no subscription"}, status=400)
+
+    send_push(
+        sub.subscription_data,
+        title="Hello!",
+        body="This is a test push notification.",
+        url="/"
+    )
+    return JsonResponse({"status": "sent"})
 

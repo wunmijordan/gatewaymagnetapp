@@ -15,6 +15,7 @@ urlpatterns = [
     path("groups/delete/<int:group_id>/", views.delete_group, name="delete_group"),
     #path("page/", views.chat_page, name="chat_page"),
     path("chat/", views.chat_room, name="chat_room"),
+    path("chat/load/", views.load_more_messages, name="load_more_messages"),
     #path('api/messages/<int:message_id>/edit/', views.edit_message, name='edit_message'),
     #path('api/messages/<int:message_id>/delete/', views.delete_message, name='delete_message'),
     #path('api/guests/<int:guest_id>/', views.guest_detail_api, name='guest_detail_api'),

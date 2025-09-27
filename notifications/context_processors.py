@@ -2,6 +2,7 @@
 
 from .models import Notification
 from .models import UserSettings
+from django.conf import settings
 
 
 def unread_notifications(request):
@@ -23,6 +24,15 @@ def user_settings(request):
             "sound_choices": UserSettings.SOUND_CHOICES,
         }
     return {}
+
+
+
+def vapid_keys(request):
+    return {
+        "VAPID_PUBLIC_KEY": getattr(settings, "VAPID_PUBLIC_KEY", ""),
+    }
+
+
 
 
 #def user_settings(request):

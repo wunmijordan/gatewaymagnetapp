@@ -1,8 +1,6 @@
 import os
 from pathlib import Path
 import environ
-from decouple import config
-from dotenv import load_dotenv
 import cloudinary
 import dj_database_url
 
@@ -11,23 +9,25 @@ import dj_database_url
 # =========================
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-env = environ.Env(DEBUG=(bool, False))
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
-load_dotenv(dotenv_path=BASE_DIR / ".env")
+env = environ.Env(
+    DEBUG=(bool, False),
+    DJANGO_ENV=(str, "development")
+)
+
+# Load .env file
+environ.Env.read_env(BASE_DIR / ".env")
 
 # =========================
 # CORE SETTINGS
 # =========================
-SECRET_KEY = config("SECRET_KEY", default="goodnewsonlygoodnewsalways")
-DEBUG = config("DEBUG", default=True, cast=bool)
-ENVIRONMENT = config("DJANGO_ENV", default="development")
+SECRET_KEY = env("SECRET_KEY", default="goodnewsonlygoodnewsalways")
+DEBUG = env("DEBUG")
+ENVIRONMENT = env("DJANGO_ENV")
 
-allowed_hosts_env = os.getenv(
-    "ALLOWED_HOSTS", "localhost,127.0.0.1,magnet.gatewaynation.org"
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1", "magnet.gatewaynation.org"]
 )
-ALLOWED_HOSTS = [
-    host.strip() for host in allowed_hosts_env.split(",") if host.strip()
-]
 
 # =========================
 # INSTALLED APPS
@@ -64,7 +64,7 @@ if DEBUG:
 # =========================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -73,7 +73,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
     "notifications.middleware.CurrentUserMiddleware",
-    #"accounts.middleware.OnlineNowMiddleware",
 ]
 
 if DEBUG:
@@ -99,6 +98,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "notifications.context_processors.unread_notifications",
                 "notifications.context_processors.user_settings",
+                "notifications.context_processors.vapid_keys",
                 "messaging.context_processors.bulk_message_form",
                 "guests.context_processors.superuser_guests",
             ],
@@ -112,7 +112,7 @@ TEMPLATES = [
 if ENVIRONMENT == "production":
     DATABASES = {
         "default": dj_database_url.config(
-            default=os.getenv("DATABASE_URL"),
+            default=env("DATABASE_URL"),
             conn_max_age=600,
             ssl_require=True,
         )
@@ -122,11 +122,11 @@ else:
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.postgresql",
-                "NAME": config("DB_NAME"),
-                "USER": config("DB_USER"),
-                "PASSWORD": config("DB_PASSWORD"),
-                "HOST": config("DB_HOST"),
-                "PORT": config("DB_PORT"),
+                "NAME": env("DB_NAME"),
+                "USER": env("DB_USER"),
+                "PASSWORD": env("DB_PASSWORD"),
+                "HOST": env("DB_HOST"),
+                "PORT": env("DB_PORT"),
             }
         }
     except Exception:
@@ -140,23 +140,24 @@ else:
 # =========================
 # REDIS CHANNEL LAYER
 # =========================
-import os
-
-# Prefer a single REDIS_URL for simplicity (works in dev and prod)
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379/0")
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [REDIS_URL],
-            # Optional: tweak capacity/expiry to reduce disconnects
             "capacity": 1000,
             "expiry": 60,
         },
     }
 }
 
+# =========================
+# VAPID for Push Notifications
+# =========================
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
 
 # =========================
 # STATIC & MEDIA
@@ -174,16 +175,16 @@ MEDIA_ROOT = BASE_DIR / "media"
 # CLOUDINARY
 # =========================
 cloudinary.config(
-    cloud_name=config("CLOUDINARY_CLOUD_NAME"),
-    api_key=config("CLOUDINARY_API_KEY"),
-    api_secret=config("CLOUDINARY_API_SECRET"),
+    cloud_name=env("CLOUDINARY_CLOUD_NAME"),
+    api_key=env("CLOUDINARY_API_KEY"),
+    api_secret=env("CLOUDINARY_API_SECRET"),
 )
 
 DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
 CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": config("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": config("CLOUDINARY_API_KEY"),
-    "API_SECRET": config("CLOUDINARY_API_SECRET"),
+    "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": env("CLOUDINARY_API_KEY"),
+    "API_SECRET": env("CLOUDINARY_API_SECRET"),
 }
 
 # =========================
@@ -257,12 +258,10 @@ WS_SCHEME = "wss://" if ENVIRONMENT == "production" else "ws://"
 # =========================
 # CSRF & SECURITY
 # =========================
-csrf_origins_env = os.getenv(
-    "CSRF_TRUSTED_ORIGINS", "https://magnet.gatewaynation.org"
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["https://magnet.gatewaynation.org"]
 )
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip() for origin in csrf_origins_env.split(",") if origin.strip()
-]
 
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
@@ -271,4 +270,3 @@ if DEBUG:
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
     CSRF_TRUSTED_ORIGINS.append("http://127.0.0.1:8000")
-

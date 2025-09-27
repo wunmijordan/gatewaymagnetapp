@@ -1,14 +1,16 @@
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import pre_save, post_save, post_delete
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
-from .models import UserSettings, Notification
+from .models import UserSettings, Notification, PushSubscription
 from guests.models import Review, GuestEntry
 from accounts.models import ChatMessage
 from django.urls import reverse
 from notifications.middleware import get_current_user
 from django.utils import timezone
 from accounts.utils import user_in_groups
+from .utils import send_push
+from pywebpush import WebPushException
 from notifications.utils import (
     notify_users,
     STAFF_GROUPS,
@@ -18,43 +20,109 @@ from notifications.utils import (
 )
 
 
+
 User = get_user_model()
 
 
 # -----------------------------
 # Guest Signals
 # -----------------------------
+@receiver(pre_save, sender=GuestEntry)
+def cache_old_assignment(sender, instance, **kwargs):
+    """
+    Store the current assigned_to before saving so we can detect reassignment.
+    """
+    if instance.pk:
+        try:
+            old = sender.objects.get(pk=instance.pk)
+            instance._old_assigned_to = old.assigned_to
+        except sender.DoesNotExist:
+            instance._old_assigned_to = None
+    else:
+        instance._old_assigned_to = None
+
+
 @receiver(post_save, sender=GuestEntry)
-def notify_guest_creation(sender, instance, created, **kwargs):
-    if not created:
-        return
-
-    registrant = get_current_user()  # use currently logged-in user
-
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+def notify_guest_creation_or_assignment(sender, instance, created, **kwargs):
+    """
+    Sends notifications for:
+    - New guest creation
+    - Guest assignment
+    - Guest reassignment
+    """
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     guest_name = guest_full_name(instance)
-    creator_name = user_full_name(registrant)
     custom_id = getattr(instance, "custom_id", "N/A")
-    guest_count = GuestEntry.objects.count()
-    superusers = User.objects.filter(is_superuser=True)
-    staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(is_superuser=True).distinct()
-
-    description = (
-        f"{guest_name} ({custom_id})\n"
-        f"Registered by: {creator_name}, at {ts}.\n"
-        f"New Guests Count: {guest_count}"
-    )
     link = reverse("guest_list")
+    registrant = get_current_user()  # implement properly
+    creator_name = user_full_name(registrant)
 
-    notify_users(superusers, "Guest Created", description, link, is_success=True)
-    notify_users(staff_users, "Guest Created", description, link, is_success=True)
+    old_assigned = getattr(instance, "_old_assigned_to", None)
+    new_assigned = instance.assigned_to
+
+    # --- CASE 1: New guest ---
+    if created:
+        # Top-level notification for superusers and staff (excluding assignee)
+        top_level_msg = (
+            f"{guest_name} ({custom_id})\n"
+            f"Registered by: {creator_name}, at {ts}.\n"
+            f"New Guests Count: {GuestEntry.objects.count()}."
+        )
+        if new_assigned:
+            assigned_user_name = user_full_name(new_assigned)
+            top_level_msg += f"\nAssigned to: {assigned_user_name}."
+
+        superusers = User.objects.filter(is_superuser=True)
+        staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(is_superuser=True).distinct()
+        if new_assigned:
+            top_level_recipients = list(superusers.exclude(id=new_assigned.id)) + \
+                                   list(staff_users.exclude(id=new_assigned.id))
+        else:
+            top_level_recipients = list(superusers) + list(staff_users)
+
+        notify_users(top_level_recipients, "Guest Created", top_level_msg, link, is_success=True)
+
+        # Notify assigned user
+        if new_assigned:
+            assigned_msg = f"I have been assigned: {guest_name} ({custom_id}), at {ts}."
+            notify_users([new_assigned], "Guest Assigned", assigned_msg, link, is_success=True)
+
+        return  # done with creation
+
+    # --- CASE 2: Guest reassignment ---
+    if old_assigned != new_assigned:
+        # Notify new assignee
+        if new_assigned:
+            assigned_msg = f"I have been reassigned: {guest_name} ({custom_id}), at {ts}."
+            notify_users([new_assigned], "Guest Reassigned", assigned_msg, link, is_success=True)
+
+        # Notify top-level roles
+        others_msg = (
+            f"{guest_name} ({custom_id}) has been reassigned "
+            f"to {user_full_name(new_assigned) if new_assigned else 'no one'}, at {ts}."
+        )
+        superusers = User.objects.filter(is_superuser=True)
+        if new_assigned:
+            superusers = superusers.exclude(id=new_assigned.id)
+        staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS)\
+                                  .exclude(is_superuser=True)
+        if new_assigned:
+            staff_users = staff_users.exclude(id=new_assigned.id)
+        staff_users = staff_users.distinct()
+
+        notify_users(list(superusers) + list(staff_users), "Guest Reassigned", others_msg, link, is_urgent=True)
+
+    # --- CASE 3: Guest edited, assignment unchanged ---
+    # Do nothing
+
+
 
 
 @receiver(post_delete, sender=GuestEntry)
 def notify_guest_deletion(sender, instance, **kwargs):
     deleter = get_current_user()
 
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     guest_name = guest_full_name(instance)
     deleter_name = user_full_name(deleter)
     custom_id = getattr(instance, "custom_id", "N/A")
@@ -73,28 +141,6 @@ def notify_guest_deletion(sender, instance, **kwargs):
     notify_users(staff_users, "Guest Deleted", description, link, is_urgent=True)
 
 
-@receiver(post_save, sender=GuestEntry)
-def notify_guest_assignment(sender, instance, created, **kwargs):
-    if created:
-        return
-    if instance.assigned_to:
-        ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
-        guest_name = guest_full_name(instance)
-        assigned_user = instance.assigned_to
-        assigned_user_name = user_full_name(assigned_user)  # display string
-        self_msg = f"I have been assigned: {guest_name} ({instance.custom_id}), at {ts}."
-        others_msg = f"{assigned_user_name} has been assigned: {guest_name} ({instance.custom_id}), at {ts}."
-        superusers = User.objects.filter(is_superuser=True).exclude(id=assigned_user.id)
-        staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(
-            id__in=[assigned_user.id]
-        ).exclude(is_superuser=True).distinct()
-        link = reverse("guest_list")
-
-        notify_users([instance.assigned_to], "Guest Assigned", self_msg, link, is_success=True)
-        notify_users(superusers, "Guest Assigned", others_msg, link, is_urgent=True)
-        notify_users(staff_users, "Guest Assigned", others_msg, link, is_success=True)
-
-
 
 @receiver(post_save, sender=Review)
 def notify_review_submission(sender, instance, created, **kwargs):
@@ -103,7 +149,7 @@ def notify_review_submission(sender, instance, created, **kwargs):
 
     reviewer = instance.reviewer
     guest = instance.guest
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     guest_name = guest_full_name(guest)
     reviewer_name = user_full_name(reviewer)
     link = reverse("guest_list")  # adjust if you have review detail page
@@ -167,7 +213,7 @@ def notify_review_submission(sender, instance, created, **kwargs):
 def notify_user_creation(sender, instance, created, **kwargs):
     if not created:
         return
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     superusers = User.objects.filter(is_superuser=True)
     staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(is_superuser=True).distinct()
     description = f"New user created: {user_full_name(instance)}, at {ts}."
@@ -179,7 +225,7 @@ def notify_user_creation(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=User)
 def notify_user_deletion(sender, instance, **kwargs):
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     superusers = User.objects.filter(is_superuser=True)
     staff_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(is_superuser=True).distinct()
     description = f"User deleted: {user_full_name(instance)}, at {ts}."
@@ -191,7 +237,7 @@ def notify_user_deletion(sender, instance, **kwargs):
 
 @receiver(user_logged_in)
 def notify_user_login(sender, request, user, **kwargs):
-    ts = timezone.localtime().strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     user_name = user_full_name(user)
     role = get_user_role(user)
     description_self = f"I just logged in at {ts}."
@@ -226,7 +272,7 @@ def create_chat_notification(sender, instance, created, **kwargs):
 
     sender_user = instance.sender
     message_preview = instance.message[:50] or "(Attachment)"
-    ts = timezone.localtime(instance.created_at).strftime("%Y-%m-%d %H:%M:%S")
+    ts = timezone.localtime(instance.created_at).strftime("%b. %d, %Y - %H:%M")
     link = reverse("accounts:chat_room")  # your chat page url name
 
     recipients = User.objects.exclude(id=sender_user.id)
@@ -246,10 +292,29 @@ def create_chat_notification(sender, instance, created, **kwargs):
     )
 
 
-
-
-
 @receiver(post_save, sender=User)
 def create_user_settings(sender, instance, created, **kwargs):
     if created:
         UserSettings.objects.create(user=instance)
+
+
+
+@receiver(post_save, sender=Notification)
+def push_on_notification(sender, instance, created, **kwargs):
+    if created:
+        subscriptions = PushSubscription.objects.filter(user=instance.user)
+        for sub in subscriptions:
+            try:
+                send_push(
+                    sub.subscription_data,
+                    title=instance.title,
+                    body=instance.description,
+                    url=instance.link or "/"
+                )
+            except WebPushException as e:
+                if "410" in str(e) or "404" in str(e):
+                    # subscription expired → remove it
+                    sub.delete()
+                else:
+                    print("Push failed:", repr(e))
+

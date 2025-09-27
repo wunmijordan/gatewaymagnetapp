@@ -148,7 +148,7 @@
                   <div class="card-body">
                     <div class="row">
                       <div class="col">
-                        <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
+                        <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
                       </div>
                     </div>
                   </div>
@@ -318,7 +318,7 @@
                 <div class="card-body">
                   <div class="row">
                     <div class="col">
-                      <a href="#" class="btn btn-2 w-100" id="mark-all-read-btn"> Mark All Read </a>
+                      <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
                     </div>
                   </div>
                 </div>
@@ -1109,6 +1109,12 @@
   <!-- CUSTOM SCRIPTS -->
   <!-- ========================= -->
   <!--<script src="{% static 'js/chat_room.js' %}"></script>-->
+
+  <!-- Inject VAPID public key into global JS scope -->
+  <script>
+    window.VAPID_PUBLIC_KEY = "{{ VAPID_PUBLIC_KEY|escapejs }}";
+    console.log("Injected VAPID key:", window.VAPID_PUBLIC_KEY, "Length:", window.VAPID_PUBLIC_KEY.length);
+  </script>
 
   <script src="{% static 'js/custom.js' %}"></script>
   

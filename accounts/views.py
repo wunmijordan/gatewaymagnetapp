@@ -9,7 +9,7 @@ from django.utils.timezone import localtime, now
 import pytz
 from django.contrib.auth import get_user_model
 from guests.models import GuestEntry
-from .models import CustomUser
+from .models import CustomUser, ChatMessage
 from django.contrib.auth.forms import SetPasswordForm
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
@@ -20,7 +20,12 @@ import calendar
 from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
 from .utils import user_in_groups
-
+import json
+from .consumers import get_user_color
+from django.core.serializers.json import DjangoJSONEncoder
+import re
+from django.http import JsonResponse
+from django.utils.dateparse import parse_datetime
 
 
 
@@ -559,48 +564,113 @@ def delete_group(request, group_id):
 
 
 
-import json
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from .models import CustomUser, ChatMessage
-from .consumers import get_user_color
-from guests.models import GuestEntry
-from django.core.serializers.json import DjangoJSONEncoder
-from accounts.utils import user_in_groups
+def build_mention_helpers():
+    """Precompute mention_map + regex for all users (cached per request)."""
+    users = list(CustomUser.objects.all())
+    mention_map = {}
+    for u in users:
+        display = f"@{ (u.title + ' ') if getattr(u, 'title', None) else '' }{ (u.full_name or u.username) }".strip()
+        mention_map[display] = u
+    if mention_map:
+        regex = re.compile(r"(" + "|".join(map(re.escape, mention_map.keys())) + r")")
+    else:
+        regex = None
+    return mention_map, regex
+
+
+def serialize_message(m, mention_map=None, mention_regex=None):
+    """Serialize a ChatMessage into dict payload with full guest + assigned_user info."""
+
+    # --- Mentions payload ---
+    mentions_payload = []
+    if mention_regex and m.message:
+        found = set(mention_regex.findall(m.message))
+        for token in found:
+            u = mention_map.get(token)
+            if u:
+                mentions_payload.append({
+                    "id": u.id,
+                    "username": u.username,
+                    "title": getattr(u, "title", ""),
+                    "fullname": u.full_name or u.username,
+                    "color": get_user_color(u.id),
+                })
+
+    # --- Parent message payload ---
+    parent_payload = None
+    if m.parent:
+        parent_guest_payload = None
+        if m.parent.guest_card:
+            guest = m.parent.guest_card
+            parent_guest_payload = {
+                "id": guest.id,
+                "name": guest.full_name,
+                "title": guest.title,
+                "image": guest.picture.url if guest.picture else None,
+                "date_of_visit": guest.date_of_visit.strftime("%Y-%m-%d") if guest.date_of_visit else "",
+                "assigned_user": {
+                    "id": guest.assigned_to.id,
+                    "title": guest.assigned_to.title,
+                    "full_name": guest.assigned_to.full_name,
+                    "image": guest.assigned_to.image.url if guest.assigned_to.image else None,
+                } if guest.assigned_to else None
+            }
+
+        parent_payload = {
+            "id": m.parent.id,
+            "sender_id": m.parent.sender.id,
+            "sender_title": getattr(m.parent.sender, "title", ""),
+            "sender_name": m.parent.sender.full_name or m.parent.sender.username,
+            "sender_color": get_user_color(m.parent.sender.id),
+            "message": m.parent.message[:50],
+            "guest": parent_guest_payload,
+        }
+
+    guest_payload = None
+    if m.guest_card:
+        guest = GuestEntry.objects.select_related('assigned_to').get(id=m.guest_card.id)
+        guest_payload = {
+            "id": guest.id,
+            "name": guest.full_name,
+            "custom_id": guest.custom_id,
+            "image": guest.picture.url if guest.picture else None,
+            "title": guest.title,
+            "date_of_visit": guest.date_of_visit.strftime("%Y-%m-%d") if guest.date_of_visit else "",
+            "assigned_user": {
+                "id": guest.assigned_to.id,
+                "title": guest.assigned_to.title,
+                "full_name": guest.assigned_to.full_name,
+                "image": guest.assigned_to.image.url if guest.assigned_to.image else None,
+            } if guest.assigned_to else None
+        }
+
+    # --- Final message payload ---
+    return {
+        "id": m.id,
+        "message": m.message,
+        "sender_id": m.sender.id,
+        "sender_title": getattr(m.sender, "title", ""),
+        "sender_name": m.sender.full_name or m.sender.username,
+        "sender_image": m.sender.image.url if m.sender.image else None,
+        "color": get_user_color(m.sender.id),
+        "created_at": m.created_at.isoformat(),
+        "guest_id": guest_payload["id"] if guest_payload else None,
+        "pinned": getattr(m, "pinned", False),
+        "mentions": mentions_payload,
+        "guest": guest_payload,
+        "reply_to_id": m.parent.id if m.parent else None,
+        "parent": parent_payload,
+    }
+
 
 
 @login_required
 def chat_room(request):
     users = CustomUser.objects.all().prefetch_related('assigned_guests')
 
-    # --- NEW: check for guest_id from query string ---
     guest_id = request.GET.get("guest_id")
-    attached_guest = None
-    if guest_id:
-        attached_guest = GuestEntry.objects.filter(id=guest_id).first()
+    attached_guest = GuestEntry.objects.filter(id=guest_id).first() if guest_id else None
 
-    # helper to resolve mentions tokens in a message by matching "Title Full Name"
-    def resolve_mentions_for_message(text):
-        """
-        Scan message text for occurrences of '@Title Full Name' that match existing users.
-        Returns list of User objects (or dicts - we produce dicts below).
-        """
-        if not text:
-            return []
-        # build candidates from all users (small optimization possible)
-        mentions = []
-        # We'll try to find strings like '@Bro. Wunmi Jordan' or '@Mr. Segun Ajayi'
-        # Approach: check for each user whether the display string appears in the text.
-        for u in CustomUser.objects.all():
-            display = f"@{ (u.title + ' ') if getattr(u, 'title', None) else '' }{ (u.full_name or u.username) }".strip()
-            if display in text:
-                mentions.append(u)
-        return mentions
-
-    # Get latest 50 messages
-    last_messages = ChatMessage.objects.select_related('sender','guest_card', 'parent__sender').order_by('-created_at')[:500]
-    # take last 50, oldest first
-    last_messages = reversed(last_messages)
     def get_effective_role(user):
         if user.is_superuser:
             return "Superuser"
@@ -611,6 +681,17 @@ def chat_room(request):
         if user_in_groups(user, "Team Lead"):
             return "Team Lead"
         return "Team Member"
+
+    # Prebuild mention helpers (map + regex)
+    mention_map, mention_regex = build_mention_helpers()
+
+    # Load latest 50 messages efficiently
+    last_messages = ChatMessage.objects.select_related(
+        'sender', 'guest_card', 'parent__sender'
+    ).order_by('-created_at')[:50]
+    last_messages_payload = [
+        serialize_message(m, mention_map, mention_regex) for m in reversed(last_messages)
+    ]
 
     user_guests = [
         {
@@ -647,72 +728,6 @@ def chat_room(request):
             } for g in unassigned_qs
         ]
 
-    # Build last_messages_json but resolve mentions for existing messages by scanning text
-    last_messages_payload = []
-    for m in last_messages:
-        # resolve mentions for message text (returns User queryset list)
-        found_users = resolve_mentions_for_message(m.message)
-        mentions_payload = [
-            {
-                "id": u.id,
-                "username": u.username,
-                "title": getattr(u, "title", ""),
-                "fullname": u.full_name or u.username,
-                "color": get_user_color(u.id)
-            } for u in found_users
-        ]
-
-        parent_payload = None
-        if m.parent:
-            parent_payload = {
-                "id": m.parent.id,
-                "sender_id": m.parent.sender.id,
-                "sender_title": getattr(m.parent.sender, "title", ""),
-                "sender_name": m.parent.sender.full_name or m.parent.sender.username,
-                "sender_color": get_user_color(m.parent.sender.id),
-                "message": m.parent.message[:50],
-            }
-            if m.parent.guest_card:
-                parent_payload["guest"] = {
-                    "id": m.parent.guest_card.id,
-                    "name": m.parent.guest_card.full_name,
-                    "title": m.parent.guest_card.title,
-                    "image": m.parent.guest_card.picture.url if m.parent.guest_card.picture else None,
-                    "date_of_visit": m.parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.parent.guest_card.date_of_visit else "",
-                }
-
-        last_messages_payload.append({
-            "id": m.id,
-            "message": m.message,
-            "sender_id": m.sender.id,
-            "sender_title": getattr(m.sender, "title", ""),
-            "sender_name": m.sender.full_name or m.sender.username,
-            "sender_image": m.sender.image.url if m.sender.image else None,
-            "color": get_user_color(m.sender.id),
-            "created_at": m.created_at.isoformat(),
-            "guest_id": m.guest_card.id if m.guest_card else None,
-            "pinned": getattr(m, "pinned", False),
-            #"deleted": getattr(m, "deleted", False),
-            #"edited": getattr(m, "edited", False),
-            "mentions": mentions_payload,
-            "guest": {
-                "id": m.guest_card.id,
-                "name": m.guest_card.full_name,
-                "custom_id": m.guest_card.custom_id,
-                "image": m.guest_card.picture.url if m.guest_card.picture else None,
-                "title": m.guest_card.title,
-                "date_of_visit": m.guest_card.date_of_visit.strftime("%Y-%m-%d") if m.guest_card.date_of_visit else "",
-                "assigned_user": {  # << add this
-                    "id": m.guest_card.assigned_to.id,
-                    "title": m.guest_card.assigned_to.title,
-                    "full_name": m.guest_card.assigned_to.full_name,
-                    "image": m.guest_card.assigned_to.image.url if m.guest_card.assigned_to.image else None,
-                } if m.guest_card.assigned_to else None
-            } if m.guest_card else None,
-            "reply_to_id": m.parent.id if m.parent else None,
-            "parent": parent_payload
-        })
-
     context = {
         "users": [
             {
@@ -734,7 +749,7 @@ def chat_room(request):
                         "image": g.picture.url if g.picture else None,
                         "title": g.title,
                         "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-                        "assigned_user": {  # add this
+                        "assigned_user": {
                             "id": g.assigned_to.id,
                             "title": g.assigned_to.title,
                             "full_name": g.assigned_to.full_name,
@@ -744,7 +759,7 @@ def chat_room(request):
                 ]
             } for u in users
         ],
-        "users_json": json.dumps([
+        "users_json": json.dumps([  # keep JSON version of users
             {
                 "id": u.id,
                 "full_name": u.full_name,
@@ -764,7 +779,7 @@ def chat_room(request):
                         "image": g.picture.url if g.picture else None,
                         "title": g.title,
                         "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-                        "assigned_user": {  # add this
+                        "assigned_user": {
                             "id": g.assigned_to.id,
                             "title": g.assigned_to.title,
                             "full_name": g.assigned_to.full_name,
@@ -792,6 +807,34 @@ def chat_room(request):
         "page_title": "ChatRoom",
     }
     return render(request, "accounts/chat_room.html", context)
+
+
+@login_required
+def load_more_messages(request):
+    """AJAX endpoint to fetch older messages before a given timestamp."""
+    before = request.GET.get("before")  # ISO timestamp string
+    limit = int(request.GET.get("limit", 50))
+
+    qs = ChatMessage.objects.select_related("sender", "guest_card", "parent__sender")
+
+    if before:
+        before_dt = parse_datetime(before)
+        if before_dt:
+            qs = qs.filter(created_at__lt=before_dt)
+
+    # Prebuild mention helpers
+    mention_map, mention_regex = build_mention_helpers()
+
+    # 🔹 Fetch newest first, then reverse in Python to oldest → newest
+    messages = list(qs.order_by("-created_at")[:limit])
+    messages.reverse()  # oldest → newest
+
+    payload = [serialize_message(m, mention_map, mention_regex) for m in messages]
+
+    return JsonResponse({"messages": payload})
+
+
+
 
 
 

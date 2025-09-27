@@ -59,14 +59,16 @@ class ChatMessage(models.Model):
   sender = models.ForeignKey(
       settings.AUTH_USER_MODEL,  # explicitly using CustomUser
       on_delete=models.CASCADE,
-      related_name='sent_chats'
+      related_name='sent_chats',
+      db_index=True  # ⚡ faster sender lookups
   )
   parent = models.ForeignKey(
       'self',
       null=True,
       blank=True,
       on_delete=models.CASCADE,
-      related_name='replies'
+      related_name='replies',
+      db_index=True  # ⚡ helps with threaded lookups
   )
   message = models.TextField(blank=True)
   attachment = models.FileField(upload_to='chat_files/', blank=True, null=True)
@@ -76,9 +78,10 @@ class ChatMessage(models.Model):
       null=True,
       blank=True,
       on_delete=models.SET_NULL,
-      related_name='chat_messages'
+      related_name='chat_messages',
+      db_index=True  # ⚡ filter/pagination per guest
   )
-  created_at = models.DateTimeField(auto_now_add=True)
+  created_at = models.DateTimeField(auto_now_add=True, db_index=True)  # ⚡ main pagination field
   #edited = models.BooleanField(default=False)
   #edited_at = models.DateTimeField(null=True, blank=True)
   #deleted = models.BooleanField(default=False)
@@ -87,11 +90,16 @@ class ChatMessage(models.Model):
       related_name='seen_chats',
       blank=True
   )
-  pinned = models.BooleanField(default=False)  # New field to pin messages
+  pinned = models.BooleanField(default=False, db_index=True)  # ⚡ faster queries for pinned
 
 
   class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),  # explicit index for ordering
+            models.Index(fields=['sender', 'created_at']),  # ⚡ sender history
+            models.Index(fields=['guest_card', 'created_at']),  # ⚡ per guest timeline
+        ]
 
   def __str__(self):
       return f"Message #{self.id} by {self.sender.full_name or self.sender.username}"
@@ -101,4 +109,3 @@ class ChatMessage(models.Model):
       from django.contrib.auth import get_user_model
       User = get_user_model()
       return self.seen_by.count() >= (User.objects.count() - 1)
-

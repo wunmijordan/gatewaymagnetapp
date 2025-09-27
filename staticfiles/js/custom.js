@@ -295,13 +295,64 @@ document.addEventListener('DOMContentLoaded', () => {
   /* =========================
      🔟 PWA SERVICE WORKER
      ========================= */
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>{
-      navigator.serviceWorker.getRegistrations()
-        .then(regs=>regs.forEach(r=>r.unregister()))
-        .finally(()=>navigator.serviceWorker.register("/static/js/sw.js")
-          .then(reg=>console.log('Service Worker registered:',reg))
-          .catch(err=>console.error('SW registration failed:',err)));
+  // Convert Base64 URL-safe string to Uint8Array
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  // Helper: get CSRF token
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  if ("serviceWorker" in navigator && "PushManager" in window) {
+    window.addEventListener("load", async () => {
+      try {
+        // Register SW
+        const swRegistration = await navigator.serviceWorker.register("/static/js/sw.js");
+        console.log("Service Worker registered:", swRegistration);
+
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          console.warn("Notification permission denied");
+          return;
+        }
+
+        // Grab key injected from template
+        const vapidPublicKey = window.VAPID_PUBLIC_KEY;
+        console.log("Using VAPID key:", vapidPublicKey, "Length:", vapidPublicKey.length);
+
+        // Convert and subscribe
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+        const subscription = await swRegistration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+
+        // Send subscription to backend
+        await fetch("/notifications/save-subscription/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify(subscription),
+        });
+
+        console.log("Push subscription saved:", subscription);
+      } catch (err) {
+        console.error("Push setup failed:", err);
+      }
     });
   }
 
@@ -433,20 +484,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================
     // MARK ALL READ
     // =========================
-    document.getElementById("mark-all-read-btn")?.addEventListener("click", async () => {
-      try {
-        const res = await fetch(urls.markAllRead, {
-          method: "POST",
-          headers: { "X-CSRFToken": csrfToken }
-        });
-        if (res.ok) {
-          document.getElementById("notif-list").innerHTML =
-            '<div class="list-group-item">No new notifications</div>';
-          document.getElementById("notif-badge")?.remove();
+    document.querySelectorAll(".mark-all-read-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        try {
+          const res = await fetch(urls.markAllRead, {
+            method: "POST",
+            headers: { "X-CSRFToken": csrfToken }
+          });
+          if (res.ok) {
+            document.querySelectorAll("#notif-list").forEach(list => {
+              list.innerHTML = '<div class="list-group-item">No new notifications</div>';
+            });
+            document.querySelectorAll("#notif-badge").forEach(badge => badge.remove());
+          }
+        } catch (err) {
+          console.error("Failed to mark all read", err);
         }
-      } catch (err) {
-        console.error("Failed to mark all read", err);
-      }
+      });
     });
 
     // =========================

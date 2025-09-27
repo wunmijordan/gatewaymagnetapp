@@ -244,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const optionsPanel = document.getElementById("chatOptionsPanel");
   const scrollToBottomBtn = document.getElementById("scrollToBottomBtn");
   const mentionDropdown = document.getElementById("mentionDropdown");
+  //const roomId = chatContainer.dataset.roomId;
 
   let chatSocket = null;
 
@@ -267,6 +268,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     chatSocket.onmessage = (e) => {
       const data = JSON.parse(e.data);
+      // Update your local USER_GUESTS
+      if (data.guest && data.guest.assigned_user) {
+          const idx = USER_GUESTS.findIndex(g => g.id === data.guest.id);
+          if (idx !== -1) USER_GUESTS[idx].assigned_user = data.guest.assigned_user;
+      }
       appendMessage(data); // 👈 your existing handler
     };
   }
@@ -284,6 +290,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let selectedBubbles = new Set(); // selected message IDs
   let lastSelectionClick = null;    // for detecting single-selection for edit/reply
   const isTouch = ("ontouchstart" in window);
+  let loading = false;
+  let oldestLoaded = null; // track oldest message timestamp
+  const limit = 50;
+  let lastMessageDate = null;
 
   // --- Input listener for "@" ---
   // Use users JSON from Django
@@ -466,34 +476,18 @@ document.addEventListener("DOMContentLoaded", () => {
     return new Date(dateStr).toLocaleDateString(undefined, options);
   }
 
-  // Sticky header setup
-  //const stickyDateHeader = document.getElementById("stickyDateHeader");
-  Object.assign(stickyDateHeader.style, {
-    position: "absolute",
-    top: "0px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    display: "inline-flex",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontWeight: "600",
-    fontSize: "0.9rem",
-    color: "#f59f00", // text-yellow-800
-    backgroundColor: "#343531", // bg-yellow-lt
-    boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-    textAlign: "center",
-    justifyContent: "center",
-    margin: "0 auto",
-    transition: "opacity 0.3s ease, transform 0.3s ease",
-    zIndex: 50,
-    pointerEvents: "none",
-    opacity: "0"
-  });
+  // --- Safe Date Parser ---
+  function safeParseDate(isoString) {
+    if (!isoString) return null;
+    // Strip microseconds like .123456
+    const cleaned = isoString.replace(/\.\d+/, "");
+    const d = new Date(cleaned);
+    return isNaN(d.getTime()) ? null : d;
+  }
 
-  let lastMessageDate = null;
-
-  // Date text formatter
+  // --- Update getDateText to use safe date ---
   function getDateText(date) {
+    if (!date) return "";
     const now = new Date();
     const msgDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -505,49 +499,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const diffTime = today.getTime() - msgDay.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 7) {
-      return msgDay.toLocaleDateString(undefined, { weekday: "long" }); // "Monday"
-    }
+    if (diffDays < 7) return msgDay.toLocaleDateString(undefined, { weekday: "long" });
 
     return msgDay.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   }
-
-  // Update sticky header
-  function updateStickyHeader() {
-    const children = Array.from(chatContainer.querySelectorAll(".chat-item"));
-    let headerText = "";
-    const containerRect = chatContainer.getBoundingClientRect();
-
-    for (let i = 0; i < children.length; i++) {
-      const item = children[i];
-      const dateEl = item.querySelector(".chat-bubble-date");
-      if (!dateEl) continue;
-
-      const date = new Date(dateEl.getAttribute("data-full-date"));
-      const rect = item.getBoundingClientRect();
-
-      if (rect.top <= containerRect.top + 10) {
-        headerText = getDateText(date);
-      }
-    }
-
-    if (headerText) {
-      stickyDateHeader.textContent = headerText;
-      stickyDateHeader.style.opacity = "1";
-      stickyDateHeader.style.transform = "translate(-50%, 0)";
-    } else {
-      stickyDateHeader.style.opacity = "0";
-    }
-  }
-  chatContainer.addEventListener("scroll", updateStickyHeader);
 
   // Attach from Guest list to Chat handler
   document.querySelectorAll(".attach-to-chat").forEach(item => {
     item.addEventListener("click", (e) => {
       e.preventDefault();
-      const guest = JSON.parse(e.currentTarget.getAttribute("data-guest"));
-      createGuestPreview(guestData);
+      
+      let guest = JSON.parse(e.currentTarget.getAttribute("data-guest"));
+
+      // 🔹 ALWAYS populate assigned_user from your arrays
+      const matchedGuest =
+        USER_GUESTS.find(g => g.id === guest.id) ||
+        UNASSIGNED_GUESTS.find(g => g.id === guest.id);
+
+      guest.assigned_user = matchedGuest?.assigned_user || null;
+
+      createGuestPreview(guest);
       chatInput.focus();
       chatInput.scrollIntoView({ behavior: "smooth", block: "center" });
     });
@@ -607,39 +578,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  // Append Message
-  function appendMessage(data) {
+  // Render Message
+  function renderMessage(data, isPrepend = false) {
     //console.log("Incoming message:", data);
     const isMe = data.sender_id === CURRENT_USER_ID;
-
-    const msgDateObj = new Date(data.created_at);
-    const msgDay = new Date(msgDateObj.getFullYear(), msgDateObj.getMonth(), msgDateObj.getDate());
-
-    if (!lastMessageDate || msgDay.getTime() !== lastMessageDate.getTime()) {
-      lastMessageDate = msgDay;
-      const separator = document.createElement("div");
-      separator.classList.add("chat-date-separator", "mb-2");
-      Object.assign(separator.style, {
-        display: "inline-block",
-        padding: "2px 12px",
-        borderRadius: "20px",
-        fontWeight: "500",
-        fontSize: "0.8rem",
-        color: "#f59f00",
-        backgroundColor: "#343531",
-        boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
-        textAlign: "center",
-        margin: "0 auto"
-      });
-      separator.textContent = getDateText(msgDay);
-      chatContainer.appendChild(separator);
-    }
 
     const replyHTML = data.parent ? createReplyPreviewHTML({ parent: data.parent }, true) : "";
 
     const bubbleColorClass = isMe ? "bg-green-lt text-white" : data.color;
 
     const bubble = document.createElement("div");
+    bubble.dataset.createdAt = data.created_at;
     bubble.classList.add("chat-item");
     bubble.id = `chat-bubble-${data.id}`;
     //bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
@@ -680,6 +629,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Check if guest has an assigned user
       const assignedUser = data.guest.assigned_user; // make sure your guest object includes assigned user
+      if (assignedUser) {
+        console.log("Assigned:", assignedUser.full_name);
+      } else {
+        console.log("No assigned user");
+      }
       let assignedHTML = "";
       if (assignedUser) {
         assignedHTML = `
@@ -757,9 +711,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
-    chatContainer.appendChild(bubble);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-    updateStickyHeader();
 
     //📌 Add flags if pinned/mentioned
     const flags = bubble.querySelector(".chat-bubble-flags");
@@ -878,6 +829,283 @@ document.addEventListener("DOMContentLoaded", () => {
         replyPreviewText.innerHTML = ""; // clear text
       });
     }
+    return bubble;
+  }
+
+  // ---------- Prepend older messages ----------
+  function prependMessages(messages) {
+    const prevScrollHeight = chatContainer.scrollHeight;
+    const prevScrollTop = chatContainer.scrollTop;
+
+    // ✅ Keep backend order (oldest → newest)
+    messages.forEach(msg => {
+      if (!document.getElementById(`chat-bubble-${msg.id}`)) {
+        chatContainer.prepend(renderMessage(msg, true));
+      } else {
+        console.warn("Duplicate skipped (prepend):", msg.id);
+      }
+    });
+
+    // ✅ Restore scroll position after prepend
+    chatContainer.scrollTop = chatContainer.scrollHeight - prevScrollHeight + prevScrollTop;
+
+    // ✅ Rebuild separators cleanly
+    normalizeDateSeparators();
+    updateStickyHeader();
+  }
+
+  // ---------- Normalize date separators ----------
+  // --- normalizeDateSeparators (fixed to use safeParseDate) ---
+  function normalizeDateSeparators() {
+    chatContainer.querySelectorAll(".chat-date-separator").forEach(el => el.remove());
+
+    let lastDay = null;
+    const messages = [...chatContainer.querySelectorAll(".chat-item")]
+      .sort((a, b) => {
+        const da = safeParseDate(a.dataset.createdAt);
+        const db = safeParseDate(b.dataset.createdAt);
+        return da - db;
+      });
+
+    // ✅ Clear container and rebuild in order
+    messages.forEach(msg => chatContainer.appendChild(msg));
+
+    messages.forEach(msg => {
+      const createdAt = msg.dataset.createdAt;
+      if (!createdAt) return;
+      const msgDateObj = safeParseDate(createdAt);
+      if (!msgDateObj) return;
+
+      const msgDay = new Date(msgDateObj.getFullYear(), msgDateObj.getMonth(), msgDateObj.getDate());
+
+      if (!lastDay || msgDay.getTime() !== lastDay.getTime()) {
+        lastDay = msgDay;
+
+        const separator = document.createElement("div");
+        separator.classList.add("chat-date-separator", "mb-2");
+        Object.assign(separator.style, {
+          display: "inline-block",
+          padding: "2px 12px",
+          borderRadius: "20px",
+          fontWeight: "500",
+          fontSize: "0.8rem",
+          color: "#f59f00",
+          backgroundColor: "#343531",
+          boxShadow: "0 4px 8px rgba(0,0,0,0.4)",
+          textAlign: "center",
+          margin: "0 auto"
+        });
+        separator.textContent = getDateText(msgDay);
+
+        chatContainer.insertBefore(separator, msg);
+      }
+    });
+  }
+
+  function updateStickyHeader() {
+    const separators = Array.from(chatContainer.querySelectorAll(".chat-date-separator"));
+    let headerText = "";
+    const containerRect = chatContainer.getBoundingClientRect();
+
+    for (let i = 0; i < separators.length; i++) {
+      const sep = separators[i];
+      const rect = sep.getBoundingClientRect();
+
+      if (rect.top <= containerRect.top + 10) {
+        headerText = sep.textContent;
+      }
+    }
+
+    if (headerText) {
+      stickyDateHeader.textContent = headerText;
+      stickyDateHeader.style.opacity = "1";
+      stickyDateHeader.style.transform = "translate(-50%, 0)";
+    } else {
+      stickyDateHeader.style.opacity = "0";
+    }
+  }
+  chatContainer.addEventListener("scroll", updateStickyHeader);
+
+
+  // ---------- Load more ----------
+  async function loadMoreMessages() {
+    if (loading) return;
+    loading = true;
+    let url = `load/?limit=${limit}`;
+    if (oldestLoaded) url += `&before=${encodeURIComponent(oldestLoaded)}`;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.messages.length) {
+        prependMessages(data.messages);
+
+        // ✅ first element is now the oldest
+        oldestLoaded = data.messages[0].created_at;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
+    loading = false;
+  }
+
+  // ---------- Append new live message ----------
+  function appendMessage(data) {
+    // 🔹 Ensure assigned_user is included for rendering immediately
+    if (data.guest) {
+      const latestGuest = USER_GUESTS.find(g => g.id === data.guest.id) || UNASSIGNED_GUESTS.find(g => g.id === data.guest.id);
+      data.guest.assigned_user = latestGuest?.assigned_user || data.guest.assigned_user || null;
+    }
+
+    if (document.getElementById(`chat-bubble-${data.id}`)) return console.warn("Duplicate skipped (append):", data.id);
+
+    const bubble = renderMessage(data);
+    chatContainer.appendChild(bubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    normalizeDateSeparators();
+    updateStickyHeader();
+  }
+
+  // ---------- Infinite scroll ----------
+  chatContainer.addEventListener("scroll", () => {
+    if (chatContainer.scrollTop === 0 && !loading) loadMoreMessages();
+  });
+
+  // ---------- Initial load ----------
+  loadMoreMessages();
+
+
+  LAST_MESSAGES.forEach(appendMessage);
+
+  function detectMentionsFromText(text) {
+    const detected = [];
+    usersList.forEach(u => {
+      const regex = new RegExp(`@(${u.title ? u.title + '\\s' : ''})?${u.full_name}`, 'i');
+      if (regex.test(text) && !mentions.some(m => m.id == u.id)) {
+        detected.push({ id: u.id, title: u.title, name: u.full_name });
+      }
+    });
+    return detected;
+  }
+
+  function sendMessage(message = "", guest = selectedGuest) {
+    console.log("🔹 sendMessage triggered", { message, guest, replyToId, chatSocket });
+
+    if (!message.trim() && !guest && !replyToId) {
+      console.warn("sendMessage exited: empty message, no guest, no reply");
+      return;
+    }
+
+    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+      console.warn("sendMessage exited: WebSocket not open", chatSocket?.readyState);
+      return;
+    }
+
+    // 🔹 Ensure assigned_user is included
+    if (guest) {
+      // Use already assigned user if present
+      if (!guest.assigned_user) {
+        const latestGuest = USER_GUESTS.find(g => g.id === guest.id) || UNASSIGNED_GUESTS.find(g => g.id === guest.id);
+        guest.assigned_user = latestGuest?.assigned_user || null;
+      }
+    }
+
+    // Detect manually typed mentions
+    const manualMentions = detectMentionsFromText(message).map(m => {
+      const user = USERS.find(u => u.id === m.id); // get the full user object
+      return {
+        ...m,
+        color: user?.color || "#00aeffff" // assign their chat bubble color
+      };
+    });
+
+    // Push to mentions array
+    manualMentions.forEach(m => mentions.push(m));
+
+    // Edit mode
+    //if (chatInput.dataset.editingId) {
+    //  const editId = parseInt(chatInput.dataset.editingId, 10);
+    //  const node = document.getElementById(`chat-bubble-${editId}`);
+    //  if (node) {
+    //    node.dataset.edited = "true";
+    //    const body = node.querySelector(".chat-bubble-body .fs-4");
+    //    if (body) body.textContent = message.trim();
+
+    //    let editedTag = node.querySelector(".edited-flag");
+    //    if (!editedTag) {
+    //      const dateEl = node.querySelector(".chat-bubble-date");
+    //      if (dateEl) {
+    //        editedTag = document.createElement("span");
+    //        editedTag.className = "edited-flag text-muted ms-1";
+    //        editedTag.style.fontSize = "0.7rem";
+    //        editedTag.textContent = "(Edited)";
+    //        dateEl.appendChild(editedTag);
+    //      }
+    //    }
+    //  }
+
+    //  chatSocket.send(JSON.stringify({
+    //    action: "edit",
+    //    message_id: editId,
+    //    new_text: message.trim(),
+    //    sender_id: CURRENT_USER_ID
+    //  }));
+
+    //  chatInput.value = "";
+    //  delete chatInput.dataset.editingId;
+    //  return;
+    //}
+
+    const payload = {
+      message: message.trim(),
+      sender_id: CURRENT_USER_ID,
+      guest_id: guest ? parseInt(guest.id, 10) : null,
+      reply_to_id: replyToId || null,
+      mentions: mentions.map(m => m.id),
+      guest: guest
+      ? {
+          id: parseInt(guest.id, 10),
+          name: guest.name,
+          custom_id: guest.custom_id,
+          image: guest.image,
+          title: guest.title,
+          date_of_visit: guest.date_of_visit,
+          assigned_user: guest.assigned_user || null
+        }
+      : null
+    };
+
+    // 🔥 Log guest info reliably
+    console.group("📝 Sending message");
+    console.log("Guest object:", guest);
+    console.log("Assigned user:", guest?.assigned_user);
+    console.log("Message content:", message.trim());
+    console.groupEnd();
+
+    if (guest) {
+      payload.guest = {
+        id: parseInt(guest.id, 10),
+        name: guest.name,
+        custom_id: guest.custom_id,
+        image: guest.image,
+        title: guest.title,
+        date_of_visit: guest.date_of_visit,
+        //assigned_user: guest.assigned_user || null
+      };
+    }
+
+    chatSocket.send(JSON.stringify(payload));
+
+    // Cleanup
+    chatInput.value = "";
+    removeGuestPreview();
+    replyToId = null;
+    replyPreview.classList.add("d-none");
+    //window.clearMentions();
+    mentions = [];
   }
 
   // escape HTML to prevent injection when using textContent-like replacement in innerHTML
@@ -1042,105 +1270,12 @@ document.addEventListener("DOMContentLoaded", () => {
   chatContainer.addEventListener("scroll", updateScrollButton);
   scrollToBottomBtn.addEventListener("click", ()=> chatContainer.scrollTo({top: chatContainer.scrollHeight, behavior:"smooth"}));
 
-  LAST_MESSAGES.forEach(appendMessage);
-
-  function detectMentionsFromText(text) {
-    const detected = [];
-    usersList.forEach(u => {
-      const regex = new RegExp(`@(${u.title ? u.title + '\\s' : ''})?${u.full_name}`, 'i');
-      if (regex.test(text) && !mentions.some(m => m.id == u.id)) {
-        detected.push({ id: u.id, title: u.title, name: u.full_name });
-      }
-    });
-    return detected;
-  }
-
-  function sendMessage(message = "", guest = selectedGuest) {
-    if (!message.trim() && !guest && !replyToId) return;
-
-    if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
-      console.warn("⚠️ Cannot send message, WebSocket not connected.");
-      return;
-    }
-
-    // Detect manually typed mentions
-    const manualMentions = detectMentionsFromText(message).map(m => {
-      const user = USERS.find(u => u.id === m.id); // get the full user object
-      return {
-        ...m,
-        color: user?.color || "#00aeffff" // assign their chat bubble color
-      };
-    });
-
-    // Push to mentions array
-    manualMentions.forEach(m => mentions.push(m));
-
-    // Edit mode
-    //if (chatInput.dataset.editingId) {
-    //  const editId = parseInt(chatInput.dataset.editingId, 10);
-    //  const node = document.getElementById(`chat-bubble-${editId}`);
-    //  if (node) {
-    //    node.dataset.edited = "true";
-    //    const body = node.querySelector(".chat-bubble-body .fs-4");
-    //    if (body) body.textContent = message.trim();
-
-    //    let editedTag = node.querySelector(".edited-flag");
-    //    if (!editedTag) {
-    //      const dateEl = node.querySelector(".chat-bubble-date");
-    //      if (dateEl) {
-    //        editedTag = document.createElement("span");
-    //        editedTag.className = "edited-flag text-muted ms-1";
-    //        editedTag.style.fontSize = "0.7rem";
-    //        editedTag.textContent = "(Edited)";
-    //        dateEl.appendChild(editedTag);
-    //      }
-    //    }
-    //  }
-
-    //  chatSocket.send(JSON.stringify({
-    //    action: "edit",
-    //    message_id: editId,
-    //    new_text: message.trim(),
-    //    sender_id: CURRENT_USER_ID
-    //  }));
-
-    //  chatInput.value = "";
-    //  delete chatInput.dataset.editingId;
-    //  return;
-    //}
-
-    const payload = {
-      message: message.trim(),
-      sender_id: CURRENT_USER_ID,
-      guest_id: guest ? parseInt(guest.id, 10) : null,
-      reply_to_id: replyToId || null,
-      mentions: mentions.map(m => m.id)
-    };
-
-    if (guest) {
-      payload.guest = {
-        id: parseInt(guest.id, 10),
-        name: guest.name,
-        custom_id: guest.custom_id,
-        image: guest.image,
-        title: guest.title,
-        date_of_visit: guest.date_of_visit
-      };
-    }
-
-    //console.log("Sending message payload:", payload);
-    chatSocket.send(JSON.stringify(payload));
-
-    // Cleanup
-    chatInput.value = "";
-    removeGuestPreview();
-    replyToId = null;
-    replyPreview.classList.add("d-none");
-    //window.clearMentions();
-    mentions = [];
-  }
-
   function createGuestPreview(guest){
+    // ensure assigned_user is always present
+    const matchedGuest =
+        USER_GUESTS.find(g => g.id === guest.id) ||
+        UNASSIGNED_GUESTS.find(g => g.id === guest.id);
+    guest.assigned_user = matchedGuest?.assigned_user || null;
     removeGuestPreview();
     selectedGuest = guest;
 
