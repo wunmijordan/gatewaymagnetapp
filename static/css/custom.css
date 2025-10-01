@@ -991,7 +991,7 @@
   .chat-wrapper {
     display: flex;
     flex-direction: column;
-    height: 100%; /* full screen minus header */
+    height: 100vh; /* full screen minus header */
     overflow: hidden;
     padding-top: 45px; /* push content below header */
     bottom: 0;
