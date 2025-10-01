@@ -993,7 +993,7 @@
     flex-direction: column;
     height: 100vh; /* full screen minus header */
     overflow: hidden;
-    padding-top: 55px; /* push content below header */
+    padding-top: 45px; /* push content below header */
     bottom: 0;
   }
 
@@ -1008,7 +1008,7 @@
 
   .chat-wrapper .page-body {
     margin-bottom: 0;
-    padding-bottom: 0.03rem;
+    padding-bottom: 2rem;
     background: #111827 !important;
   }
 
