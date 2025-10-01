@@ -993,7 +993,7 @@
     flex-direction: column;
     height: 100vh; /* full screen minus header */
     overflow: hidden;
-    padding-top: 45px; /* push content below header */
+    padding-top: 55px; /* push content below header */
     bottom: 0;
   }
 
