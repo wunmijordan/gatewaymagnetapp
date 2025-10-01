@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from cloudinary.models import CloudinaryField
+from django.utils.timezone import now
 from django.conf import settings
 from guests.models import GuestEntry
 
@@ -91,6 +92,20 @@ class ChatMessage(models.Model):
       blank=True
   )
   pinned = models.BooleanField(default=False, db_index=True)  # ⚡ faster queries for pinned
+  pinned_at = models.DateTimeField(null=True, blank=True, db_index=True)
+  pinned_by = models.ForeignKey(
+    settings.AUTH_USER_MODEL,
+    null=True,
+    blank=True,
+    on_delete=models.SET_NULL,
+    related_name="pinned_messages"
+  )
+
+  def is_expired(self):
+    """Convenience: check if pinned > 14 days ago"""
+    if not self.pinned or not self.pinned_at:
+        return False
+    return (now() - self.pinned_at).days > 14
 
 
   class Meta:

@@ -71,22 +71,22 @@
   align-items: center;
   border: none !important;
   box-shadow: none !important;
-  padding: 1rem 1rem;   /* keep inner spacing instead of margin */
+  padding: 0.5rem 0.5rem;   /* keep inner spacing instead of margin */
 }
 
-.navbar.scrolled {
+.navbar.scrolled .container-fluid {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;               /* makes centering easier */
-  width: 90%;             /* or max-width if you want it tighter */
+  width: 95%;             /* or max-width if you want it tighter */
   max-width: 1200px;      /* keeps consistent size on wide screens */
   margin: 0 auto;         /* centers horizontally */  
   background: #0c1420 !important;
   border-radius: 2rem;
   box-shadow: 0 6px 10px #000000ea;
   transition: all 0.2s ease-in-out;
-  padding: 0.25rem 2rem;        /* even padding left & right */
+  padding: 0.25rem 1rem;        /* even padding left & right */
   animation: slideDown 0.2s ease forwards;
   z-index: 1030;
 }
@@ -778,7 +778,7 @@
 .scroll-to-bottom {
   position: absolute;
   right: 10px;
-  bottom: 66px;
+  bottom: 16px;
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -859,6 +859,278 @@
   pointer-events: none;
   opacity: 0;
 }
+
+
+/* Apply only to the reply message text */
+.reply-preview-text {
+  flex: 1 1 auto;                     /* take up remaining space */
+  min-width: 0;                /* ✅ prevent overflow squeeze */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;       /* clamp to 3 lines */
+  line-clamp: 3;               
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+#replyPreview,
+#guestPreview {
+  width: 100%;
+  flex-shrink: 0; /* don’t collapse */
+}
+
+
+
+
+
+@media (max-width: 768px) {
+  #chatBackBtn {
+    display: inline-flex; /* visible on mobile */
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Desktop keeps column layout */
+@media (min-width: 769px) {
+  #chatBackBtn {
+    display: inline-flex; /* hide back button on desktop */
+  }
+}
+
+
+
+
+
+
+/* ============================
+   8. Mobile responsiveness
+   ============================ */
+@media (max-width: 767px) {
+  .navbar-chat .navbar-nav {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .navbar-chat.scrolled {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;               /* makes centering easier */
+    width: 95%;             /* or max-width if you want it tighter */
+    max-width: 1200px;      /* keeps consistent size on wide screens */
+    margin: 0 auto;         /* centers horizontally */  
+    background: #0c1420 !important;
+    border-radius: 2rem;
+    box-shadow: 0 6px 10px #000000ea;
+    transition: all 0.2s ease-in-out;
+    padding: 0.25rem 0.25rem;        /* even padding left & right */
+    animation: slideDown 0.2s ease forwards;
+    z-index: 1030;
+  }
+
+  /* Slide-down animation */
+  @keyframes slideDown {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(0); }
+  }
+
+  .navbar-chat .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+    height: 2.5rem;
+    width: 2.5rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Shrink logo when scrolled */
+  .navbar-chat.scrolled .navbar-nav {
+    padding: 0.25rem 0.25rem;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .navbar-chat {
+    height: auto !important;
+    position: relative;
+    z-index: 1050;
+    min-height: 3.5rem !important;
+  }
+
+  .navbar-chat .navbar-toggler svg {
+    pointer-events: none; /* make sure clicks go to button */
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    position: absolute;
+  }
+
+  .navbar-chat .icon-tabler-menu-deep,
+  .navbar-chat .icon-tabler-x {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+
+  .navbar-chat .icon-tabler-menu-deep.hidden,
+  .navbar-chat .icon-tabler-x.hidden {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.8);
+    pointer-events: none;
+  }
+
+  .navbar-chat .navbar-collapse.collapse {
+    transition: height 0.35s ease;
+    overflow: visible;
+    position: relative;
+    z-index: 1060;
+    background: transparent !important;
+    color: #fff !important;
+  }
+
+  .chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* full screen minus header */
+    overflow: hidden;
+    padding-top: 45px; /* push content below header */
+    bottom: 0;
+  }
+
+  .chat-wrapper .chat-column .card-footer {
+    padding: 0 0;
+    width: 95%;
+    margin: 0.25rem auto;
+    background: rgba(17, 34, 51, 0.082)937 !important;
+    box-shadow: 0 6px 10px #000000ea;
+    border-radius: 1rem;
+  }
+
+  .chat-wrapper .page-body {
+    margin-bottom: 0;
+    padding-bottom: 0.03rem;
+    background: #111827 !important;
+  }
+
+  .chat-wrapper .chat-card {
+    margin: 0 0.5rem;
+    margin-bottom: 5rem;
+    background: #111827 !important;
+    box-shadow: 0 4px 8px #000000d2;
+    border-radius: 1rem;
+  }
+  
+  
+}
+
+.chat-wrapper .chat-column::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 2rem;
+  background: url('/static/images/church_logo.png') no-repeat center;
+  background-size: 470px;
+  opacity: 0.01; /* faint watermark */
+  pointer-events: none; /* don’t block clicks/scroll */
+}
+
+
+/* Desktop: no gap */
+@media (min-width: 768px) {
+  .chat-wrapper {
+    height: 100vh !important;
+  }
+}
+
+
+/* Pinned preview stack (always visible top-left of chat container) */
+/* Stack container (top-left fixed) */
+.pinned-preview {
+  position: absolute;
+  top: 25px;
+  left: 20px;
+  display: flex;
+  flex-direction: column-reverse; /* newest at bottom */
+  gap: 5px;
+  z-index: 50;
+}
+
+/* Outer card wrapping pinner + preview bubble */
+.pinned-outer {
+  position: relative;
+  background-color: #1f2937; /* dark grey bg */
+  border-radius: 10px;
+  padding: 4px 7px;
+  color: #fff;
+  font-size: 0.6rem;
+  max-width: 180px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Pin icon top-left outside the card */
+.pinned-outer .pinned-icon {
+  position: absolute;
+  top: 5px;
+  left: -15px;
+  border-radius: 50%;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+.pinned-outer .pinned-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Pinner label */
+.pinned-outer .pinner {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #fbbf24;
+  margin-bottom: 6px;
+  padding: 0 0;
+}
+
+/* Inner preview bubble (with green border-left) */
+.pinned-outer .pinned-info {
+  background-color: #25292634;
+  border-left: 4px solid rgba(247, 3, 215, 0.527);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 0.6rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  cursor: pointer;
+  color: #6c757d;
+  line-height: 1rem;
+
+  /* ✅ Truncate to 2 lines with ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* max 2 lines */
+  line-clamp: 2; /* standard property for compatibility */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal; /* allow wrapping */
+}
+
+/* Highlight when scroll-to-bubble */
+.chat-bubble.highlight-pinned {
+  animation: glow 5s ease-in-out;
+}
+
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 0px rgba(247, 3, 215, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(247, 3, 215, 0.8); /* bright pink glow */
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(247, 3, 215, 0.0);
+  }
+}
+
+.pinned-preview .pinned-item:hover {
+  transform: scale(1.05);
+}
+
 
 
 

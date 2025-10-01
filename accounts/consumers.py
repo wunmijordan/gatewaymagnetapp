@@ -1,7 +1,6 @@
 import json
 import logging
-import re
-from datetime import datetime
+from datetime import timedelta
 from django.utils.timezone import now
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
@@ -32,6 +31,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
+        # ✅ Send latest pinned previews on connect
+        recent = await self.get_recent_pinned()
+        await self.send(text_data=json.dumps({
+            "type": "pinned_preview",
+            "messages": recent
+        }))
+
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
@@ -44,6 +50,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 return
 
             await self.handle_new_message(data)
+
         except Exception as e:
             logger.error(f"WebSocket receive error: {e}")
 
@@ -52,34 +59,47 @@ class ChatConsumer(AsyncWebsocketConsumer):
         action = data.get("action")
         sender_id = data.get("sender_id")
 
-        #if action == "delete":
-        #    message_ids = data.get("message_ids", [])
-        #    deleted_ids = await self.handle_delete(message_ids, sender_id)
-        #    await self.channel_layer.group_send(
-        #        self.room_group_name,
-        #        {"type": "message_deleted", "message_ids": deleted_ids}
-        #    )
-
         if action == "pin":
             message_ids = data.get("message_ids", [])
-            pinned = await self.handle_pin(message_ids, sender_id)
+            pinned_map = await self.handle_pin(message_ids, sender_id)
+
+            # 🔹 Get sender info for pinned_by
+            from .models import CustomUser
+            try:
+                pinner = await sync_to_async(CustomUser.objects.get)(id=sender_id)
+                pinned_by_payload = {
+                    "id": pinner.id,
+                    "name": pinner.full_name or pinner.username,
+                    "title": getattr(pinner, "title", "")
+                }
+            except Exception:
+                pinned_by_payload = None
+
+            # 🔹 1. Tell all clients to toggle bubble flags
             await self.channel_layer.group_send(
                 self.room_group_name,
-                {"type": "message_pinned", "message_ids": message_ids, "pinned": pinned}
+                {
+                    "type": "message_pinned",
+                    "message_ids": message_ids,
+                    "pinned": pinned_map,
+                    "pinned_by": pinned_by_payload,
+                }
             )
 
-        #elif action == "edit":
-        #    message_id = data.get("message_id")
-        #    new_text = data.get("new_text", "")
-        #    success = await self.handle_edit(message_id, new_text, sender_id)
-        #    if success:
-        #        payload = await self.get_message_payload(message_id)
-        #        payload.update({"type": "message_edited"})
-        #        await self.channel_layer.group_send(self.room_group_name, payload)
+            # 🔹 2. Broadcast updated pinned preview stack
+            recent = await self.get_recent_pinned()
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "pinned_preview",
+                    "messages": recent
+                }
+            )
+            return
 
         elif action == "reply":
             # client handles reply preview
-            pass
+            return
 
         else:
             logger.debug("Unknown action received: %s", action)
@@ -103,14 +123,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event))
 
-    #async def message_deleted(self, event):
-    #    await self.send(text_data=json.dumps(event))
-
     async def message_pinned(self, event):
         await self.send(text_data=json.dumps(event))
 
-    #async def message_edited(self, event):
-    #    await self.send(text_data=json.dumps(event))
+    async def pinned_preview(self, event):
+        """Broadcast pinned preview list"""
+        await self.send(text_data=json.dumps({
+            "type": "pinned_preview",
+            "messages": event["messages"]
+        }))
 
     # =================== Database / Sync Handlers ===================
     @sync_to_async(thread_sensitive=False)
@@ -164,27 +185,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return parent_data
 
     # ---------- Action Handlers ----------
-    """
-    @sync_to_async
-    def handle_delete(self, message_ids, sender_id):
-        from .models import ChatMessage
-        deleted = []
-        for mid in message_ids:
-            try:
-                m = ChatMessage.objects.filter(id=mid).first()
-                if m and m.sender.id == sender_id:
-                    if hasattr(m, "deleted"):
-                        m.deleted = True
-                    m.message = "[deleted]"
-                    if hasattr(m, "edited"):
-                        m.edited = True
-                    m.save()
-                    deleted.append(mid)
-            except Exception:
-                logger.exception("Failed to delete message %s", mid)
-        return deleted
-    """
-
     @sync_to_async
     def handle_pin(self, message_ids, sender_id):
         from .models import ChatMessage
@@ -192,33 +192,64 @@ class ChatConsumer(AsyncWebsocketConsumer):
         for mid in message_ids:
             try:
                 m = ChatMessage.objects.filter(id=mid).first()
-                if m and hasattr(m, "pinned"):
-                    m.pinned = not m.pinned
-                    m.save()
-                    res[mid] = m.pinned
+                if not m:
+                    continue
+
+                # Toggle pinned state
+                if m.pinned:
+                    m.pinned = False
+                    m.pinned_at = None
+                    m.pinned_by = None
+                else:
+                    m.pinned = True
+                    m.pinned_at = now()
+                    m.pinned_by_id = sender_id
+                m.save(update_fields=["pinned", "pinned_at", "pinned_by_id"])
+                res[str(mid)] = m.pinned
             except Exception:
                 logger.exception("Failed to toggle pin %s", mid)
         return res
 
-    """
+    # ---------- Helpers ----------
     @sync_to_async
-    def handle_edit(self, message_id, new_text, sender_id):
+    def get_recent_pinned(self):
         from .models import ChatMessage
-        try:
-            m = ChatMessage.objects.get(id=message_id)
-            if m.sender.id != sender_id:
-                return False
-            m.message = new_text
-            if hasattr(m, "edited"):
-                m.edited = True
-            if hasattr(m, "edited_at"):
-                m.edited_at = now()
-            m.save()
-            return True
-        except Exception:
-            logger.exception("Failed to edit message %s", message_id)
-            return False
-    """
+        cutoff = now() - timedelta(days=14)
+
+        # Auto-unpin expired ones
+        ChatMessage.objects.filter(pinned=True, pinned_at__lt=cutoff).update(
+            pinned=False, pinned_at=None, pinned_by=None
+        )
+
+        pinned = (
+            ChatMessage.objects.filter(pinned=True, pinned_at__gte=cutoff)
+            .select_related("pinned_by", "sender", "guest_card")
+            .order_by("-pinned_at")[:3]
+        )
+        return [self.serialize_message(m) for m in pinned]
+
+    def serialize_message(self, m):
+        """Enriched payload for pinned preview"""
+        return {
+            "id": m.id,
+            "message": m.message[:50],
+            "original_sender_id": m.sender.id,
+            "original_sender_name": m.sender.full_name or m.sender.username,
+            "original_sender_title": getattr(m.sender, "title", ""),
+            "pinned": m.pinned,
+            "pinned_at": m.pinned_at.isoformat() if m.pinned_at else None,
+            "pinned_by": {
+                "id": m.pinned_by.id if m.pinned_by else None,
+                "name": (m.pinned_by.full_name or m.pinned_by.username) if m.pinned_by else None,
+                "title": getattr(m.pinned_by, "title", "") if m.pinned_by else "",
+            } if m.pinned_by else None,
+            "guest": {
+                "id": m.guest_card.id,
+                "name": m.guest_card.full_name,
+                "title": m.guest_card.title,
+                "image": m.guest_card.picture.url if m.guest_card.picture else None,
+            } if m.guest_card else None,
+        }
 
     # ---------- Build Broadcast Payload ----------
     @sync_to_async
@@ -240,8 +271,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
             "guest": None,
             "parent": None,
             "pinned": getattr(m, "pinned", False),
-            #"deleted": getattr(m, "deleted", False),
-            #"edited": getattr(m, "edited", False),
             "color": get_user_color(m.sender.id),
         }
 
@@ -312,8 +341,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "parent": None,
                 "reply_to_id": parent.id if parent else None,
                 "pinned": getattr(saved, "pinned", False),
-                #"deleted": getattr(saved, "deleted", False),
-                #"edited": getattr(saved, "edited", False),
                 "color": get_user_color(sender.id),
             }
 
@@ -378,4 +405,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.exception("create_message failed: %s", e)
             return {}
-
