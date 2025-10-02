@@ -38,7 +38,7 @@
           </button>
         </div>
 
-        <!-- Search bar container -->
+        <!-- Mobile Search bar container -->
         <div class="flex-grow-1 position-relative">
           <!-- Input -->
           <input type="text"
@@ -47,26 +47,13 @@
                 style="
                   box-shadow: 0 4px 8px #000000d2;
                   height: 48px;             /* tall enough for icons */
-                  padding-left: 44px;       /* space for logo */
-                  padding-right: 44px;      /* space for avatar */
+                  padding-left: 48px;       /* space for logo */
+                  padding-right: 48px;      /* space for avatar */
                   width: 250px;
                 ">
 
-          <!-- Logo inside input (left) -->
-          <span class="position-absolute top-50 start-0 translate-middle-y ps-3 me-2">
-            {% if request.user.is_superuser or request.user.is_staff %}
-              <a href="{% url 'accounts:admin_dashboard' %}">
-                <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
-              </a>
-            {% else %}
-              <a href="{% url 'dashboard' %}">
-                <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
-              </a>
-            {% endif %}
-          </span>
-
           <!-- Avatar / SVG inside input (right) -->
-          <span class="position-absolute top-50 end-0 translate-middle-y pe-3 me-2">
+          <span class="position-absolute top-50 start-0 translate-middle-y ps-3 me-2">
             <span class="d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="rgba(227, 1, 247, 0.81)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -77,6 +64,19 @@
                 <path d="M6 19v2"/><path d="M18 19v2"/>
               </svg>
             </span>
+          </span>
+
+          <!-- Logo inside input (left) -->
+          <span class="position-absolute top-50 end-0 translate-middle-y pe-3 me-2">
+            {% if request.user.is_superuser or request.user.is_staff %}
+              <a href="{% url 'accounts:admin_dashboard' %}">
+                <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
+              </a>
+            {% else %}
+              <a href="{% url 'dashboard' %}">
+                <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
+              </a>
+            {% endif %}
           </span>
         </div>
       </div>
@@ -201,16 +201,45 @@
           <!-- RIGHT COLUMN -->
           <div class="chat-column col-12 col-lg-7 col-xl-9 d-flex flex-column" style="height:100%;">
             <div class="d-none d-lg-flex card-header justify-content-center border-0">
+              
+              <!-- Search bar container -->
               <div class="input-icon">
-                <span class="input-icon-addon">
-                  <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-search">
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" />
-                    <path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" />
-                  </svg>
+                <!-- Input -->
+                <input type="text"
+                      class="form-control rounded-4 ms-2 border-0 chat-search"
+                      placeholder="Search Chat" aria-label="Search"
+                      style="
+                        box-shadow: 0 4px 8px #000000d2;
+                        height: 48px;             /* tall enough for icons */
+                        padding-left: 48px;       /* space for logo */
+                        padding-right: 48px;      /* space for avatar */
+                        width: 250px;
+                      ">
+
+                <!-- Avatar / SVG inside input (right) -->
+                <span class="input-icon-addon top-50 start-0 translate-middle-y ps-3 me-2">
+                  <span class="d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-user-search">
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                      <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" /><path d="M6 21v-2a4 4 0 0 1 4 -4h1.5" />
+                      <path d="M18 18m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M20.2 20.2l1.8 1.8" />
+                    </svg>
+                  </span>
+                  </span>
                 </span>
-                <input type="text" class="form-control chat-search" 
-                      placeholder="Search Chat" aria-label="Search">
+
+                <!-- Logo inside input (left) -->
+                <span class="input-icon-addon top-50 end-0 translate-middle-y ps-3 me-2" style="pointer-events:auto;">
+                  {% if request.user.is_superuser or request.user.is_staff %}
+                    <a href="{% url 'accounts:admin_dashboard' %}">
+                      <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
+                    </a>
+                  {% else %}
+                    <a href="{% url 'dashboard' %}">
+                      <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
+                    </a>
+                  {% endif %}
+                </span>
               </div>
             </div>
             <div class="card-body mt-0 p-0 d-flex flex-column flex-fill" style="height:100%; overflow:hidden;">
