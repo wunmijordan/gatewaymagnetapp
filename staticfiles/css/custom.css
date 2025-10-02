@@ -1004,23 +1004,39 @@
     background: rgba(17, 34, 51, 0.082)937 !important;
     box-shadow: 0 6px 10px #000000ea;
     border-radius: 1rem;
+    flex-shrink: 0;
   }
 
   .chat-wrapper .page-body {
     margin-bottom: 0;
-    padding-bottom: 2rem;
+    padding-bottom: 0.03rem;
     background: #111827 !important;
   }
 
   .chat-wrapper .chat-card {
+    flex: 1 1 auto;
+    height: 100%;
     margin: 0 0.5rem;
-    margin-bottom: 5rem;
+    margin-bottom: 0;
     background: #111827 !important;
     box-shadow: 0 4px 8px #000000d2;
     border-radius: 1rem;
+    overflow: hidden;
   }
-  
-  
+
+  .chat-card .card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  #chatMessagesContainer {
+    flex: 1 1 auto;
+    overflow-y: auto;    /* ✅ only this scrolls */
+    height: auto;        /* let flexbox size it */
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .chat-wrapper .chat-column::before {
