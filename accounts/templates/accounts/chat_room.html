@@ -362,6 +362,10 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+
 <script src="https://cdn.jsdelivr.net/npm/textarea-caret@3.1.0/index.min.js"></script>
 
 <script>
@@ -1910,6 +1914,14 @@ document.addEventListener("DOMContentLoaded", () => {
     createGuestPreview(JSON.parse(guestData));
     localStorage.removeItem("attachGuest"); // clear after use
   }
+
+  function setVH() {
+    document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+  }
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', setVH);
+  setVH();
+
 
 });
 </script>

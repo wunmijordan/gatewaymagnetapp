@@ -991,7 +991,7 @@
   .chat-wrapper {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* full screen minus header */
+    height: calc(var(--vh, 1vh) * 100); /* full screen minus header */
     overflow: hidden;
     padding-top: 45px; /* push content below header */
     bottom: 0;
@@ -1007,7 +1007,11 @@
     flex-shrink: 0;
   }
 
-
+  .chat-wrapper .page-body {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    background: #111827 !important;
+  }
 
   .chat-card {
     flex: 1 1 auto;
@@ -1030,6 +1034,7 @@
   #chatMessagesContainer {
     flex: 1 1 auto;
     overflow-y: auto;    /* ✅ only this scrolls */
+    overflow-x: hidden;
     height: auto;        /* let flexbox size it */
     -webkit-overflow-scrolling: touch;
   }
