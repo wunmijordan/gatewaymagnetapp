@@ -691,10 +691,10 @@
 /* Flags container (outside bubble, bottom-left) */
 .chat-bubble-flags {
   position: absolute;
-  bottom: -14px;
-  left: 8px;
+  bottom: -10px;
+  left: -10px;
   display: flex;
-  gap: 6px;
+  gap: 0.5px;
   align-items: center;
   font-size: 0.85rem;
   z-index: 20;
@@ -704,19 +704,19 @@
 
 .chat-bubble-flags .mention-flag {
   color: #00aeff;
-  background: rgba(16,185,129,0.08);
-  padding: 2px 6px;
+  background: none !important;
+  padding: 2px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 300;
   animation: mention-bounce 1.2s infinite ease-in-out;
 }
 
 .chat-bubble-flags .pin-flag {
   color: #e703fc;
-  background: rgba(16,185,129,0.08);
+  background: none !important;
   padding: 2px 6px;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 300;
 }
 
 @keyframes mention-bounce {
@@ -728,17 +728,17 @@
 /* Options panel (vertical, right sticky inside chat container) */
 .options-panel {
   position: absolute;        /* absolute inside chat container */
-  top: 50%;                  /* center vertically */
-  right: 12px;               /* stick to the right */
+  top: 116px;                  /* center vertically */
+  right: 5px;               /* stick to the right */
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;    /* stack buttons vertically */
   gap: 10px;
   padding: 10px 6px;
-  background: #111827;
+  background: #1f2937;
   color: #f59f00;
   border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  box-shadow: 0 4px 8px #000000d2;
   transition: opacity 180ms ease, transform 200ms cubic-bezier(.2,.9,.3,1);
   z-index: 1000;
   opacity: 1;
@@ -777,17 +777,17 @@
 /* floating scroll-to-bottom arrow */
 .scroll-to-bottom {
   position: absolute;
-  right: 10px;
+  right: 5px;
   bottom: 16px;
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  background: #111827;
+  border-radius: 16px;
+  background: #1f2937;
   color: #f59f00;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.815);
+  box-shadow: 0 4px 8px #000000d2;
   cursor: pointer;
   z-index: 1200;
   opacity: 0;
@@ -849,8 +849,8 @@
   font-weight: 600;
   font-size: 0.9rem;
   color: #f59f00; /* text-yellow-800*/
-  background-color: #343531; /* bg-yellow-lt*/
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  background-color: #1f2937; /* bg-yellow-lt*/
+  box-shadow: 0 4px 8px #000000d2;
   text-align: center;
   justify-content: center;
   margin: 0 auto;
@@ -880,6 +880,80 @@
   width: 100%;
   flex-shrink: 0; /* don’t collapse */
 }
+
+/* Textarea Formatting 
+#chatInput {
+    width: 100%;
+    min-height: 40px;
+    max-height: 100px;
+    line-height: 20px;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    resize: none;
+  }*/
+
+  .preview {
+    position: fixed;
+    top: 50%;
+    left: 10px;
+    transform: translateY(-50%);
+    padding: 10px;
+    background: #343531;
+    color: white;
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-width: 200px;
+    overflow-wrap: break-word;
+    z-index: 1000;
+    font-size: 0.65rem;
+    border-radius: 0.5rem;
+  }
+
+  .highlight { background-color: #8eb615; color: white; }
+
+/* Bold and italic are <b> and <i> */
+.chat-bubble-body i {
+  font-style: italic;
+  color: #ffa600b4; /* purple for numbers/bullets */
+}
+
+.chat-bubble-body b {
+  font-weight: 900;
+  color: #ffa600;
+}
+
+.chat-bubble-body u {
+  text-decoration: underline;
+  color: #ffa600cc; /* blue for underline */
+}
+
+/* Highlight overrides inner colors */
+.chat-bubble-body .highlight {
+  background-color: #ffa60098;
+  color: white !important;   /* override normal bold/italic color */
+  border-radius: 3px;
+  padding: 0 3px;
+}
+.chat-bubble-body .highlight b,
+.chat-bubble-body .highlight i,
+.chat-bubble-body .highlight u {
+  color: inherit !important;   /* force highlighted color */
+}
+
+
+
+.chat-bubble-body .message-row {
+  font-weight: 300;
+}
+
+
+#chatInput {
+  min-height: 20px;
+  line-height: 20px;
+  white-space: pre-wrap; /* preserve newlines */
+}
+
+
+
 
 
 
@@ -1007,6 +1081,8 @@
     flex-shrink: 0;
   }
 
+  
+
   .chat-wrapper .page-body {
     margin-bottom: 0;
     padding-bottom: 0;
@@ -1040,13 +1116,21 @@
   }
 }
 
-.chat-wrapper .chat-column::before {
+.chat-bubble {
+    background-color: #0c121f !important;
+  }
+
+  .chat-bubble-me {
+    background-color: #1c3536 !important;
+  }
+
+.chat-wrapper .chat-column .card-body::before {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 2rem;
   background: url('/static/images/church_logo.png') no-repeat center;
   background-size: 470px;
-  opacity: 0.01; /* faint watermark */
+  opacity: 0.09; /* faint watermark */
   pointer-events: none; /* don’t block clicks/scroll */
 }
 
@@ -1063,7 +1147,7 @@
 /* Stack container (top-left fixed) */
 .pinned-preview {
   position: absolute;
-  top: 25px;
+  top: 35px;
   left: 20px;
   display: flex;
   flex-direction: column-reverse; /* newest at bottom */
@@ -1088,9 +1172,10 @@
   position: absolute;
   top: 5px;
   left: -15px;
-  border-radius: 50%;
+  border-radius: 15%;
   padding: 0;
   box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  background: none !important;
 }
 .pinned-outer .pinned-icon svg {
   width: 14px;
@@ -1147,6 +1232,15 @@
 .pinned-preview .pinned-item:hover {
   transform: scale(1.05);
 }
+
+.chat-bubble {
+  -webkit-user-select: none; /* iOS Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+  user-select: none;         /* Chrome/modern */
+  -webkit-touch-callout: none; /* disable callout (copy/save) on iOS long press */
+}
+
 
 
 

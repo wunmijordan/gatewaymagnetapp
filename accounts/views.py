@@ -6,7 +6,7 @@ from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm
 from django.urls import reverse_lazy, reverse
 from django.utils.timezone import localtime, now
-import pytz
+import pytz, requests, re, calendar, json, mimetypes, os
 from django.contrib.auth import get_user_model
 from guests.models import GuestEntry
 from .models import CustomUser, ChatMessage
@@ -16,16 +16,20 @@ from django.db.models import Q, Count
 from datetime import datetime, timedelta
 from django.db.models.functions import ExtractMonth
 from django.http import JsonResponse, HttpResponseForbidden
-import calendar
 from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm, CustomUserChangeForm, GroupForm
 from .utils import user_in_groups
-import json
 from .consumers import get_user_color
 from django.core.serializers.json import DjangoJSONEncoder
-import re
 from django.http import JsonResponse
 from django.utils.dateparse import parse_datetime
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+from .utils import serialize_message, build_mention_helpers
+from django.core.files.storage import default_storage
+import urllib.parse
 
 
 
@@ -564,104 +568,6 @@ def delete_group(request, group_id):
 
 
 
-def build_mention_helpers():
-    """Precompute mention_map + regex for all users (cached per request)."""
-    users = list(CustomUser.objects.all())
-    mention_map = {}
-    for u in users:
-        display = f"@{ (u.title + ' ') if getattr(u, 'title', None) else '' }{ (u.full_name or u.username) }".strip()
-        mention_map[display] = u
-    if mention_map:
-        regex = re.compile(r"(" + "|".join(map(re.escape, mention_map.keys())) + r")")
-    else:
-        regex = None
-    return mention_map, regex
-
-
-def serialize_message(m, mention_map=None, mention_regex=None):
-    """Serialize a ChatMessage into dict payload with full guest + assigned_user info."""
-
-    # --- Mentions payload ---
-    mentions_payload = []
-    if mention_regex and m.message:
-        found = set(mention_regex.findall(m.message))
-        for token in found:
-            u = mention_map.get(token)
-            if u:
-                mentions_payload.append({
-                    "id": u.id,
-                    "username": u.username,
-                    "title": getattr(u, "title", ""),
-                    "fullname": u.full_name or u.username,
-                    "color": get_user_color(u.id),
-                })
-
-    # --- Parent message payload ---
-    parent_payload = None
-    if m.parent:
-        parent_guest_payload = None
-        if m.parent.guest_card:
-            guest = m.parent.guest_card
-            parent_guest_payload = {
-                "id": guest.id,
-                "name": guest.full_name,
-                "title": guest.title,
-                "image": guest.picture.url if guest.picture else None,
-                "date_of_visit": guest.date_of_visit.strftime("%Y-%m-%d") if guest.date_of_visit else "",
-                "assigned_user": {
-                    "id": guest.assigned_to.id,
-                    "title": guest.assigned_to.title,
-                    "full_name": guest.assigned_to.full_name,
-                    "image": guest.assigned_to.image.url if guest.assigned_to.image else None,
-                } if guest.assigned_to else None
-            }
-
-        parent_payload = {
-            "id": m.parent.id,
-            "sender_id": m.parent.sender.id,
-            "sender_title": getattr(m.parent.sender, "title", ""),
-            "sender_name": m.parent.sender.full_name or m.parent.sender.username,
-            "sender_color": get_user_color(m.parent.sender.id),
-            "message": m.parent.message[:50],
-            "guest": parent_guest_payload,
-        }
-
-    guest_payload = None
-    if m.guest_card:
-        guest = GuestEntry.objects.select_related('assigned_to').get(id=m.guest_card.id)
-        guest_payload = {
-            "id": guest.id,
-            "name": guest.full_name,
-            "custom_id": guest.custom_id,
-            "image": guest.picture.url if guest.picture else None,
-            "title": guest.title,
-            "date_of_visit": guest.date_of_visit.strftime("%Y-%m-%d") if guest.date_of_visit else "",
-            "assigned_user": {
-                "id": guest.assigned_to.id,
-                "title": guest.assigned_to.title,
-                "full_name": guest.assigned_to.full_name,
-                "image": guest.assigned_to.image.url if guest.assigned_to.image else None,
-            } if guest.assigned_to else None
-        }
-
-    # --- Final message payload ---
-    return {
-        "id": m.id,
-        "message": m.message,
-        "sender_id": m.sender.id,
-        "sender_title": getattr(m.sender, "title", ""),
-        "sender_name": m.sender.full_name or m.sender.username,
-        "sender_image": m.sender.image.url if m.sender.image else None,
-        "color": get_user_color(m.sender.id),
-        "created_at": m.created_at.isoformat(),
-        "guest_id": guest_payload["id"] if guest_payload else None,
-        "pinned": getattr(m, "pinned", False),
-        "mentions": mentions_payload,
-        "guest": guest_payload,
-        "reply_to_id": m.parent.id if m.parent else None,
-        "parent": parent_payload,
-    }
-
 
 
 @login_required
@@ -832,6 +738,75 @@ def load_more_messages(request):
     payload = [serialize_message(m, mention_map, mention_regex) for m in messages]
 
     return JsonResponse({"messages": payload})
+
+
+
+@csrf_exempt
+def upload_file(request):
+    """Upload a file and return metadata for frontend."""
+    if request.method != "POST" or "file" not in request.FILES:
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    try:
+        f = request.FILES["file"]
+
+        # Save file safely
+        file_path = default_storage.save(f"chat_uploads/{f.name}", f)  # relative storage path
+        file_url = default_storage.url(file_path)  # URL for frontend display
+
+        # Guess MIME type
+        guessed_type, _ = mimetypes.guess_type(f.name)
+
+        return JsonResponse({
+            "url": file_path,  # return **storage path**, not URL
+            "display_url": file_url,  # optional, frontend-friendly
+            "name": f.name,  # ✅ original filename for display
+            "saved_name": os.path.basename(file_path),  # ✅ actual stored filename
+            "size": f.size,
+            "type": guessed_type or f.content_type or "application/octet-stream",
+        })
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+
+
+
+
+@csrf_exempt
+def fetch_link_preview(request):
+    url = request.GET.get("url")
+    if not url:
+        return JsonResponse({"error": "Missing URL"}, status=400)
+
+    try:
+        r = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        title_tag = soup.find("meta", property="og:title") or soup.find("title")
+        desc_tag = soup.find("meta", property="og:description") or soup.find("meta", attrs={"name": "description"})
+        image_tag = soup.find("meta", property="og:image")
+
+        return JsonResponse({
+            "url": url,
+            "title": title_tag["content"] if title_tag and title_tag.has_attr("content") else (title_tag.string if title_tag else ""),
+            "description": desc_tag["content"] if desc_tag and desc_tag.has_attr("content") else "",
+            "image": image_tag["content"] if image_tag and image_tag.has_attr("content") else "",
+        })
+    except Exception as e:
+        return JsonResponse({
+            "url": url,
+            "title": url,  # fallback
+            "description": "",
+            "image": "",
+            "error": str(e)
+        }, status=200)
+
+
+
+
 
 
 

@@ -71,8 +71,7 @@ class ChatMessage(models.Model):
       related_name='replies',
       db_index=True  # ⚡ helps with threaded lookups
   )
-  message = models.TextField(blank=True)
-  attachment = models.FileField(upload_to='chat_files/', blank=True, null=True)
+  message = models.TextField(null=True, blank=True)
   voice_note = models.FileField(upload_to='chat_voice/', blank=True, null=True)
   guest_card = models.ForeignKey(
       GuestEntry,
@@ -91,6 +90,12 @@ class ChatMessage(models.Model):
       related_name='seen_chats',
       blank=True
   )
+  file = models.FileField(upload_to="chat/files/", blank=True, null=True)
+  file_type = models.CharField(max_length=100, blank=True, null=True)
+  link_url = models.URLField(blank=True, null=True)
+  link_title = models.CharField(max_length=255, blank=True, null=True)
+  link_description = models.TextField(blank=True, null=True)
+  link_image = models.URLField(blank=True, null=True)
   pinned = models.BooleanField(default=False, db_index=True)  # ⚡ faster queries for pinned
   pinned_at = models.DateTimeField(null=True, blank=True, db_index=True)
   pinned_by = models.ForeignKey(

@@ -271,7 +271,17 @@ def create_chat_notification(sender, instance, created, **kwargs):
         return
 
     sender_user = instance.sender
-    message_preview = instance.message[:50] or "(Attachment)"
+
+    # 🔹 Safely handle empty/None message, file, or guest-only cards
+    if instance.message:
+        message_preview = instance.message[:50]
+    elif instance.file:
+        message_preview = "(Attachment)"
+    elif instance.guest_card:
+        message_preview = f"(Guest: {instance.guest_card.full_name})"
+    else:
+        message_preview = "(No content)"
+
     ts = timezone.localtime(instance.created_at).strftime("%b. %d, %Y - %H:%M")
     link = reverse("accounts:chat_room")  # your chat page url name
 
@@ -290,6 +300,7 @@ def create_chat_notification(sender, instance, created, **kwargs):
         link,
         is_success=True
     )
+
 
 
 @receiver(post_save, sender=User)
