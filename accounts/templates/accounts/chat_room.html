@@ -1301,20 +1301,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Chat Bubble Text Formatting
   function formatMessage(text) {
     let formatted = text
-      // bold
+      // bold/italic/underline/highlight
       .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-      // italic
       .replace(/\*(.*?)\*/g, '<i>$1</i>')
-      // underline
       .replace(/_(.*?)_/g, '<u>$1</u>')
-      // highlight
       .replace(/==(.+?)==/g, '<span class="highlight">$1</span>');
 
-    // Numbered list: 1. 2. etc
-    //formatted = formatted.replace(/^(\s*)(\d+\.\s)/gm, '<span class="fw-bold">$1$2</span>');
+    // Wrap top-level numbering
+    formatted = formatted.replace(/^(\s*\d+\.\s.*)$/gm, (m) => {
+      const leadingSpaces = m.match(/^(\s*)/)[1].replace(/ /g, '&nbsp;');
+      return `<span class="numbered-line">${leadingSpaces}${m.trim()}</span>`;
+    });
 
-    // Nested list: a. b. c. → italic
-    //formatted = formatted.replace(/^(\s+)([a-z]\.\s)/gm, '<i>$1$2</i>');
+    // Wrap nested numbering
+    formatted = formatted.replace(/^(\s*[a-z]\.\s.*)$/gm, (m) => {
+      const leadingSpaces = m.match(/^(\s*)/)[1].replace(/ /g, '&nbsp;');
+      return `<span class="nested-line">${leadingSpaces}${m.trim()}</span>`;
+    });
 
     return formatted;
   }
@@ -2389,8 +2392,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---------- Textarea resizing ----------
 
   const TAB_SPACES = "    "; // 4-space tab
-  let lastLineNumbering = null; // current numbering sequence
-  let lastLineWasNumbered = false; // track if previous line was auto-numbered
+  let lastLineNumbering = null;       // top-level number
+  let lastLineNestedNumbering = null; // nested letter
+  let lastLineWasNumbered = false;
+  let lastLineWasNested = false;
 
   function autoResizeTextarea(el) {
     el.style.height = "auto";
@@ -2435,41 +2440,61 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleEnterAndNumbering(e, el) {
     const selStart = el.selectionStart;
     const selEnd = el.selectionEnd;
+    const before = el.value.substring(0, selStart);
+    const after = el.value.substring(selEnd);
+    const lastNewline = before.lastIndexOf("\n");
+    const currentLine = before.substring(lastNewline + 1);
 
     // Shift+Enter = send
     if (e.key === "Enter" && e.shiftKey) {
       e.preventDefault();
-      const text = chatInput.value; // do NOT trim here
-      sendMessage(text);             // send even if empty
-      chatInput.value = "";
-      autoResizeTextarea(chatInput);
+      sendMessage(el.value);
+      el.value = "";
+      autoResizeTextarea(el);
       updatePreview();
       lastLineNumbering = null;
+      lastLineNestedNumbering = null;
       lastLineWasNumbered = false;
+      lastLineWasNested = false;
+      return;
     }
 
-    // Enter = newline / auto-numbering / double-enter end numbering
+    // Enter key: continuation, double-enter cancellation
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      const before = el.value.substring(0, selStart);
-      const after = el.value.substring(selEnd);
-      const lastNewline = before.lastIndexOf("\n");
-      const currentLine = before.substring(lastNewline + 1);
-
       let newText = "\n";
-      const match = currentLine.match(/^(\s*)(\d+)\.\s/);
 
-      if (match) {
-        const indent = match[1];
-        const number = parseInt(match[2], 10);
+      const nestedMatch = currentLine.match(/^(\s*)([a-z])\.\s/);
+      const topMatch = currentLine.match(/^(\s*)(\d+)\.\s/);
 
-        // Double-enter: clear current number+indent on same line
-        if (lastLineWasNumbered && currentLine.trim() === `${number}.`) {
-          newText = ""; // replace current line with empty (cursor at start)
+      if (nestedMatch) {
+        const indent = nestedMatch[1];
+        const letter = nestedMatch[2];
+
+        // Double-enter: cancel nested
+        if (lastLineWasNested && lastLineNestedNumbering === letter && currentLine.trim() === `${letter}.`) {
+          newText = "";
+          lastLineNestedNumbering = null;
+          lastLineWasNested = false;
+          el.value = before.substring(0, lastNewline + 1) + newText + after;
+          el.selectionStart = el.selectionEnd = lastNewline + 1;
+        } else {
+          const nextLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+          newText += indent + nextLetter + ". ";
+          lastLineNestedNumbering = nextLetter;
+          lastLineWasNested = true;
+          el.value = before + newText + after;
+          el.selectionStart = el.selectionEnd = before.length + newText.length;
+        }
+      } else if (topMatch) {
+        const indent = topMatch[1];
+        const number = parseInt(topMatch[2], 10);
+
+        // Double-enter: cancel top-level
+        if (lastLineWasNumbered && lastLineNumbering === number && currentLine.trim() === `${number}.`) {
+          newText = "";
           lastLineNumbering = null;
           lastLineWasNumbered = false;
-
-          // Rebuild textarea value: remove current line completely
           el.value = before.substring(0, lastNewline + 1) + newText + after;
           el.selectionStart = el.selectionEnd = lastNewline + 1;
         } else {
@@ -2481,7 +2506,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } else {
         lastLineNumbering = null;
+        lastLineNestedNumbering = null;
         lastLineWasNumbered = false;
+        lastLineWasNested = false;
         el.value = before + newText + after;
         el.selectionStart = el.selectionEnd = before.length + newText.length;
       }
@@ -2493,20 +2520,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Space after number -> indent
     if (e.key === " " && !e.shiftKey && selStart === selEnd) {
-      const before = el.value.substring(0, selStart);
-      const lastNewline = before.lastIndexOf("\n");
-      const currentLine = before.substring(lastNewline + 1);
-
+      // Detect top-level number
       if (/^\s*\d+\.$/.test(currentLine)) {
         e.preventDefault();
         const after = el.value.substring(selStart);
         const newLine = TAB_SPACES + currentLine + " ";
         el.value = el.value.substring(0, lastNewline + 1) + newLine + after;
-        const newPos = lastNewline + 1 + newLine.length;
-        el.selectionStart = el.selectionEnd = newPos;
+        el.selectionStart = el.selectionEnd = lastNewline + 1 + newLine.length;
+        lastLineWasNumbered = true;
+        lastLineNumbering = parseInt(currentLine.trim(), 10);
         autoResizeTextarea(el);
         updatePreview();
         return;
+      }
+
+      // Detect typing a. in front of a top-level number → nested indent
+      if (/^\s*a\.$/.test(currentLine.trim())) {
+        const parentMatch = before.substring(0, lastNewline).match(/^\s*\d+\.\s.*$/m);
+        if (parentMatch) {
+          e.preventDefault();
+          const parentIndent = parentMatch[0].match(/^(\s*)/)[1] || "";
+          const after = el.value.substring(selStart);
+          const nestedLine = parentIndent + TAB_SPACES + "a. ";
+          el.value = el.value.substring(0, lastNewline + 1) + nestedLine + after;
+          el.selectionStart = el.selectionEnd = lastNewline + 1 + nestedLine.length;
+          lastLineNestedNumbering = "a";
+          lastLineWasNested = true;
+          lastLineWasNumbered = false;
+          lastLineNumbering = null;
+          autoResizeTextarea(el);
+          updatePreview();
+          return;
+        }
       }
     }
   }
@@ -2526,15 +2571,17 @@ document.addEventListener("DOMContentLoaded", () => {
   // Send button
   sendButton.addEventListener("click", (e) => {
     e.preventDefault();
-    const text = chatInput.value; // do NOT trim here
-    sendMessage(text);             // send even if empty
+    sendMessage(chatInput.value);
     chatInput.value = "";
     autoResizeTextarea(chatInput);
     updatePreview();
     lastLineNumbering = null;
+    lastLineNestedNumbering = null;
     lastLineWasNumbered = false;
+    lastLineWasNested = false;
   });
 
+  // Initialize
   autoResizeTextarea(chatInput);
   updatePreview();
 

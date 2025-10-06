@@ -891,24 +891,28 @@
     resize: none;
   }*/
 
-  .preview {
-    position: fixed;
-    top: 50%;
-    left: 10px;
-    transform: translateY(-50%);
-    padding: 10px;
-    background: #343531;
-    color: white;
-    font-family: monospace;
-    white-space: pre-wrap;
-    max-width: 200px;
-    overflow-wrap: break-word;
-    z-index: 1000;
-    font-size: 0.65rem;
-    border-radius: 0.5rem;
-  }
+.preview {
+  position: fixed;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  padding: 10px;
+  background: #343531;
+  color: white;
+  font-family: monospace;
+  white-space: pre-wrap;
+  max-width: 200px;
+  overflow-wrap: break-word;
+  z-index: 1000;
+  font-size: 0.65rem;
+  border-radius: 0.5rem;
+}
 
-  .highlight { background-color: #8eb615; color: white; }
+.highlight { background-color: #8eb615; color: white; }
+
+.numbered-line { display: block; margin-left: 1rem; white-space: pre; }
+.nested-line { display: block; margin-left: 2rem; white-space: pre; }
+
 
 /* Bold and italic are <b> and <i> */
 .chat-bubble-body i {
