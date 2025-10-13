@@ -61,12 +61,109 @@
     </div>
   </div>
 
+  <!-- Notification Settings Modal -->
+  <div class="modal fade" id="notifSettingsModal" tabindex="-1" aria-labelledby="notifSettingsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content rounded-3 shadow">
+        <div class="modal-header">
+          <h5 class="modal-title" id="notifSettingsLabel">Notification Settings</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <form id="settingsForm" method="post">
+          <div class="modal-body">
+            {% csrf_token %}
+
+            <!-- Notification Sound Selector -->
+            <div class="mb-3">
+              <label class="form-label">Notification Sound</label>
+              <div class="list-group">
+                {% for value,label in sound_choices %}
+                <label class="list-group-item d-flex align-items-center">
+                  <input type="radio"
+                        name="notification_sound"
+                        value="{{ value }}"
+                        {% if settings and settings.notification_sound == value %}checked{% endif %}
+                        class="me-2">
+                  <span class="flex-grow-1">{{ label }}</span>
+                  <button type="button"
+                          class="btn btn-outline-secondary btn-sm preview-btn"
+                          data-sound="{{ value }}">
+                    ▶
+                  </button>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Vibration Toggle -->
+            <div class="form-check mb-3">
+              <input type="checkbox"
+                    name="vibration_enabled"
+                    id="vibration_enabled"
+                    {% if settings and settings.vibration_enabled %}checked{% endif %}
+                    class="form-check-input">
+              <label for="vibration_enabled" class="form-check-label">Enable Vibration</label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+
+        <!-- Hidden audio elements -->
+        <audio id="notifSound" preload="auto"></audio>
+        <audio id="previewSound" preload="auto"></audio>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS: Map sound keys → static URLs & URLs -->
+  <script>
+    window.APP_CONFIG = {
+      urls: {
+        topServicesData: "{% url 'top_services_data' %}",
+        channelBreakdown: "{% url 'channel_breakdown' %}",
+        updateSettings: "{% url 'notifications:update_user_settings' %}",
+        markAllRead: "{% url 'notifications:mark_all_read' %}"
+      },
+      csrfToken: "{{ csrf_token }}",
+      user: {
+        id: {{ request.user.id|default:'null' }},
+        isAuthenticated: {{ request.user.is_authenticated|yesno:'true,false' }},
+      },
+      sound: {
+        userSound: "{{ settings.notification_sound|default:'chime1' }}",
+        vibrationEnabled: {{ settings.vibration_enabled|yesno:'true,false' }},
+        soundMap: {
+          {% for value,label in sound_choices %}
+          "{{ value }}": "{% static 'sounds/' %}{{ value }}.mp3"{% if not forloop.last %},{% endif %}
+          {% endfor %}
+        }
+      }
+    };
+  </script>
+
   <!-- ========================= -->
   <!-- JS LIBRARIES -->
   <!-- ========================= -->
   <script src="https://unpkg.com/htmx.org@1.9.3"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const navbar = document.querySelector(".navbar");
+      window.addEventListener("scroll", function () {
+        if (window.scrollY > 50) {
+          navbar.classList.add("scrolled");
+        } else {
+          navbar.classList.remove("scrolled");
+        }
+      });
+    });
+  </script>
 
   <!-- ========================= -->
   <!-- CUSTOM SCRIPTS -->

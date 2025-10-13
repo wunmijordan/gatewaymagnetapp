@@ -10,10 +10,10 @@
     <div class="container-fluid">
 
       <!-- Mobile chat header -->
-      <div class="d-flex w-100 d-md-none align-items-center mb-2 px-2">
+      <div class="d-flex w-100 d-md-none align-items-center mb-2 px-1">
 
         <!-- Left group: back button + toggler -->
-        <div class="d-flex align-items-center me-2 gap-2 flex-shrink-0">
+        <div class="d-flex align-items-center me-1 gap-2 flex-shrink-0">
           <!-- Back button -->
           <a class="link-secondary p-0 chat-back-btn" style="color:white;">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -48,26 +48,12 @@
                   box-shadow: 0 4px 8px #000000d2;
                   height: 48px;             /* tall enough for icons */
                   padding-left: 48px;       /* space for logo */
-                  padding-right: 48px;      /* space for avatar */
-                  width: 250px;
+                  padding-right: 40px;      /* space for avatar */
+                  width: 200px;
                 ">
 
-          <!-- Avatar / SVG inside input (right) -->
-          <span class="position-absolute top-50 start-0 translate-middle-y ps-3 me-2">
-            <span class="d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="rgba(227, 1, 247, 0.81)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z"/>
-                <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5"/>
-                <path d="M6 19v2"/><path d="M18 19v2"/>
-              </svg>
-            </span>
-          </span>
-
           <!-- Logo inside input (left) -->
-          <span class="position-absolute top-50 end-0 translate-middle-y pe-3 me-2">
+          <span class="position-absolute top-50 start-0 translate-middle-y ps-3 me-2">
             {% if request.user.is_superuser or request.user.is_staff %}
               <a href="{% url 'accounts:admin_dashboard' %}">
                 <img src="{% static 'images/church_logo.png' %}" alt="Logo" width="32" height="32">
@@ -78,6 +64,156 @@
               </a>
             {% endif %}
           </span>
+
+          <!-- Avatar / SVG inside input (right) 
+          <span class="position-absolute top-50 end-0 translate-middle-y pe-2 me-2">
+            <span class="d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="rgba(227, 1, 247, 0.81)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-armchair">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M5 11a2 2 0 0 1 2 2v2h10v-2a2 2 0 1 1 4 0v4a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-4a2 2 0 0 1 2 -2z"/>
+                <path d="M5 11v-5a3 3 0 0 1 3 -3h8a3 3 0 0 1 3 3v5"/>
+                <path d="M6 19v2"/><path d="M18 19v2"/>
+              </svg>
+            </span>
+          </span>-->
+        </div>
+
+        <div class="navbar-nav flex-row ms-auto">
+          <div class="nav-item dropdown d-flex align-items-center ms-2 me-0">
+            <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+              <!-- Tabler bell icon -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+              </svg>
+              {% if unread_count > 0 %}
+                <span class="badge-lt text-red position-absolute top-5 start-100 translate-middle"
+                      style="font-size: 0.6rem; width: 20px; height:20px; display:flex; align-items:center; justify-content:center;"
+                      id="notif-badge">
+                  {{ unread_count }}
+                </span>
+              {% endif %}
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
+              <div class="card">
+                <div class="card-header d-flex">
+                  <h3 class="card-title">Notifications</h3>
+                  <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                </div>
+
+                <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                  {% for notif in unread_notifications %}
+                  <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                    <div class="row align-items-center">
+                      <div class="col-auto">
+                        <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                      </div>
+                      <div class="col">
+                        <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
+                        <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
+                          {{ notif.description|truncatechars:150 }}
+                          {% if notif.description|length > 150 %}
+                            <a href="#" class="show-more">...more</a>
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="col-auto">
+                        <a href="#" class="list-group-item-actions notif-star">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="icon text-light icon-2">
+                            <path
+                              d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  {% empty %}
+                  <div class="list-group-item">No new notifications</div>
+                  {% endfor %}
+                </div>
+
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col">
+                      <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav-item dropdown">
+          <a href="#" class="nav-link d-flex lh-1 p-0 px-0 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
+            {% if user.image %}
+              <img src="{{ user.image.url }}" class="avatar avatar-sm" 
+                  style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
+            {% else %}
+              <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                    style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
+                {{ user.initials }}
+              </span>
+            {% endif %}
+
+            <div class="ps-2 d-flex flex-column justify-content-center">
+              <!--<div class="d-block d-xl-none">{{ user.get_full_name|default:user.full_name }}</div>--> <!-- Show on mobile -->
+              <div class="d-none d-xl-block"><i><small>{{ user.title|default:"" }}</small></i><br> {{ user.full_name }}</div> <!-- Show on xl+ -->
+
+              <div class="d-none d-xl-block mt-1 fs-6 text-secondary">
+                {% if user.is_superuser %}
+                  <span class="bg-warning-lt">Superuser</span>
+                {% elif user|has_group:"Pastor" %}
+                  <span class="bg-green-lt">Pastor</span>
+                {% elif user|has_group:"Team Lead" %}
+                  <span class="bg-green-lt">Team Lead</span>
+                {% elif user|has_group:"Admin" %}
+                  <span class="bg-secondary-lt">Admin</span>
+                {% elif user|has_group:"Registrant" %}
+                  <span class="bg-pink-lt">Registrant</span>
+                {% elif user|has_group:"Message Manager" %}
+                  <span class="bg-purple-lt">Message Manager</span>
+                {% elif user|has_group:"Team Member" %}
+                  <span class="bg-blue-lt">Team Member</span>
+                {% else %}
+                  <span class="bg-red-lt">Demo</span>
+                {% endif %}
+              </div>
+            </div>
+          </a>
+          <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
+            <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
+                <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
+                <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
+                <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
+              </svg>
+              Preferences
+            </a>
+            <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
+              </svg>
+              Gateway Nation
+              <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'login' %}" class="dropdown-item text-danger">
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
+              </svg>
+              Logout
+            </a>
+          </div>
         </div>
       </div>
 
@@ -134,7 +270,7 @@
 
           <!-- LEFT COLUMN -->
           <div class="d-none d-lg-flex col-12 col-lg-5 col-xl-3 border-end flex-column" style="display:flex; flex-direction:column; height:100%;">
-            <div class="card-header mb-2 justify-content-center align-items-center border-0 sticky-top">
+            <div class="card-header my-2 py-1 justify-content-center align-items-center border-0 sticky-top">
               <!-- Back button (mobile only) -->
               <a class="link-secondary p-0 me-2 d-flex chat-back-btn" style="color:white;">
                 <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chevrons-left">
@@ -200,10 +336,10 @@
 
           <!-- RIGHT COLUMN -->
           <div class="chat-column col-12 col-lg-7 col-xl-9 d-flex flex-column" style="height:100%;">
-            <div class="d-none d-lg-flex card-header justify-content-center border-0">
+            <div class="d-none d-lg-flex card-header justify-content-center border-0 position-relative">
               
               <!-- Search bar container -->
-              <div class="input-icon">
+              <div class="input-icon position-absolute">
                 <!-- Input -->
                 <input type="text"
                       class="form-control rounded-4 ms-2 border-0 chat-search"
@@ -240,6 +376,118 @@
                     </a>
                   {% endif %}
                 </span>
+              </div>
+
+              <!-- Desktop right icons (classic style, hidden on mobile) -->
+              <div class="navbar-nav flex-row ms-auto">  
+                <div class="nav-item dropdown d-flex align-items-center">
+                  <a href="#" class="nav-link px-0" data-bs-toggle="dropdown" aria-label="Show notifications">
+                    <!-- Tabler bell icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff5e01ff"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                      <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6"></path>
+                      <path d="M9 17v1a3 3 0 0 0 6 0v-1"></path>
+                    </svg>
+                    {% if unread_count > 0 %}
+                      <span class="badge-lt text-red position-absolute top-5 start-100 translate-middle"
+                            style="font-size: 0.7rem; width: 20px; height:20px; display:flex; align-items:center; justify-content:center;"
+                            id="notif-badge">
+                        {{ unread_count }}
+                      </span>
+                    {% endif %}
+                  </a>
+
+                  <div class="dropdown-menu dropdown-menu-arrow dropdown-menu-end dropdown-menu-card notif-dropdown">
+                    <div class="card">
+                      <div class="card-header d-flex">
+                        <h3 class="card-title">Notifications</h3>
+                        <div class="btn-close ms-auto" data-bs-dismiss="dropdown"></div>
+                      </div>
+
+                      <div class="list-group list-group-flush list-group-hoverable" id="notif-list">
+                        {% for notif in unread_notifications %}
+                        <div class="list-group-item notif-item" data-id="{{ notif.id }}">
+                          <div class="row align-items-center">
+                            <div class="col-auto">
+                              <span class="status-dot status-dot-animated {% if notif.is_urgent %}bg-red{% elif notif.is_success %}bg-green{% else %}bg-gray{% endif %} d-block"></span>
+                            </div>
+                            <div class="col">
+                              <a href="{{ notif.link }}" class="text-body d-block notif-link text-truncate">{{ notif.title }}</a>
+                              <div class="d-block text-secondary mt-n1 notif-description" data-full="{{ notif.description }}">
+                                {{ notif.description|truncatechars:150 }}
+                                {% if notif.description|length > 150 %}
+                                  <a href="#" class="show-more">...more</a>
+                                {% endif %}
+                              </div>
+                            </div>
+                            <div class="col-auto">
+                              <a href="#" class="list-group-item-actions notif-star">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                  class="icon text-light icon-2">
+                                  <path
+                                    d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z"></path>
+                                </svg>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                        {% empty %}
+                        <div class="list-group-item">No new notifications</div>
+                        {% endfor %}
+                      </div>
+
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col">
+                            <a href="#" class="btn btn-2 w-100 mark-all-read-btn"> Mark All Read </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="nav-item dropdown">
+                  <a href="#" class="nav-link d-flex lh-1 p-0 px-2 ms-2 text-white" data-bs-toggle="dropdown" aria-label="Open user menu" aria-expanded="false">
+                    {% if user.image %}
+                      <img src="{{ user.image.url }}" class="avatar avatar-sm" 
+                          style="width: 32px; height: 32px; border-radius: 0.5rem; object-fit: cover;">
+                    {% else %}
+                      <span class="avatar avatar-sm bg-grey text-white d-inline-flex align-items-center justify-content-center"
+                            style="width: 32px; height: 32px; font-weight: bold; font-size: 16px; border-radius: 0.5rem;">
+                        {{ user.initials }}
+                      </span>
+                    {% endif %}
+                  </a>
+                  <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow py-1">
+                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#notifSettingsModal">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-bell-cog">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 17h-8a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6a2 2 0 1 1 4 0a7 7 0 0 1 4 6v.5" />
+                        <path d="M19.001 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M19.001 15.5v1.5" />
+                        <path d="M19.001 21v1.5" /><path d="M22.032 17.25l-1.299 .75" /><path d="M17.27 20l-1.3 .75" />
+                        <path d="M15.97 17.25l1.3 .75" /><path d="M20.733 20l1.3 .75" /><path d="M9 17v1a3 3 0 0 0 3 3" />
+                      </svg>
+                      Preferences
+                    </a>
+                    <a href="https://gatewaynation.org" class="dropdown-item" target="_blank" rel="noreferrer">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-pointer">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M7.904 17.563a1.2 1.2 0 0 0 2.228 .308l2.09 -3.093l4.907 4.907a1.067 1.067 0 0 0 1.509 0l1.047 -1.047a1.067 1.067 0 0 0 0 -1.509l-4.907 -4.907l3.113 -2.09a1.2 1.2 0 0 0 -.309 -2.228l-13.582 -3.904l3.904 13.563z" />
+                      </svg>
+                      Gateway Nation
+                      <span class="badge badge-sm bg-green-lt ms-auto">Home</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="{% url 'login' %}" class="dropdown-item text-danger">
+                      <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-logout">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                        <path d="M9 12h12l-3 -3" /><path d="M18 15l3 -3" />
+                      </svg>
+                      Logout
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="card-body mt-0 p-0 d-flex flex-column flex-fill" style="height:100%; overflow:hidden;">
@@ -597,7 +845,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Use users JSON from Django
   const usersList = USERS.map(u => ({
       id: u.id,
-      full_name: u.full_name || u.username,
+      name: u.full_name || u.username,
       title: u.title || "",
       username: u.username,
       image: u.image || null,
@@ -750,6 +998,36 @@ document.addEventListener("DOMContentLoaded", () => {
     if (item) selectMention(item);
   });
 
+  // --- Mobile scroll containment for mention dropdown ---
+  mentionDropdown.addEventListener("touchstart", (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  mentionDropdown.addEventListener("touchmove", (e) => {
+    // Allow scrolling within dropdown, but prevent bubbling
+    const el = mentionDropdown;
+    const scrollTop = el.scrollTop;
+    const scrollHeight = el.scrollHeight;
+    const height = el.offsetHeight;
+    const atTop = scrollTop <= 0;
+    const atBottom = scrollTop + height >= scrollHeight;
+
+    const touch = e.touches[0];
+    const deltaY = touch.clientY - (el._lastTouchY || touch.clientY);
+    el._lastTouchY = touch.clientY;
+
+    // Prevent overscroll from propagating to the chat container
+    if ((atTop && deltaY > 0) || (atBottom && deltaY < 0)) {
+      e.preventDefault();
+    }
+
+    e.stopPropagation();
+  }, { passive: false });
+
+  mentionDropdown.addEventListener("touchend", () => {
+    delete mentionDropdown._lastTouchY;
+  });
+
   // --- Expose mentions array for sendMessage ---
   //window.getCurrentMentions = () => mentions;
   //window.clearMentions = () => { mentions = []; };
@@ -822,11 +1100,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!container) return;
     container.innerHTML = "";
 
-    pinnedMessages.forEach(msg => {
-      // Outer wrapper
+    pinnedMessages.forEach((msg, index) => {
       const outer = document.createElement("div");
       outer.classList.add("pinned-outer");
       outer.dataset.id = msg.id;
+
+      // Add animation classes
+      if (index === 0 && pinnedMessages.length >= 3) {
+        outer.classList.add("new-card"); // newest card
+      } else if (index === pinnedMessages.length - 1) {
+        outer.classList.add("oldest-third"); // oldest third card
+      }
 
       // Pin icon
       const icon = document.createElement("div");
@@ -851,24 +1135,89 @@ document.addEventListener("DOMContentLoaded", () => {
       // Preview bubble
       const preview = document.createElement("div");
       preview.classList.add("pinned-info");
-      const senderTitle = msg.original_sender_title || "";
+      const senderTitle = msg.original_sender_title || msg.sender_title || "";
       const senderName = msg.original_sender_name || msg.sender_name || "Unknown";
       const sender = `${senderTitle} ${senderName}`.trim();
-      const text = msg.message || msg.message_text || "(Guest Card)";
-      const previewText = `${sender}: ${text}`;
-      preview.textContent = previewText.length > 140 ? previewText.slice(0, 137) + "..." : previewText;
+      let attachmentHTML = "";
+      if (msg.guest) {
+        const g = msg.guest;
+        attachmentHTML = `
+          <div class="d-flex align-items-center mt-1" style="gap:4px;">
+            ${
+              g.image
+                ? `<img src="${g.image}" style="width:28px;height:28px;border-radius:4px;object-fit:cover;">`
+                : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
+                      style="width:28px;height:28px;border-radius:4px;">${g.name?.[0] || "?"}</span>`
+            }
+            <span class="small text-warning">${g.title || ""} ${g.name || ""}</span>
+          </div>`;
+      } else if (msg.file) {
+        const f = msg.file;
+        const fileType = (f.type || "").toLowerCase();
+        const ext = f.name?.split(".").pop()?.toLowerCase() || "";
+        const fileUrl = f.display_url || f.url;
+        if (fileType.startsWith("image/")) {
+          attachmentHTML = `
+            <div class="mt-1 d-flex align-items-center gap-2">
+              <img src="${fileUrl}" alt="${f.name}"
+                  style="width:30px;height:30px;border-radius:4px;object-fit:cover;">
+              <span class="small text-secondary text-truncate" style="max-width:120px;">${f.name}</span>
+            </div>`;
+        } else {
+          const icon = getFileIcon(ext, fileType);
+          attachmentHTML = `
+            <div class="mt-1 d-flex align-items-center gap-2">
+              <div class="d-flex align-items-center justify-content-center"
+                  style="width:28px;height:28px;background:#1f2937;border-radius:4px;">${icon}</div>
+              <span class="small text-secondary text-truncate" style="max-width:120px;">${f.name}</span>
+            </div>`;
+        }
+      } else if (msg.link_preview) {
+        const lp = msg.link_preview;
+        attachmentHTML = `
+          <div class="mt-1 d-flex align-items-center gap-2">
+            ${
+              lp.image
+                ? `<img src="${lp.image}" alt="${lp.title}"
+                    style="width:30px;height:30px;border-radius:4px;object-fit:cover;">`
+                : `<span class="avatar bg-blue-lt d-flex align-items-center justify-content-center"
+                    style="width:30px;height:30px;border-radius:4px;">🌐</span>`
+            }
+            <div class="d-flex flex-column" style="max-width:130px;">
+              <span class="small text-white text-truncate">${lp.title || lp.url}</span>
+              <span class="text-muted small text-truncate">${new URL(lp.url).hostname}</span>
+            </div>
+          </div>`;
+      }
+
+      const rawText = msg.message || msg.message_text || "";
+      let displayText = rawText;
+      let hasNewline = rawText.includes("\n");
+      let firstLine = rawText.split("\n")[0];
+
+      // If there’s a newline, decide whether to show enter icon or truncate
+      if (hasNewline) {
+        displayText = firstLine; // always keep first line
+      }
+
+      // Create span HTML
+      let newlineIndicator = "";
+      if (hasNewline) {
+        newlineIndicator = "...";
+      }
+
+      preview.innerHTML = `
+        <small class="text-secondary">${sender}</small><br>
+        <span class="reply-preview-text small text-muted" 
+              style="display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${displayText}${newlineIndicator}
+        </span>
+        ${attachmentHTML}
+      `;
 
       // Click-to-scroll
       preview.addEventListener("click", () => {
-        const wrapper = document.getElementById(`chat-bubble-${msg.id}`);
-        if (wrapper) {
-          const bubble = wrapper.querySelector(".chat-bubble");
-          if (bubble) {
-            bubble.scrollIntoView({ behavior: "smooth", block: "center" });
-            bubble.classList.add("highlight-pinned");
-            setTimeout(() => bubble.classList.remove("highlight-pinned"), 5000);
-          }
-        }
+        scrollToMessage(msg.id, "highlight-pinned");
       });
 
       outer.appendChild(icon);
@@ -908,7 +1257,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
   document.getElementById("pinBtn").addEventListener("click", () => {
     if (!selectedBubbles.size) return;
 
@@ -924,8 +1272,48 @@ document.addEventListener("DOMContentLoaded", () => {
     clearSelections();
   });
 
-  
+  // Scroll to specific message by ID, loading more if needed
+  async function scrollToMessage(msgId, highlightClass = "highlight-pinned") {
+    let target = document.getElementById(`chat-bubble-${msgId}`);
 
+    while (!target) {
+      if (!oldestLoaded) break;
+      await loadMoreMessages();
+      target = document.getElementById(`chat-bubble-${msgId}`);
+    }
+
+    if (!target) return;
+
+    const bubble = target.querySelector(".chat-bubble") || target;
+    const siblings = Array.from(chatContainer.querySelectorAll(".chat-item"));
+    const index = siblings.indexOf(target);
+
+    const containerRect = chatContainer.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    let jumpTarget = target; // default: no jump
+
+    // Only jump if target is outside the current viewport
+    if (targetRect.bottom > containerRect.bottom) {
+      // jump to a few bubbles above, but not if it's already below current scroll
+      const jumpIndex = Math.max(index - 1, 0);
+      jumpTarget = siblings[jumpIndex];
+    } else if (targetRect.top < containerRect.top) {
+      // jump to a few bubbles below, if target is above viewport
+      const jumpIndex = Math.min(index + 1, siblings.length - 1);
+      jumpTarget = siblings[jumpIndex];
+    }
+
+    // 1️⃣ Jump instantly to the intermediate position
+    jumpTarget.scrollIntoView({ behavior: "auto", block: "center" });
+
+    // 2️⃣ Smooth scroll the target into view immediately
+    bubble.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // 3️⃣ Highlight
+    bubble.classList.add(highlightClass);
+    setTimeout(() => bubble.classList.remove(highlightClass), 5000);
+  }
 
 
 
@@ -990,15 +1378,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 🔹 File type icons
   function getFileIcon(ext, type) {
-    const size = 96; // bigger icons for visibility
+    const size = 128; // bigger icons for visibility
     const commonAttrs = `xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" 
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" 
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="icon icon-tabler" style="color:#f8fafc;">`;
+                        class="icon icon-tabler"`;
 
-    if (ext === "pdf" || type.includes("pdf")) return `
-      <svg ${commonAttrs}>
-        <path stroke="#961822ff" d="M0 0h24v24H0z" fill="none"/>
+    // Define colors per file type
+    const colors = {
+      pdf: "#E03E3E",      // red
+      doc: "#2B579A",      // blue
+      xls: "#217346",      // green
+      ppt: "#D24726",      // orange
+      archive: "#8B5CF6",  // purple
+      generic: "#f8fafc"   // fallback light gray
+    };
+
+    const extLower = ext.toLowerCase();
+
+    // PDF
+    if (extLower === "pdf" || type.includes("pdf")) return `
+      <svg ${commonAttrs} style="color:${colors.pdf};">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
         <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
@@ -1006,9 +1407,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <path d="M11 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z" />
       </svg>`;
 
-    if (["doc", "docx"].includes(ext)) return `
-      <svg ${commonAttrs}>
-        <path stroke="#182496ff" d="M0 0h24v24H0z" fill="#182496ff"/>
+    // Word
+    if (["doc", "docx"].includes(extLower)) return `
+      <svg ${commonAttrs} style="color:${colors.doc};">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
         <path d="M5 15v6h1a2 2 0 0 0 2 -2v-2a2 2 0 0 0 -2 -2h-1z" />
@@ -1016,20 +1418,22 @@ document.addEventListener("DOMContentLoaded", () => {
         <path d="M12.5 15a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1 -3 0v-3a1.5 1.5 0 0 1 1.5 -1.5z" />
       </svg>`;
 
-    if (["xls", "xlsx", "csv"].includes(ext)) return `
-      <svg ${commonAttrs}>
-        <path stroke="#189618ff" d="M0 0h24v24H0z" fill="#189618ff"/>
+    // Excel / CSV
+    if (["xls", "xlsx", "csv"].includes(extLower)) return `
+      <svg ${commonAttrs} style="color:${colors.xls};">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
         <path d="M4 15l4 6" /><path d="M4 21l4 -6" />
         <path d="M17 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1
-                a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+              a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
         <path d="M11 15v6h3" />
       </svg>`;
 
-    if (["ppt", "pptx"].includes(ext)) return `
-      <svg ${commonAttrs}>
-        <path stroke="#963c18ff" d="M0 0h24v24H0z" fill="none"/>
+    // PowerPoint
+    if (["ppt", "pptx"].includes(extLower)) return `
+      <svg ${commonAttrs} style="color:${colors.ppt};">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
         <path d="M5 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
         <path d="M11 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
@@ -1037,18 +1441,19 @@ document.addEventListener("DOMContentLoaded", () => {
         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
       </svg>`;
 
-    if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return `
-      <svg ${commonAttrs}>
-        <path stroke="#961885ff" d="M0 0h24v24H0z" fill="none"/>
+    // Archives / ZIP / RAR
+    if (["zip", "rar", "7z", "tar", "gz"].includes(extLower)) return `
+      <svg ${commonAttrs} style="color:${colors.archive};">
+        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M14 3v4a1 1 0 0 0 1 1h4" />
         <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
         <path d="M16 18h1.5a1.5 1.5 0 0 0 0 -3h-1.5v6" />
         <path d="M12 15v6" /><path d="M5 15h3l-3 6h3" />
       </svg>`;
 
-    // Fallback generic file
+    // Generic fallback
     return `
-      <svg ${commonAttrs} fill="currentColor" class="icon-tabler icon-tabler-file">
+      <svg ${commonAttrs} style="color:${colors.generic};" fill="currentColor" class="icon-tabler icon-tabler-file">
         <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
         <path d="M12 2l.117 .007a1 1 0 0 1 .876 .876l.007 .117v4l.005 .15a2 2 0 0 0 
                 1.838 1.844l.157 .006h4l.117 .007a1 1 0 0 1 .876 .876l.007 .117v9
@@ -1099,9 +1504,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (type.startsWith("audio/")) {
       thumb = `<audio src="${URL.createObjectURL(file)}"
                       style="width:120px; margin-right:10px;" controls></audio>`;
-    } else if (ext === "pdf") {
-      thumb = `<embed src="${URL.createObjectURL(file)}" type="application/pdf"
-                      style="width:60px; height:60px; border-radius:4px; margin-right:10px;">`;
     } else {
       // ✅ use your new icon function for docs/zip/etc
       thumb = `<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;
@@ -1252,11 +1654,74 @@ document.addEventListener("DOMContentLoaded", () => {
     let replyOwner = "";
 
     if (data.parent) {
-      if (data.parent.sender_id === CURRENT_USER_ID) {
-        replyOwner = "You";
+      replyOwner =
+        data.parent.sender_id === CURRENT_USER_ID
+          ? "You"
+          : `${data.parent.sender_title || ""} ${data.parent.sender_name || ""}`;
+    }
+
+    // --- Build attachment preview depending on parent type ---
+    let attachmentPreview = "";
+
+    if (data.parent.guest) {
+      // 🧍 Guest mini preview
+      const g = data.parent.guest;
+      attachmentPreview = `
+        <div class="d-flex align-items-center mt-1">
+          ${
+            g.image
+              ? `<img src="${g.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;">`
+              : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
+                    style="width:35px;height:35px;border-radius:4px;">${g.name?.[0] || "?"}</span>`
+          }
+          <span class="ms-2 text-warning">${g.title || ""} ${g.name || ""}</span>
+        </div>`;
+    }
+
+    else if (data.parent.file) {
+      // 📎 File mini preview (non-clickable)
+      const f = data.parent.file;
+      const type = (f.type || "").toLowerCase();
+      const ext = f.name?.split(".").pop()?.toLowerCase() || "";
+      const fileUrl = f.display_url || f.url;
+
+      if (type.startsWith("image/")) {
+        attachmentPreview = `
+          <div class="mt-1 d-flex align-items-center gap-2">
+            <img src="${fileUrl}" alt="${f.name}" 
+                style="width:45px;height:45px;object-fit:cover;border-radius:4px;">
+            <span class="small text-secondary text-truncate" style="max-width:120px;">${f.name}</span>
+          </div>`;
       } else {
-        replyOwner = `${data.parent.sender_title} ${data.parent.sender_name}`;
+        const icon = getFileIcon(ext, type);
+        attachmentPreview = `
+          <div class="mt-1 d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center justify-content-center"
+                style="width:35px;height:35px;background:#1f2937;border-radius:4px;">
+              ${icon}
+            </div>
+            <span class="small text-secondary text-truncate" style="max-width:120px;">${f.name}</span>
+          </div>`;
       }
+    }
+
+    else if (data.parent.link_preview) {
+      // 🔗 Link mini preview (non-clickable)
+      const lp = data.parent.link_preview;
+      attachmentPreview = `
+        <div class="mt-1 d-flex align-items-center gap-2">
+          ${
+            lp.image
+              ? `<img src="${lp.image}" alt="${lp.title}" 
+                    style="width:40px;height:40px;border-radius:4px;object-fit:cover;">`
+              : `<span class="avatar bg-blue-lt d-flex align-items-center justify-content-center"
+                    style="width:40px;height:40px;border-radius:4px;">🌐</span>`
+          }
+          <div class="d-flex flex-column" style="max-width:140px;">
+            <span class="small text-white text-truncate">${lp.title || lp.url}</span>
+            <span class="text-muted small text-truncate">${new URL(lp.url).hostname}</span>
+          </div>
+        </div>`;
     }
 
     const innerHTML = data.parent
@@ -1265,28 +1730,11 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="reply-preview-text text-secondary">
           ${data.parent.message || ""}
         </span>
-        ${
-          data.parent.guest
-            ? `<div class="d-flex align-items-center mt-1">
-                ${
-                  data.parent.guest.image
-                    ? `<img src="${data.parent.guest.image}"
-                            style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
-                    : `<span class="avatar bg-gray d-flex align-items-center justify-content-center"
-                            style="width:35px;height:35px;border-radius:4px;">
-                        ${data.parent.guest.name[0]}
-                      </span>`
-                }
-                <span class="ms-2 text-warning">
-                  ${data.parent.guest.title} ${data.parent.guest.name}
-                </span>
-              </div>`
-            : ""
-        }
+        ${attachmentPreview}
       `
       : "";
 
-    // Wrap in container only if it's for a bubble
+    // Wrap only when used in a chat bubble
     return inBubble
       ? `<div class="chat-reply-preview fs-7 mb-1 p-1 rounded"
                 data-parent-id="${data.parent.id}"
@@ -1298,28 +1746,44 @@ document.addEventListener("DOMContentLoaded", () => {
       : innerHTML;
   }
 
+  // --- helper: pop animation ---
+  function animateReplyPop(el) {
+    el.animate(
+      [
+        { transform: "scale(1)", boxShadow: "0 0 0 rgba(0,255,120,0)" },
+        { transform: "scale(1.2)", boxShadow: "0 0 12px rgba(0,255,120,0.6)" },
+        { transform: "scale(1)", boxShadow: "0 0 0 rgba(0,255,120,0)" }
+      ],
+      { duration: 500, easing: "ease-out" }
+    );
+    if (navigator.vibrate) navigator.vibrate(25);
+  }
+
   // Chat Bubble Text Formatting
   function formatMessage(text) {
+    if (!text) return "";  // <-- prevent null/undefined errors
+
     let formatted = text
-      // bold/italic/underline/highlight
-      .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-      .replace(/\*(.*?)\*/g, '<i>$1</i>')
-      .replace(/_(.*?)_/g, '<u>$1</u>')
+      .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+      .replace(/\*(.*?)\*/g, "<i>$1</i>")
+      .replace(/_(.*?)_/g, "<u>$1</u>")
       .replace(/==(.+?)==/g, '<span class="highlight">$1</span>');
 
-    // Wrap top-level numbering
-    formatted = formatted.replace(/^(\s*\d+\.\s.*)$/gm, (m) => {
-      const leadingSpaces = m.match(/^(\s*)/)[1].replace(/ /g, '&nbsp;');
-      return `<span class="numbered-line">${leadingSpaces}${m.trim()}</span>`;
+    const lines = formatted.split(/\n/);
+    const processed = lines.map((line) => {
+      // preserve all leading spaces
+      const leadingSpaces = line.match(/^(\s*)/)[1].replace(/ /g, "&nbsp;");
+      const content = line.trimStart(); // remove only leading spaces for content formatting
+
+      if (/^\d+\.\s/.test(line.trimStart())) {
+        return `<div class="numbered-line">${leadingSpaces}${content}</div>`;
+      } else if (/^[a-z]\.\s/.test(line.trimStart())) {
+        return `<div class="nested-line">${leadingSpaces}${content}</div>`;
+      }
+      return `<div>${leadingSpaces}${line.trimStart()}</div>`;
     });
 
-    // Wrap nested numbering
-    formatted = formatted.replace(/^(\s*[a-z]\.\s.*)$/gm, (m) => {
-      const leadingSpaces = m.match(/^(\s*)/)[1].replace(/ /g, '&nbsp;');
-      return `<span class="nested-line">${leadingSpaces}${m.trim()}</span>`;
-    });
-
-    return formatted;
+    return processed.join("");
   }
 
   // Enhanced linkify for chat text
@@ -1359,6 +1823,9 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.id = `chat-bubble-${data.id}`;
     bubble.dataset.senderId = data.sender_id;   // 🔥 needed for edit check
     bubble.dataset.color = data.color || "";   // helpful for reply handler
+    bubble.dataset.guest = data.guest ? JSON.stringify(data.guest) : "";
+    bubble.dataset.file = data.file ? JSON.stringify(data.file) : "";
+    bubble.dataset.linkPreview = data.link_preview ? JSON.stringify(data.link_preview) : "";
     //bubble.dataset.edited = data.edited ? "true" : "false"; // if already edited
 
     let guestHTML = "";
@@ -1461,15 +1928,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (ext === "pdf") {
+        const icon = getFileIcon(ext, type);
         return `
           <div class="chat-file-card text-white px-2 py-2 mb-2 rounded-2 d-flex flex-column align-items-center gap-2"
-              style="box-shadow: 0 4px 8px #000000a1; background-color: #11182781;">
-            <embed src="${fileUrl}" type="application/pdf"
-                  style="width:200px; height:200px; border-radius:6px;" />
-            <div class="mt-1 small text-muted text-center" 
-                style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">
-              ${name} · ${sizeText} <a href="${fileUrl}" target="_blank" class="ms-1">Open</a>
-            </div>
+                style="box-shadow: 0 4px 8px #000000a1; background-color: #11182781;">
+            <a href="${fileUrl}" target="_blank" class="text-center" 
+                style="text-decoration:none; max-width:200px; max-height:200px; object-fit:cover; border-radius:6px;">
+              ${icon}
+              <div class="small text-white mt-1">${ext.toUpperCase()}</div>
+            
+              <div class="mt-1 small text-muted text-center mt-2" 
+                    style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">${name} · ${sizeText}
+              </div>
+            </a>
           </div>`;
       }
 
@@ -1482,9 +1953,10 @@ document.addEventListener("DOMContentLoaded", () => {
               style="text-decoration:none; max-width:200px; max-height:200px; object-fit:cover; border-radius:6px;">
             ${icon}  
             <div class="small text-white">${ext.toUpperCase()}</div>
-          </a> 
-          <div class="mt-1 small text-muted text-center mt-2" 
-                style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">${name} · ${sizeText}</div>          
+           
+            <div class="mt-1 small text-muted text-center mt-2" 
+                  style="max-width: 200px; white-space: pre-wrap; word-break: break-word;">${name} · ${sizeText}</div> 
+          </a>         
         </div>`;
     }
     let fileHTML = data.file ? renderFilePreview(data.file) : "";
@@ -1532,7 +2004,9 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         </span>`;
 
-    const messageHTML = linkify(renderMessageWithMentions(data.message, data.mentions));
+    let formattedMsg = formatMessage(data.message || "");
+    formattedMsg = renderMessageWithMentions(formattedMsg, data.mentions);
+    const messageHTML = linkify(formattedMsg);
     bubble.innerHTML = `
       <div class="d-flex align-items-end ${isMe ? "justify-content-end" : ""}">
         ${!isMe ? `<div class="me-1">${avatarHTML}</div>` : ""}
@@ -1553,7 +2027,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             ${data.message?.trim() ? `<div class="message-row" style="display: block; margin: 0;">
               <div class="fs-4 text-white"
-                  style="white-space: pre-wrap; word-break: break-word; margin:0; padding:0;">${formatMessage(messageHTML)}</div></div>` : ""}
+                  style="white-space: pre-wrap; word-break: break-word; margin:0; padding:0;">${messageHTML}</div></div>` : ""}
             <div style="display:flex; justify-content:flex-end; width:100%;">
               <small class="chat-bubble-date text-muted"
                     style="white-space: nowrap; font-size: 0.6rem;" 
@@ -1626,70 +2100,121 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Mobile: long-press opens selection/option panel (500ms)
+    // --- Mobile touch gestures ---
     if (isTouch) {
       let pressTimer;
-      chatBubbleEl.addEventListener("touchstart", (ev) => {
-        ev.preventDefault();     // prevent default touch highlighting
-        ev.stopPropagation();
-        pressTimer = setTimeout(() => toggleBubbleSelection(chatBubbleEl, data.id), 500);
-      }, { passive: false });
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let longPressTriggered = false;
+      let swipeTriggered = false;
 
-      ["touchend","touchmove","touchcancel"].forEach(e => {
-        chatBubbleEl.addEventListener(e, (ev) => {
-          clearTimeout(pressTimer);
-          ev.preventDefault();   // stop native text-selection/copy popup
-          ev.stopPropagation();
-        }, { passive: false });
-      });
-      // swipe to reply (left/right) - preserved
-      let touchStartX = 0, touchEndX = 0;
-      chatBubbleEl.addEventListener("touchstart", (e)=> touchStartX = e.changedTouches[0].screenX);
-      chatBubbleEl.addEventListener("touchend", (e)=> {
-        touchEndX = e.changedTouches[0].screenX;
-        const deltaX = touchEndX - touchStartX;
+      chatBubbleEl.addEventListener(
+        "touchstart",
+        (ev) => {
+          const t = ev.changedTouches[0];
+          touchStartX = t.screenX;
+          touchStartY = t.screenY;
+          longPressTriggered = false;
+          swipeTriggered = false;
 
-        // Only trigger on right swipe (deltaX > 50)
-        if (deltaX > 50) {
-          // trigger reply preview for single bubble
-          replyToId = data.id;
-          replyPreview.classList.remove("d-none");
-          replyPreviewText.innerHTML = `<small>
-            ${data.sender_id === CURRENT_USER_ID ? "You" : `${data.sender_title || ""} ${data.sender_name}`}
-          </small><br> 
-          <span class="reply-preview-text text-secondary">${data.message || ""}</span>`;
+          // 🔹 Start long-press threshold timer
+          pressTimer = setTimeout(() => {
+            longPressTriggered = true;
+            ev.preventDefault(); // stop Windows native menu
 
-          if (data.guest) {
-            replyPreviewText.innerHTML += `
-              <div class="d-flex align-items-center mt-1">
-                ${
-                  data.guest.image
-                    ? `<img src="${data.guest.image}" style="width:35px;height:35px;border-radius:4px;object-fit:cover;" />`
-                    : `<span class="avatar bg-gray d-flex align-items-center justify-content-center" 
-                          style="width:35px;height:35px;border-radius:4px;">${data.guest.name[0]}</span>`
+            // 🔸 Push-in animation
+            const pushAnim = chatBubbleEl.animate(
+              [
+                { transform: "scale(1)", boxShadow: "0 0 0 rgba(0,0,0,0)" },
+                { transform: "scale(0.7)", boxShadow: "inset 0 0 10px rgba(0,0,0,0.5)" }
+              ],
+              { duration: 120, fill: "forwards", easing: "ease-out" }
+            );
+
+            if (navigator.vibrate) navigator.vibrate(20);
+
+            // Show options panel once push completes
+            pushAnim.onfinish = () => {
+              toggleBubbleSelection(chatBubbleEl, data.id);
+
+              // 🔸 Bounce-back with smooth, springy feel
+              chatBubbleEl.animate(
+                [
+                  { transform: "scale(0.7)", boxShadow: "inset 0 0 10px rgba(0,0,0,0.5)" },
+                  { transform: "scale(1.03)", boxShadow: "0 0 6px rgba(0,255,120,0.25)" },
+                  { transform: "scale(1)", boxShadow: "0 0 0 rgba(0,0,0,0)" }
+                ],
+                {
+                  duration: 280,
+                  fill: "forwards",
+                  easing: "cubic-bezier(0.22, 1.35, 0.5, 1)" // smooth spring-like motion
                 }
-                <span class="ms-2 text-warning">${data.guest.title} ${data.guest.name}</span>
-              </div>`;
+              );
+
+              // disable long-press after feedback
+              longPressTriggered = false;
+              clearTimeout(pressTimer);
+            };
+          }, 500); // threshold
+        },
+        { passive: false }
+      );
+
+      chatBubbleEl.addEventListener(
+        "touchmove",
+        (ev) => {
+          const t = ev.changedTouches[0];
+          const dx = Math.abs(t.screenX - touchStartX);
+          const dy = Math.abs(t.screenY - touchStartY);
+
+          // cancel if moved too far
+          if (dy > 10 || dx > 10) {
+            clearTimeout(pressTimer);
           }
-          chatInput.focus();
-          adjustPreviewPositions();
-        }
+        },
+        { passive: true }
+      );
+
+      chatBubbleEl.addEventListener(
+        "touchend",
+        (ev) => {
+          clearTimeout(pressTimer);
+          if (longPressTriggered) return; // prevent overlap
+
+          const t = ev.changedTouches[0];
+          const deltaX = t.screenX - touchStartX;
+          const deltaY = Math.abs(t.screenY - touchStartY);
+
+          // ✅ Right-swipe to reply
+          if (deltaX > 60 && deltaY < 25 && !swipeTriggered) {
+            swipeTriggered = true;
+            animateReplyPop(chatBubbleEl); // subtle pop/glow
+
+            replyToId = data.id;
+            replyPreview.classList.remove("d-none");
+            replyPreviewText.innerHTML = createReplyPreviewHTML({ parent: data });
+            chatInput.focus();
+            adjustPreviewPositions();
+          }
+        },
+        { passive: true }
+      );
+
+      chatBubbleEl.addEventListener("touchcancel", () => clearTimeout(pressTimer), { passive: true });
+
+      // Completely block the native Windows "touch right-click" popup
+      chatBubbleEl.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return false;
       });
     }
 
     // ========== Click reply preview inside bubble -> scroll & highlight ==========
-    bubble.querySelectorAll(".chat-reply-preview").forEach(el => {
-      el.addEventListener("click", () => {
-        const parentEl = document.getElementById(`chat-bubble-${el.dataset.parentId}`);
-        if (parentEl) {
-          parentEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          
-          // ✅ apply highlight directly to bubble div
-          const bubbleEl = parentEl.querySelector(".chat-bubble");
-          if (bubbleEl) {
-            bubbleEl.classList.add("highlight-chat-bubble");
-            setTimeout(() => bubbleEl.classList.remove("highlight-chat-bubble"), 5000);
-          }
-        }
+    bubble.querySelectorAll(".chat-reply-preview").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        scrollToMessage(el.dataset.parentId, "highlight-chat-bubble");
       });
     });
 
@@ -1891,8 +2416,13 @@ document.addEventListener("DOMContentLoaded", () => {
         : `@${fullName}`;
 
       const regex = new RegExp(pattern, "i"); // case-insensitive
-      if (regex.test(text) && !mentions.some(m => m.id == u.id)) {
-        detected.push({ id: u.id, title: u.title, name: u.full_name });
+      if (regex.test(text) && !detected.some(m => m.id == u.id)) {
+        detected.push({
+          id: u.id,
+          title: u.title || "",
+          name: u.full_name || u.username,
+          color: u.color || "#00aeff71",
+        });
       }
     });
 
@@ -1901,24 +2431,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render mentions in message with styled spans
   function renderMessageWithMentions(message, mentionsList) {
-    if (!mentionsList || !mentionsList.length) return message;
+    if (!mentionsList?.length) return message;
 
     let renderedMsg = message;
 
     mentionsList.forEach(m => {
       const titlePrefix = m.title ? m.title + " " : "";
-      const name = m.name || m.fullname; // fallback
+      const name = m.full_name;
+      const color = m.color || "#00aeffff";
 
-      const regex = new RegExp(
-        `@${escapeRegex(titlePrefix + name)}`,
-        "gi"
-      );
-
-      const mentionColor = m.color || "#00aeffff";
+      // Match the mention, case-insensitive, whole word
+      const regex = new RegExp(`@${escapeRegex(titlePrefix + name)}\\b`, "gi");
 
       renderedMsg = renderedMsg.replace(
         regex,
-        `<span class="mention" style="color:${mentionColor}">@${titlePrefix}${name}</span>`
+        `<span class="mention" style="color:${color}">@${titlePrefix}${name}</span>`
       );
     });
 
@@ -2118,7 +2645,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ? CURRENT_USER_DISPLAY
         : (node.querySelector(".chat-bubble-author")?.textContent.trim() || "Unknown");
 
-      parts.push(`${formatForCopy(iso)} — ${owner}: ${text}`);
+      parts.push(`${formatForCopy(iso)} — ${owner}:\n${text}`);
     }
 
     const final = parts.join("\n");
@@ -2179,7 +2706,13 @@ document.addEventListener("DOMContentLoaded", () => {
       color: node.dataset.color || "text-primary",
       message: node.querySelector(".chat-bubble-body .fs-4")?.textContent || "",
       guest: node.dataset.guest ? JSON.parse(node.dataset.guest) : null,
+      file: node.dataset.file ? JSON.parse(node.dataset.file) : null,             // ✅ support file preview
+      link_preview: node.dataset.linkPreview ? JSON.parse(node.dataset.linkPreview) : null // ✅ support link preview
     };
+
+    // 🔹 Pop animation
+    const bubbleEl = node.querySelector(".chat-bubble");
+    if (bubbleEl) animateReplyPop(bubbleEl);
 
     // ✅ use exactly the same reply preview HTML as swipe-to-reply
     replyToId = id;
@@ -2198,13 +2731,44 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // scroll-to-bottom behavior
+  function scrollToBottom(focusInput = true) {
+    const messages = Array.from(chatContainer.querySelectorAll(".chat-item"));
+    if (!messages.length) return;
+
+    const containerRect = chatContainer.getBoundingClientRect();
+    const lastMsg = messages[messages.length - 1];
+    const lastRect = lastMsg.getBoundingClientRect();
+
+    let jumpTarget = lastMsg;
+
+    // Jump only if we're far from bottom (> 5 messages height roughly)
+    if ((chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) > 300) {
+      // Pick a message ~4 above the last message
+      const jumpIndex = Math.max(messages.length - 3, 0);
+      jumpTarget = messages[jumpIndex];
+    }
+
+    // Jump instantly
+    jumpTarget.scrollIntoView({ behavior: "auto", block: "center" });
+
+    // Then smooth scroll last message into view
+    lastMsg.scrollIntoView({ behavior: "smooth", block: "end" });
+
+    // Focus input
+    if (focusInput && chatInput) chatInput.focus();
+  }
+
+  // Update button visibility
   function updateScrollButton() {
     const atBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < 60;
-    if (!atBottom) scrollToBottomBtn.classList.add("show"); else scrollToBottomBtn.classList.remove("show");
+    if (!atBottom) scrollToBottomBtn.classList.add("show");
+    else scrollToBottomBtn.classList.remove("show");
   }
-  chatContainer.addEventListener("scroll", updateScrollButton);
-  scrollToBottomBtn.addEventListener("click", ()=> chatContainer.scrollTo({top: chatContainer.scrollHeight, behavior:"smooth"}));
 
+  chatContainer.addEventListener("scroll", updateScrollButton);
+  scrollToBottomBtn.addEventListener("click", () => scrollToBottom());
+
+  // Guest Preview
   function createGuestPreview(guest){
     // ensure assigned_user is always present
     const matchedGuest =

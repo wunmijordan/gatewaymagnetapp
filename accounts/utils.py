@@ -72,7 +72,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
                     "id": u.id,
                     "username": u.username,
                     "title": getattr(u, "title", ""),
-                    "fullname": u.full_name or u.username,
+                    "name": u.full_name or u.username,
                     "color": get_user_color(u.id),
                 })
 
@@ -99,6 +99,8 @@ def serialize_message(m, mention_map=None, mention_regex=None):
     parent_payload = None
     if m.parent:
         parent = m.parent
+
+        # --- Guest (if parent had a guest card)
         parent_guest_payload = None
         if parent.guest_card:
             g = parent.guest_card
@@ -110,7 +112,49 @@ def serialize_message(m, mention_map=None, mention_regex=None):
                 "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
             }
 
-        # ✅ Choose correct preview text
+        # --- File (if parent has file)
+        parent_file_payload = None
+        if parent.file:
+            try:
+                if isinstance(parent.file, FieldFile):
+                    file_name = urllib.parse.unquote(os.path.basename(parent.file.name))
+                    file_url = default_storage.url(parent.file.name)
+                    file_size = getattr(parent.file, "size", None)
+                    guessed_type, _ = mimetypes.guess_type(parent.file.name)
+                    file_type = getattr(parent.file.file, "content_type", None) or guessed_type or "application/octet-stream"
+                else:
+                    file_path = str(parent.file)
+                    file_name = urllib.parse.unquote(os.path.basename(file_path)) or "file"
+                    if not file_path.startswith("/media/"):
+                        file_url = f"/media/{file_path.lstrip('/')}"
+                    else:
+                        file_url = file_path
+                    file_size = None
+                    guessed_type, _ = mimetypes.guess_type(file_path)
+                    file_type = guessed_type or "application/octet-stream"
+
+                parent_file_payload = {
+                    "id": parent.id,
+                    "url": file_url,
+                    "name": file_name,
+                    "size": file_size,
+                    "type": file_type,
+                }
+            except Exception as e:
+                import logging
+                logging.warning("serialize_message: parent file error %s", e)
+
+        # --- Link (if parent has link preview)
+        parent_link_payload = None
+        if parent.link_url:
+            parent_link_payload = {
+                "url": parent.link_url,
+                "title": parent.link_title,
+                "description": parent.link_description,
+                "image": parent.link_image,
+            }
+
+        # --- Message preview text
         if parent.message:
             parent_message_preview = parent.message[:50]
         elif parent.file:
@@ -130,6 +174,8 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             "sender_color": get_user_color(parent.sender.id),
             "message": parent_message_preview,
             "guest": parent_guest_payload,
+            "file": parent_file_payload,
+            "link_preview": parent_link_payload,
         }
 
     # File
@@ -177,6 +223,15 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             "image": m.link_image,
         }
 
+    # --- Pinned info ---
+    pinned_by_payload = None
+    if getattr(m, "pinned_by", None):
+        pinned_by_payload = {
+            "id": m.pinned_by.id,
+            "name": m.pinned_by.full_name or m.pinned_by.username,
+            "title": getattr(m.pinned_by, "title", ""),
+        }
+
     return {
         "id": m.id,
         "message": m.message,
@@ -193,6 +248,8 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         "link_preview": link_payload,
         "mentions": mentions_payload,
         "pinned": getattr(m, "pinned", False),
+        "pinned_at": m.pinned_at.isoformat() if getattr(m, "pinned_at", None) else None,
+        "pinned_by": pinned_by_payload,
     }
 
 

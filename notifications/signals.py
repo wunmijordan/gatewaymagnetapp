@@ -11,6 +11,7 @@ from django.utils import timezone
 from accounts.utils import user_in_groups
 from .utils import notify_users
 from pywebpush import WebPushException
+import re
 from notifications.utils import (
     notify_users,
     STAFF_GROUPS,
@@ -240,8 +241,8 @@ def notify_user_login(sender, request, user, **kwargs):
     ts = timezone.localtime().strftime("%b. %d, %Y - %H:%M")
     user_name = user_full_name(user)
     role = get_user_role(user)
-    description_self = f"I just logged in at {ts}."
-    description_others = f"{user_name} logged in at {ts}."
+    description_self = f"I just logged in, at {ts}."
+    description_others = f"{user_name} logged in, at {ts}."
     link = reverse("accounts:user_list")
 
     # Superuser sees everything
@@ -264,42 +265,160 @@ def notify_user_login(sender, request, user, **kwargs):
 
 
 
+def escape_regex(string):
+    if not string:
+        return ""
+    return re.escape(string)
+
+def detect_mentions_from_text(text):
+    """
+    Detects mentions in a message, considering @Title FullName.
+    Returns a queryset of User objects mentioned.
+    """
+    if not text:
+        return User.objects.none()
+
+    users = User.objects.all()
+    mentioned_users = []
+    for u in users:
+        full_name = escape_regex(u.full_name or u.username)
+        title = escape_regex(u.title) if u.title else ""
+        if title:
+            pattern = rf"@(?:{title}\s+)?{full_name}"
+        else:
+            pattern = rf"@{full_name}"
+        if re.search(pattern, text, re.IGNORECASE):
+            mentioned_users.append(u)
+    return User.objects.filter(id__in=[u.id for u in mentioned_users])
+
+@receiver(pre_save, sender=ChatMessage)
+def cache_old_pin(sender, instance, **kwargs):
+    """
+    Cache the old pinned status and pinner for comparison.
+    """
+    if instance.pk:
+        old = sender.objects.filter(pk=instance.pk).first()
+        instance._old_pinned = old.pinned if old else False
+        instance._old_pinned_by = old.pinned_by if old else None
+    else:
+        instance._old_pinned = False
+        instance._old_pinned_by = None
 
 @receiver(post_save, sender=ChatMessage)
 def create_chat_notification(sender, instance, created, **kwargs):
-    if not created:
-        return
-
     sender_user = instance.sender
+    just_pinned = instance.pinned and (getattr(instance, "_old_pinned", False) == False)
+    # Use pin time if message was just pinned, else original creation time
+    ts = timezone.localtime(instance.pinned_at if just_pinned else instance.created_at).strftime("%b. %d, %Y - %H:%M")
+    link = reverse("accounts:chat_room")
 
-    # 🔹 Safely handle empty/None message, file, or guest-only cards
+    message_preview = "(No content)"
     if instance.message:
         message_preview = instance.message[:50]
     elif instance.file:
         message_preview = "(Attachment)"
     elif instance.guest_card:
         message_preview = f"(Guest: {instance.guest_card.full_name})"
-    else:
-        message_preview = "(No content)"
 
-    ts = timezone.localtime(instance.created_at).strftime("%b. %d, %Y - %H:%M")
-    link = reverse("accounts:chat_room")  # your chat page url name
+    notified_users = set()
 
-    recipients = User.objects.exclude(id=sender_user.id)
+    # -----------------------------
+    # 1️⃣ Handle newly pinned messages
+    # -----------------------------
+    if just_pinned and instance.pinned_by:
+        # Detect mentioned users in the message
+        mentioned_users = detect_mentions_from_text(instance.message)
+        mentioned_ids = [u.id for u in mentioned_users]
 
-    description = (
-        f"{sender_user.full_name or sender_user.username}:\n"
-        f"{message_preview}.\n"
-        f"{ts}"
-    )
+        # Pinner gets their own notification
+        notify_users(
+            [instance.pinned_by],
+            "Pinned Message",
+            f"I pinned a message, at {ts}",
+            link,
+            is_success=True
+        )
+        notified_users.add(instance.pinned_by.id)
 
-    notify_users(
-        recipients,
-        "ChatRoom",
-        description,
-        link,
-        is_success=True
-    )
+        # Mentioned users get a modified notification
+        for u in mentioned_users:
+            notify_users(
+                [u],
+                "Pinned Message",
+                f"{user_full_name(instance.pinned_by)} pinned a message I was mentioned in, at {ts}",
+                link,
+                is_success=True
+            )
+            notified_users.add(u.id)
+
+        # Everyone else (exclude pinner + mentioned)
+        other_users = User.objects.exclude(id__in=notified_users)
+        notify_users(
+            other_users,
+            "Pinned Message",
+            f"{user_full_name(instance.pinned_by)} pinned a message, at {ts}",
+            link,
+            is_success=True
+        )
+        notified_users.update(u.id for u in other_users)
+
+    # -----------------------------
+    # 2️⃣ Handle mentions (only if not just pinned)
+    # -----------------------------
+    if instance.message and not just_pinned:
+        mentioned_users = detect_mentions_from_text(instance.message)
+
+        for user in mentioned_users:
+            notify_users(
+                [user],
+                "Mentioned",
+                f"{user_full_name(sender_user)} mentioned me in a message, at {ts}",
+                link,
+                is_success=True
+            )
+            notified_users.add(user.id)
+
+        # Sender notification
+        mentioned_names_list = [user_full_name(u) for u in mentioned_users]
+        if sender_user in mentioned_users:
+            mentioned_names_list.remove(user_full_name(sender_user))
+            mentioned_names_list = ["myself"] + mentioned_names_list
+
+        if mentioned_names_list:
+            notify_users(
+                [sender_user],
+                "Mentioned",
+                f"I mentioned {', '.join(mentioned_names_list)} in a message, at {ts}",
+                link,
+                is_success=True
+            )
+            notified_users.add(sender_user.id)
+
+        # Top-level users (superuser, Pastor, Team Lead, Admin)
+        top_level_users = User.objects.filter(groups__name__in=STAFF_GROUPS).exclude(id__in=notified_users).distinct()
+        if top_level_users.exists() and mentioned_users:
+            top_level_names = ", ".join([user_full_name(u) for u in mentioned_users])
+            notify_users(
+                list(top_level_users),
+                "Mentioned",
+                f"{user_full_name(sender_user)} mentioned {top_level_names} in a message, at {ts}",
+                link,
+                is_success=True
+            )
+            notified_users.update(u.id for u in top_level_users)
+
+    # -----------------------------
+    # 3️⃣ Regular chat notification for remaining users
+    # -----------------------------
+    remaining_recipients = User.objects.exclude(id__in=notified_users)
+    if remaining_recipients.exists():
+        notify_users(
+            remaining_recipients,
+            "ChatRoom",
+            f"{user_full_name(sender_user)}:\n{message_preview}.\n{ts}",
+            link,
+            is_success=True
+        )
 
 
 

@@ -106,7 +106,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     # ---------- New Message Handler ----------
     async def handle_new_message(self, data):
         sender_id = data.get("sender_id")
-        message = data.get("message", "").strip()
+        message = data.get("message", "").rstrip()
         guest_id = data.get("guest_id")
         parent_id = data.get("reply_to_id")
         mentions_ids = data.get("mentions", [])
@@ -114,7 +114,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         file_url = file_data.get("url")
         link_preview = data.get("link_preview")
 
-        if not message and not guest_id and not file_url and not link_preview:
+        if not message.strip() and not guest_id and not file_url and not link_preview:
             return
 
         saved_message = await self.create_message(sender_id, message, guest_id, parent_id, mentions_ids, file_url, link_preview)
