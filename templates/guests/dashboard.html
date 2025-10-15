@@ -79,6 +79,16 @@
   <div class="page-body">
     <div class="container-xl">
       <div class="row row-deck row-cards">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Event & Reminder Calendar</h3>
+            </div>
+            <div class="card-body">
+              <div id="calendar"></div>
+            </div>
+          </div>
+        </div>
         <div class="col-sm-12 col-lg-6">
           <div class="card">
             <div class="card-body">
@@ -739,9 +749,47 @@
   </div>
 </div>
 
-
-
 {% endblock %}
 
 
-          
+{% block extra_js %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var calendarEl = document.getElementById('calendar');
+
+  var events = [
+    {% for item in calendar_items %}
+      {
+        title: "{{ item.title }}",
+        start: "{{ item.start|date:'Y-m-d' }}",
+        {% if item.end %}
+        end: "{{ item.end|date:'Y-m-d' }}",
+        {% endif %}
+        allDay: true,
+        color: "{{ item.color }}"
+      },
+    {% endfor %}
+  ];
+
+  console.log("Calendar events:", events); // debug
+
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    height: 'auto',
+    expandRows: true,
+    timeZone: 'local',
+    events: '/accounts/api/events/',
+    themeSystem: 'bootstrap5',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,dayGridWeek,dayGridDay'
+    }
+  });
+
+  calendar.render();
+});
+</script>
+
+{% endblock %}

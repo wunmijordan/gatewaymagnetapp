@@ -1,12 +1,15 @@
 from django.apps import AppConfig
 
-
 class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'accounts'
 
     def ready(self):
-        import accounts.signals
+        import accounts.signals  # keep your signals
+        import sys
+        if 'runserver' in sys.argv:
+            from .scheduler import start
+            start()
         # Import signals to ensure they are registered
         # This is necessary to connect the signals defined in accounts/signals.py
         # to the appropriate events in the Django lifecycle.

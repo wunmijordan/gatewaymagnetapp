@@ -1318,5 +1318,95 @@
 
 
 
+/* --- Prevent mobile overflow --- */
+#calendar {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Remove card-body padding if needed for tighter fit */
+.card-body #calendar {
+  margin: 0 auto;
+}
+
+/* --- Clean dark theme for FullCalendar --- */
+
+/* Remove header background and border */
+.fc-theme-bootstrap5 .fc-toolbar.fc-header-toolbar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 0.75rem;
+}
+
+/* Center title and make smaller */
+.fc-toolbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--tblr-body-color, #e0e0e0);
+}
+
+/* Remove outer calendar border */
+.fc-theme-bootstrap5 td,
+.fc-theme-bootstrap5 th {
+  border: none !important;
+}
+
+/* Optional subtle border for grid lines */
+.fc .fc-daygrid-day-frame {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Hide top header background (days of week row) */
+.fc .fc-col-header-cell {
+  background: #111827 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--tblr-muted, #aaa);
+  font-weight: 500;
+}
+
+/* Calendar body background */
+.fc .fc-scrollgrid {
+  background: transparent !important;
+}
+
+/* Event styling (slightly glowing blocks) */
+.fc-event {
+  background: var(--tblr-primary, #3b82f6);
+  border: none !important;
+  color: #fff !important;
+  border-radius: 6px;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  box-shadow: 0 0 4px rgba(59,130,246,0.3);
+}
+
+/* Orange reminders */
+.fc-event[style*="orange"] {
+  background: #f97316 !important;
+  box-shadow: 0 0 4px rgba(249,115,22,0.3);
+}
+
+/* Make calendar fully responsive */
+@media (max-width: 768px) {
+  #calendar {
+    font-size: 0.8rem;
+  }
+
+  .fc-toolbar.fc-header-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .fc-toolbar-chunk {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+
+
+
 
 

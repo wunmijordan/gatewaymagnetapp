@@ -4,7 +4,11 @@ from cloudinary.models import CloudinaryField
 from django.utils.timezone import now
 from django.conf import settings
 from guests.models import GuestEntry
+from django.utils import timezone
+from datetime import datetime
 
+
+CHURCH_COORDS = (6.641732871081892, 3.3706539797031843)  # (latitude, longitude)
 
 class CustomUser(AbstractUser):
   ROLE_CHOICES = [
@@ -92,10 +96,10 @@ class ChatMessage(models.Model):
   )
   file = models.FileField(upload_to="chat/files/", blank=True, null=True)
   file_type = models.CharField(max_length=100, blank=True, null=True)
-  link_url = models.URLField(blank=True, null=True)
+  link_url = models.URLField(max_length=500, blank=True, null=True)
   link_title = models.CharField(max_length=255, blank=True, null=True)
   link_description = models.TextField(blank=True, null=True)
-  link_image = models.URLField(blank=True, null=True)
+  link_image = models.URLField(max_length=500, blank=True, null=True)
   pinned = models.BooleanField(default=False, db_index=True)  # ⚡ faster queries for pinned
   pinned_at = models.DateTimeField(null=True, blank=True, db_index=True)
   pinned_by = models.ForeignKey(
@@ -129,3 +133,130 @@ class ChatMessage(models.Model):
       from django.contrib.auth import get_user_model
       User = get_user_model()
       return self.seen_by.count() >= (User.objects.count() - 1)
+
+
+
+
+class Event(models.Model):
+  EVENT_TYPES = [
+      ('service', 'Service'),
+      ('midweek', 'Midweek'),
+      ('followup', 'Guest Follow-up'),
+      ('meeting', 'Team Meeting'),
+      ('training', 'Training'),
+      ('other', 'Other'),
+  ]
+
+  name = models.CharField(max_length=255)
+  event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
+  day_of_week = models.CharField(
+      max_length=20,
+      choices=[
+          ('sunday', 'Sunday'),
+          ('monday', 'Monday'),
+          ('tuesday', 'Tuesday'),
+          ('wednesday', 'Wednesday'),
+          ('thursday', 'Thursday'),
+          ('friday', 'Friday'),
+          ('saturday', 'Saturday'),
+      ],
+      null=True,
+      blank=True
+  )
+  date = models.DateField(null=True, blank=True)  # floating events
+  end_date = models.DateField(null=True, blank=True)  # optional for multi-day
+  time = models.TimeField(null=True, blank=True)
+  duration_days = models.PositiveIntegerField(default=1, help_text="Number of days this event lasts")
+  is_active = models.BooleanField(default=True)
+
+  class Meta:
+      verbose_name = "Event"
+      verbose_name_plural = "Events"
+      ordering = ['date', 'day_of_week', 'time']
+
+  def __str__(self):
+      return f"{self.name} ({self.get_event_type_display()})"
+
+
+
+def create_default_events(sender, **kwargs):
+    defaults = [
+        ("Sunday Service", "service", "sunday", "07:30"),
+        ("Midweek Recharge", "midweek", "thursday", "17:30"),
+        ("Team Meeting", "meeting", "wednesday", "20:45"),
+        ("SOS", "training", "tuesday", "17:45"),
+        ("Guest Follow-Up", "followup", None, None),
+    ]
+
+    for name, etype, day, time_str in defaults:
+        time_obj = datetime.strptime(time_str, "%H:%M").time() if time_str else None
+        Event.objects.get_or_create(
+            name=name,
+            event_type=etype,
+            day_of_week=day,
+            defaults={"time": time_obj, "is_active": True},
+        )
+
+
+
+class AttendanceRecord(models.Model):
+  STATUS_CHOICES = [
+      ('present', 'Present'),
+      ('late', 'Late'),
+      ('excused', 'Excused'),
+      ('absent', 'Absent'),
+  ]
+
+  user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='attendance_records')
+  event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='attendance_records')
+  date = models.DateField(default=timezone.localdate)
+  status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='absent')
+  remarks = models.TextField(blank=True)
+  timestamp = models.DateTimeField(auto_now_add=True)
+
+  class Meta:
+      unique_together = ('user', 'event', 'date')
+      ordering = ['-date']
+
+  def __str__(self):
+      return f"{self.user} - {self.event.name} ({self.date})"
+
+
+class PersonalReminder(models.Model):
+  user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+  title = models.CharField(max_length=255)
+  description = models.TextField(blank=True)
+  date = models.DateField()
+  time = models.TimeField(null=True, blank=True)
+  is_done = models.BooleanField(default=False)
+
+  class Meta:
+      ordering = ['date', 'time']
+
+  def __str__(self):
+      return f"{self.user} - {self.title} ({self.date})"
+  
+
+
+class UserActivity(models.Model):
+    ACTIVITY_TYPES = [
+        ("followup", "Follow-up"),
+        ("message", "Message Sent"),
+        ("guest_view", "Viewed Guest"),
+        ("call", "Called Guest"),
+        ("report", "Submitted Report"),
+        ("other", "Other"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="activities")
+    activity_type = models.CharField(max_length=50, choices=ACTIVITY_TYPES)
+    guest_id = models.CharField(max_length=50, blank=True, null=True)  # Optional
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "User Activities"
+
+    def __str__(self):
+        return f"{self.user} - {self.activity_type} ({self.created_at.strftime('%Y-%m-%d')})"

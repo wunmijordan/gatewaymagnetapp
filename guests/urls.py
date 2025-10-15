@@ -55,4 +55,6 @@ urlpatterns = [
 
     # Top 10 Services
     path('ajax/top-services/', views.top_services_data, name='top_services_data'),
+
+    path("attendance/", views.mark_attendance, name="mark_attendance"),
 ]

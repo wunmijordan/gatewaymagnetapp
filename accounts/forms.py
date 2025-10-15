@@ -296,3 +296,32 @@ class GroupForm(forms.ModelForm):
                 'placeholder': 'Enter group name'
             })
         }
+
+
+from django import forms
+from .models import Event
+
+class EventForm(forms.ModelForm):
+    class Meta:
+        model = Event
+        fields = [
+            "name",
+            "event_type",
+            "date",
+            "end_date",
+            "time",
+            "duration_days",
+            "is_active",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "end_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+            "time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+            "event_type": forms.Select(attrs={"class": "form-select"}),
+            "duration_days": forms.NumberInput(attrs={"class": "form-control"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
+        }
+        help_texts = {
+            "duration_days": "Number of days this event lasts",
+        }

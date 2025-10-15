@@ -306,3 +306,88 @@ class ChatConsumer(AsyncWebsocketConsumer):
             import logging
             logging.exception("create_message failed: %s", e)
             return {}
+
+
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+
+# Keep a simple in-memory cache of broadcasted events
+broadcasted_events = set()
+
+class AttendanceConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        await self.channel_layer.group_add("attendance", self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard("attendance", self.channel_name)
+
+    # Send event updates
+    async def send_event(self, event):
+        await self.send(text_data=json.dumps(event["data"]))
+
+    # Send attendance summary updates
+    async def send_summary(self, summary):
+        await self.send(text_data=json.dumps(summary["data"]))
+
+
+# scheduler.py (or wherever broadcast_event is)
+broadcasted_events = set()
+
+def broadcast_event(event):
+    """
+    Broadcast event start to clients, but only once per event id.
+    """
+    # Lazy imports
+    import json
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+
+    # Only broadcast if this event hasn't been sent yet
+    if event.id in broadcasted_events:
+        return
+    broadcasted_events.add(event.id)
+
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "attendance",
+        {
+            "type": "send_event",
+            "data": {
+                "id": event.id,
+                "name": event.name,
+                "date": str(event.date),
+                "time": str(event.time)
+            }
+        }
+    )
+
+
+
+def broadcast_attendance_summary():
+    # Lazy imports
+    import json
+    from channels.layers import get_channel_layer
+    from asgiref.sync import async_to_sync
+    from .models import AttendanceRecord
+
+    records = AttendanceRecord.objects.select_related("event", "user").order_by("-date")
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "attendance",
+        {
+            "type": "send_summary",
+            "data": {
+                "records": [
+                    {
+                        "date": r.date.isoformat(),
+                        "event": r.event.name,
+                        "user": r.user.get_full_name() or r.user.username,
+                        "status": r.status,
+                        "remarks": r.remarks or ""
+                    } for r in records
+                ]
+            }
+        }
+    )
+

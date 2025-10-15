@@ -1458,6 +1458,27 @@ document.querySelectorAll(".attach-to-chat").forEach(btn => {
 });
 </script>
 
+<script>
+  async function logUserActivity(activityType, guestId = null, description = "") {
+    try {
+      await fetch("/accounts/log-user-activity/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: JSON.stringify({
+          activity_type: activityType,
+          guest_id: guestId,
+          description: description,
+        }),
+      });
+    } catch (err) {
+      console.warn("Activity log failed:", err);
+    }
+  }
+</script>
+
 {% endblock %}
 
 

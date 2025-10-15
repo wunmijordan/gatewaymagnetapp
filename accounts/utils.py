@@ -7,6 +7,9 @@ from guests.models import GuestEntry
 from .consumers import get_user_color
 from django.db.models.fields.files import FieldFile
 from django.core.files.storage import default_storage
+from django.utils import timezone
+from .models import Event, AttendanceRecord
+
 
 
 def user_in_groups(user, group_names):
@@ -252,4 +255,42 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         "pinned_by": pinned_by_payload,
     }
 
+
+
+def generate_daily_attendance():
+    today = timezone.localdate()
+    weekday = today.strftime("%A").lower()
+
+    events_today = Event.objects.filter(day_of_week=weekday, is_active=True)
+    users = CustomUser.objects.filter(is_active=True)
+
+    created_count = 0
+    for event in events_today:
+        for user in users:
+            _, created = AttendanceRecord.objects.get_or_create(
+                user=user,
+                event=event,
+                date=today,
+                defaults={"status": "absent"}
+            )
+            if created:
+                created_count += 1
+    return created_count
+
+
+from geopy.distance import distance
+from django.core.exceptions import ValidationError
+from .models import CHURCH_COORDS
+
+def validate_church_proximity(user_lat, user_lon, threshold_km=0.05):
+    """Ensure user is within the threshold distance from church."""
+    if not user_lat or not user_lon:
+        raise ValidationError("Unable to determine your location.")
+    
+    user_distance = distance(CHURCH_COORDS, (user_lat, user_lon)).km
+    if user_distance > threshold_km:
+        raise ValidationError(
+            f"You appear to be {user_distance:.2f} km away from church. "
+            "Please select 'Excused' or 'Follow-up' instead."
+        )
 
