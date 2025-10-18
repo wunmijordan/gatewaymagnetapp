@@ -218,7 +218,7 @@ PWA_APP_LANG = "en-US"
 # AUTHENTICATION & SESSIONS
 # =========================
 AUTH_USER_MODEL = "accounts.CustomUser"
-LOGIN_REDIRECT_URL = "/post-login/"
+LOGIN_REDIRECT_URL = "/accounts/chat/"
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

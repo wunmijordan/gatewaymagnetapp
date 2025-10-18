@@ -118,6 +118,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const toastMessage = document.getElementById("toastMessage");
   const toast = new bootstrap.Toast(toastEl);
   const addBtn = document.getElementById("addEventBtn");
+  const recurringCheckbox = document.querySelector("[name='is_recurring_weekly']");
+  const dayOfWeekField = document.querySelector("[name='day_of_week']");
+  const dateField = document.querySelector("[name='date']");
+  const endDateField = document.querySelector("[name='end_date']");
   let editMode = false;
   let editId = null;
 
@@ -201,6 +205,23 @@ document.addEventListener("DOMContentLoaded", () => {
   function showToast(message) {
     toastMessage.textContent = message;
     toast.show();
+  }
+
+  function toggleRecurringFields() {
+    if (recurringCheckbox.checked) {
+      dayOfWeekField.removeAttribute("disabled");
+      dateField.setAttribute("disabled", "disabled");
+      endDateField.setAttribute("disabled", "disabled");
+    } else {
+      dayOfWeekField.setAttribute("disabled", "disabled");
+      dateField.removeAttribute("disabled");
+      endDateField.removeAttribute("disabled");
+    }
+  }
+
+  if (recurringCheckbox) {
+    recurringCheckbox.addEventListener("change", toggleRecurringFields);
+    toggleRecurringFields(); // Initialize on load
   }
 });
 </script>

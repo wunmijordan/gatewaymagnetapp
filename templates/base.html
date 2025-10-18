@@ -946,29 +946,20 @@
         <form id="attendanceForm" method="POST" action="{% url 'mark_attendance' %}">
           {% csrf_token %}
           <div class="modal-body">
-
             <p class="text-muted mb-3">
-              Please mark your presence or follow-up for today.
+              Please mark your presence or follow-up for this event.
             </p>
 
-            <div class="mb-3">
-              <label class="form-label">Select Event</label>
-              <select name="event_id" id="eventSelect" class="form-select" required
-                      style="background-color: #111827; color:#fff; border:none;">
-                <option value="" disabled selected>-- Choose an event --</option>
-                {% for event in events %}
-                  <option value="{{ event.id }}">{{ event.name }}</option>
-                {% endfor %}
-                {% if show_other_option %}
-                  <option value="other">Other</option>
-                {% endif %}
-              </select>
-            </div>
+            <!-- Hidden event info -->
+            <input type="hidden" name="event_id" id="eventIdField">
+            <input type="hidden" name="custom_event" id="customEventName">
+            <input type="hidden" name="next" value="{{ request.META.HTTP_REFERER }}">
 
-            <div class="mb-3 d-none" id="otherEventWrapper">
-              <label class="form-label">Enter Event Name</label>
-              <input type="text" name="custom_event" id="customEventName"
-                    class="form-control" placeholder="Type service or meeting name"
+            <!-- Read-only Event Display -->
+            <div class="mb-3">
+              <label class="form-label">Event</label>
+              <input type="text" id="eventDisplayName" class="form-control"
+                    readonly
                     style="background-color: #111827; color:#fff; border:none;">
             </div>
 
@@ -992,7 +983,6 @@
 
             <input type="hidden" name="latitude" id="latitude">
             <input type="hidden" name="longitude" id="longitude">
-
           </div>
 
           <div class="modal-footer border-0 d-flex justify-content-between">
@@ -1005,125 +995,233 @@
 
   <script>
   document.addEventListener("DOMContentLoaded", () => {
-      const modalEl = document.getElementById("attendanceModal");
-      const attendanceModal = new bootstrap.Modal(modalEl, { backdrop:"static", keyboard:false });
-      const attendanceForm = document.getElementById("attendanceForm");
-      const eventSelect = document.getElementById("eventSelect");
-      const otherEventWrapper = document.getElementById("otherEventWrapper");
-      const customEventName = document.getElementById("customEventName");
-      const statusWrapper = document.getElementById("statusWrapper");
+    const modalEl = document.getElementById("attendanceModal");
+    const attendanceModal = new bootstrap.Modal(modalEl, { backdrop: "static", keyboard: false });
+    const eventDisplayName = document.getElementById("eventDisplayName");
+    const eventIdField = document.getElementById("eventIdField");
+    const customEventName = document.getElementById("customEventName");
+    const attendanceForm = document.getElementById("attendanceForm");
+    const nextField = attendanceForm.querySelector('input[name="next"]');
 
-      let modalOpen = false; // Prevent multiple modals
+    let modalOpen = false;
 
-      // --- Geolocation ---
-      if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-              pos => {
-                  document.getElementById("latitude").value = pos.coords.latitude;
-                  document.getElementById("longitude").value = pos.coords.longitude;
-              },
-              err => console.warn("Location access denied:", err.message)
-          );
+    // --- Capture current URL for redirect fallback ---
+    nextField.value = window.location.href;
+
+    // --- Geolocation capture ---
+    let locationReady = false;
+
+    function captureLocation() {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation not supported");
+        return;
       }
 
-      // --- "Other Event" toggle ---
-      eventSelect.addEventListener("change", () => {
-          if (eventSelect.value === "other") {
-              otherEventWrapper.classList.remove("d-none");
-              customEventName.required = true;
-          } else {
-              otherEventWrapper.classList.add("d-none");
-              customEventName.required = false;
-          }
-      });
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          document.getElementById("latitude").value = pos.coords.latitude;
+          document.getElementById("longitude").value = pos.coords.longitude;
+          console.log("✅ Location captured:", pos.coords);
+          locationReady = true;
+        },
+        (err) => {
+          console.warn("⚠️ Location access denied:", err.message);
+          locationReady = false;
+        }
+      );
+    }
 
-      // --- Unlock modal after submit ---
-      attendanceForm.addEventListener("submit", () => {
-          attendanceModal._config.backdrop = true;
-          attendanceModal._config.keyboard = true;
-      });
+    // --- WebSocket connection ---
+    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${wsProtocol}://${window.location.host}/ws/attendance/`);
 
-      // --- Guest card click logging ---
-      document.querySelectorAll(".guest-card").forEach(card => {
-          card.addEventListener("click", () => {
-              fetch("/log-user-activity/", { 
-                  method: "POST", 
-                  headers: { "X-CSRFToken": "{{ csrf_token }}" }
-              });
-          });
-      });
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected for attendance");
+      // Run checkRecentEvent after connection is stable
+      setTimeout(() => checkRecentEvent(), 1000);
+    };
 
-      // --- WebSocket for live attendance ---
-      const ws = new WebSocket(`ws://${window.location.host}/ws/attendance/`);
+    // --- Check for recent event when user logs in ---
+    async function checkRecentEvent(retry = 0) {
+      try {
+        const res = await fetch("/accounts/attendance/recent/", {
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
 
-      function openAttendanceModal(event) {
-          if (modalOpen) return; // Prevent duplicate
-          modalOpen = true;
+        // Ensure we got valid JSON
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Not JSON");
+        }
 
-          const title = modalEl.querySelector(".modal-title");
-          title.textContent = `Mark Attendance for ${event.name}`;
+        const data = await res.json();
 
-          if (eventSelect) eventSelect.value = event.id;
-          localStorage.setItem("attendanceShown", new Date().toISOString().split("T")[0]);
+        if (data.event && data.event.id) {
+          console.log("🎯 Recent event detected:", data.event.name);
+          openAttendanceModal(data.event);
+        } else {
+          console.log("No active event within 45-minute window");
+        }
+      } catch (err) {
+        if (retry < 5) {
+          // Retry every 2 s up to 5 times
+          console.warn(`Retrying recent event check (${retry + 1})...`);
+          setTimeout(() => checkRecentEvent(retry + 1), 2000);
+        } else {
+          console.warn("No recent event found after retries:", err);
+        }
+      }
+    }
 
-          attendanceModal.show();
+    // Trigger check when page loads (after small delay)
+    setTimeout(checkRecentEvent, 500);
 
-          // Reset modalOpen when modal closes
-          modalEl.addEventListener('hidden.bs.modal', () => {
-              modalOpen = false;
-          }, { once: true });
+    ws.onclose = () => console.warn("⚠️ WebSocket disconnected");
+    ws.onerror = (err) => console.error("WebSocket error:", err);
+
+    // --- Open modal when event broadcast received ---
+    function openAttendanceModal(event) {
+      if (modalOpen) return;
+      modalOpen = true;
+
+      modalEl.querySelector(".modal-title").textContent = `Mark Attendance for ${event.name}`;
+      eventDisplayName.value = event.name;
+      eventIdField.value = event.id;
+      customEventName.value = event.name;
+
+      attendanceModal.show();
+      captureLocation();
+      modalEl.addEventListener("hidden.bs.modal", () => (modalOpen = false), { once: true });
+    }
+
+    // --- WebSocket message handler ---
+    ws.onmessage = function (e) {
+      const data = JSON.parse(e.data);
+
+      // 🔹 Event broadcast
+      if (data.id && data.name) {
+        const now = new Date();
+        const eventTime = new Date(`${data.date}T${data.time}`);
+        const diffMinutes = Math.abs((eventTime - now) / 60000);
+        if (diffMinutes >= -1 && diffMinutes <= 45) openAttendanceModal(data);
       }
 
-      ws.onmessage = function(e) {
-          const data = JSON.parse(e.data);
+      // 🔹 Summary broadcast (live table update)
+      if (data.records) {
+        updateAttendanceSummary(data.records);
+      }
+    };
 
-          // Event starting
-          if (data.id && data.name) {
-            const now = new Date();
-            let eventTime;
+    // --- AJAX form submission ---
+    attendanceForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!locationReady) {
+        e.preventDefault();
+        showToast("📍 Waiting for your location... please allow access.", "warning");
+        captureLocation();
+        return;
+      }
+      const formData = new FormData(attendanceForm);
+      const submitBtn = attendanceForm.querySelector("button[type='submit']");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Saving...";
 
-            if (data.date) {
-                // One-time event
-                eventTime = new Date(`${data.date}T${data.time}`);
-            } else if (data.is_recurring) {
-                // Recurring event — use today’s date
-                const todayStr = now.toISOString().split("T")[0];
-                eventTime = new Date(`${todayStr}T${data.time}`);
-            } else {
-                console.warn("Event missing date and not recurring:", data);
-                return;
+      try {
+        const response = await fetch(attendanceForm.action, {
+          method: "POST",
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+          body: formData,
+        });
+        const data = await response.json();
+
+        if (data.success) {
+          attendanceModal.hide();
+          showToast("✅ " + data.message, "success", 4000);
+
+          // 🧩 Local fallback refresh if websocket delay
+          await refreshAttendanceSummary();
+        } else {
+          showToast("⚠️ " + (data.error || "Failed to mark attendance"), "warning", 8000, true);
+          // Optional: shake effect to emphasize
+          modalEl.classList.add("shake");
+          setTimeout(() => modalEl.classList.remove("shake"), 600);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("❌ Error submitting attendance", "danger");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit";
+      }
+    });
+
+    // --- Helper: Refresh summary via AJAX (fallback) ---
+    async function refreshAttendanceSummary() {
+      try {
+        const res = await fetch("/accounts/attendance/summary/", { headers: { "X-Requested-With": "XMLHttpRequest" } });
+        const data = await res.json();
+        if (data.records) updateAttendanceSummary(data.records);
+      } catch (err) {
+        console.warn("Could not refresh summary:", err);
+      }
+    }
+
+    // --- Helper: Update summary table ---
+    function updateAttendanceSummary(records) {
+      const tbody = document.querySelector("#attendanceTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = records.map((r) => `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.event}</td>
+          <td>${r.user}</td>
+          <td>
+            ${
+              r.status === "present"
+                ? `<span class="badge bg-success-lt">Present</span>`
+                : r.status === "late"
+                ? `<span class="badge bg-danger-lt">Late</span>`
+                : r.status === "excused"
+                ? `<span class="badge bg-warning-lt">Excused</span>`
+                : `<span class="badge bg-secondary-lt">Absent</span>`
             }
+          </td>
+          <td>${r.remarks || "—"}</td>
+        </tr>`).join("");
+    }
 
-            const diffMinutes = Math.abs((eventTime - now) / 60000);
-            if (diffMinutes <= 1) {
-                openAttendanceModal(data);
-            }
-          }
+    // --- Helper: Show toast ---
+    function showToast(message, type = "info", duration = 6000, insideModal = false) {
+      const toast = document.createElement("div");
+      toast.className = `alert alert-${type} text-center fade show fw-semibold`;
+      toast.role = "alert";
+      toast.style.marginTop = "1rem";
+      toast.style.transition = "opacity 0.3s ease";
 
-          // Attendance summary update
-          if (data.records) {
-              const tbody = document.querySelector("#attendanceTableBody");
-              if (tbody) {
-                  tbody.innerHTML = data.records.map(r => `
-                      <tr>
-                          <td>${r.date}</td>
-                          <td>${r.event}</td>
-                          <td>${r.user}</td>
-                          <td>
-                            <span class="badge ${r.status === 'present' ? 'bg-success' : 'bg-secondary'}">
-                              ${r.status.charAt(0).toUpperCase() + r.status.slice(1)}
-                            </span>
-                          </td>
-                          <td>${r.remarks || "—"}</td>
-                      </tr>
-                  `).join("");
-              }
-          }
-      };
+      toast.innerHTML = `
+        <div>${message}</div>
+      `;
 
-      ws.onopen = () => console.log("WebSocket connected for attendance");
-      ws.onclose = () => console.log("WebSocket disconnected");
-      ws.onerror = (err) => console.error("WebSocket error:", err);
+      if (insideModal) {
+        const modalBody = document.querySelector("#attendanceModal .modal-body");
+        if (modalBody) {
+          // Insert toast at the bottom of the modal
+          modalBody.appendChild(toast);
+          toast.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      } else {
+        // fallback — screen toast
+        toast.classList.add("position-fixed", "bottom-0", "end-0", "m-3");
+        toast.style.zIndex = 9999;
+        document.body.appendChild(toast);
+      }
+
+      setTimeout(() => {
+        toast.classList.remove("show");
+        toast.style.opacity = "0";
+        setTimeout(() => toast.remove(), 400);
+      }, duration);
+    }
   });
   </script>
 
@@ -1264,6 +1362,7 @@
   <!-- FullCalendar (global builds) -->
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.15/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.15/index.global.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.15/index.global.min.js"></script>
 
   

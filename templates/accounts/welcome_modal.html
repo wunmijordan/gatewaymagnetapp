@@ -69,7 +69,19 @@
     countdownEl.textContent = countdown;
     if (countdown <= 0) {
       clearInterval(timer);
-      window.location.href = dashboardLink;
+
+      // 👇 Trigger attendance check before redirect
+      fetch("/accounts/attendance/recent/", { headers: { "X-Requested-With": "XMLHttpRequest" } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.event && data.event.id) {
+            // Pass data to localStorage to show modal after redirect
+            localStorage.setItem("pending_event", JSON.stringify(data.event));
+          }
+        })
+        .finally(() => {
+          window.location.href = dashboardLink;
+        });
     }
   }, 1000);
 </script>

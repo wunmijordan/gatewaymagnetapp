@@ -9,6 +9,7 @@ from django.db.models.fields.files import FieldFile
 from django.core.files.storage import default_storage
 from django.utils import timezone
 from .models import Event, AttendanceRecord
+from django.db.models import Q
 
 
 
@@ -261,7 +262,7 @@ def generate_daily_attendance():
     today = timezone.localdate()
     weekday = today.strftime("%A").lower()
 
-    events_today = Event.objects.filter(day_of_week=weekday, is_active=True)
+    events_today = Event.objects.filter(Q(date=today) | Q(day_of_week=weekday), is_active=True)
     users = CustomUser.objects.filter(is_active=True)
 
     created_count = 0
@@ -284,13 +285,21 @@ from .models import CHURCH_COORDS
 
 def validate_church_proximity(user_lat, user_lon, threshold_km=0.05):
     """Ensure user is within the threshold distance from church."""
-    if not user_lat or not user_lon:
-        raise ValidationError("Unable to determine your location.")
-    
-    user_distance = distance(CHURCH_COORDS, (user_lat, user_lon)).km
+    try:
+        # Convert to floats
+        lat = float(user_lat)
+        lon = float(user_lon)
+    except (TypeError, ValueError):
+        raise ValidationError("Unable to determine your location. Please enable location access.")
+
+    user_distance = distance(CHURCH_COORDS, (lat, lon)).km
+
     if user_distance > threshold_km:
         raise ValidationError(
-            f"You appear to be {user_distance:.2f} km away from church. "
-            "Please select 'Excused' or 'Follow-up' instead."
+            f"You appear to be {user_distance:.2f} km away from Church. "
+            "Please select other options instead."
         )
+    print(f"[DEBUG] User distance = {user_distance:.2f} km (Threshold = {threshold_km} km)")
+
+
 

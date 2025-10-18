@@ -139,12 +139,16 @@ class ChatMessage(models.Model):
 
 class Event(models.Model):
   EVENT_TYPES = [
-      ('service', 'Service'),
-      ('midweek', 'Midweek'),
-      ('followup', 'Guest Follow-up'),
-      ('meeting', 'Team Meeting'),
-      ('training', 'Training'),
-      ('other', 'Other'),
+      ('Service', 'Service'),
+      ('Followup', 'Guest Follow-up'),
+      ('Meeting', 'Meeting'),
+      ('Training', 'Training'),
+      ('Other', 'Other'),
+  ]
+
+  ATTENDANCE_MODE_CHOICES = [
+      ("Physical", "Physical"),
+      ("Virtual", "Virtual"),
   ]
 
   name = models.CharField(max_length=255)
@@ -152,22 +156,34 @@ class Event(models.Model):
   day_of_week = models.CharField(
       max_length=20,
       choices=[
-          ('sunday', 'Sunday'),
-          ('monday', 'Monday'),
-          ('tuesday', 'Tuesday'),
-          ('wednesday', 'Wednesday'),
-          ('thursday', 'Thursday'),
-          ('friday', 'Friday'),
-          ('saturday', 'Saturday'),
+          ('Sunday', 'Sunday'),
+          ('Monday', 'Monday'),
+          ('Tuesday', 'Tuesday'),
+          ('Wednesday', 'Wednesday'),
+          ('Thursday', 'Thursday'),
+          ('Friday', 'Friday'),
+          ('Saturday', 'Saturday'),
       ],
       null=True,
       blank=True
+  )
+  attendance_mode = models.CharField(
+      max_length=10,
+      choices=ATTENDANCE_MODE_CHOICES,
+      default="physical"
   )
   date = models.DateField(null=True, blank=True)  # floating events
   end_date = models.DateField(null=True, blank=True)  # optional for multi-day
   time = models.TimeField(null=True, blank=True)
   duration_days = models.PositiveIntegerField(default=1, help_text="Number of days this event lasts")
+  is_recurring_weekly = models.BooleanField(default=False)
   is_active = models.BooleanField(default=True)
+  created_by = models.ForeignKey(
+      settings.AUTH_USER_MODEL,
+      on_delete=models.SET_NULL,
+      null=True,
+      blank=True,
+  )
 
   class Meta:
       verbose_name = "Event"
@@ -176,26 +192,6 @@ class Event(models.Model):
 
   def __str__(self):
       return f"{self.name} ({self.get_event_type_display()})"
-
-
-
-def create_default_events(sender, **kwargs):
-    defaults = [
-        ("Sunday Service", "service", "sunday", "07:30"),
-        ("Midweek Recharge", "midweek", "thursday", "17:30"),
-        ("Team Meeting", "meeting", "wednesday", "20:45"),
-        ("SOS", "training", "tuesday", "17:45"),
-        ("Guest Follow-Up", "followup", None, None),
-    ]
-
-    for name, etype, day, time_str in defaults:
-        time_obj = datetime.strptime(time_str, "%H:%M").time() if time_str else None
-        Event.objects.get_or_create(
-            name=name,
-            event_type=etype,
-            day_of_week=day,
-            defaults={"time": time_obj, "is_active": True},
-        )
 
 
 

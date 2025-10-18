@@ -691,9 +691,14 @@ document.addEventListener("DOMContentLoaded", () => {
   //const roomId = chatContainer.dataset.roomId;
 
   // Handle all back buttons (desktop + mobile)
+  const guestListURL = "{% url 'guest_list' %}";
   document.querySelectorAll(".chat-back-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      window.history.back();
+      if (document.referrer.includes("/accounts/login")) {
+        window.location.href = guestListURL;
+      } else {
+        window.history.back();
+      }
     });
   });
 

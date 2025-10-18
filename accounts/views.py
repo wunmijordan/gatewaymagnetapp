@@ -65,7 +65,7 @@ class CustomLoginView(LoginView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('post_login_redirect')
+        return reverse_lazy('accounts:chat_room')
 
 
 def post_login_redirect(request):
@@ -110,27 +110,33 @@ User = get_user_model()
 @login_required
 @user_passes_test(lambda u: user_in_groups(u, "Pastor,Team Lead,Admin"))
 def attendance_summary(request):
-    """Provide attendance summary for admin dashboard or success redirect"""
+    """Provide attendance summary for admin dashboard or AJAX refresh."""
     records = AttendanceRecord.objects.select_related("event", "user").order_by("-date")
 
-    # If this is a normal HTTP request (not AJAX), show in dashboard
-    if not request.headers.get("x-requested-with") == "XMLHttpRequest":
-        context = {"records": records}
-        # Instead of rendering a new template, reuse your admin dashboard
-        return render(request, "accounts/admin_dashboard.html", context)
+    # Force JSON if explicitly requested or request is fetch()
+    wants_json = (
+        request.headers.get("x-requested-with") == "XMLHttpRequest"
+        or request.content_type == "application/json"
+        or request.GET.get("format") == "json"
+    )
 
-    # If it's an AJAX call, return JSON for dynamic refresh
-    data = [
-        {
-            "date": r.date.strftime("%Y-%m-%d"),
-            "event": r.event.name if r.event else "—",
-            "user": r.user.get_full_name() or r.user.username,
-            "status": r.status,
-            "remarks": r.remarks or "—",
-        }
-        for r in records
-    ]
-    return JsonResponse({"records": data})
+    if wants_json:
+        data = [
+            {
+                "date": r.date.strftime("%Y-%m-%d"),
+                "event": r.event.name if r.event else "—",
+                "user": f"{(r.user.title or '')} {r.user.get_full_name()}".strip(),
+                "status": r.status,
+                "remarks": r.remarks or "—",
+            }
+            for r in records
+        ]
+        return JsonResponse({"records": data})
+
+    # Fallback: render dashboard normally
+    context = {"records": records}
+    return render(request, "accounts/admin_dashboard.html", context)
+
 
 
 
@@ -839,43 +845,41 @@ def fetch_link_preview(request):
 
 
 
-# accounts/views.py
-from datetime import datetime, timedelta, time as dt_time
-from django.shortcuts import render, redirect
+from datetime import datetime, timedelta
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponseRedirect
+from django.shortcuts import render
 from django.utils import timezone
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.core.exceptions import ValidationError
 from .models import Event, AttendanceRecord, UserActivity
 from .utils import validate_church_proximity
+from .broadcast import broadcast_attendance_summary
 
 @login_required
 def mark_attendance(request):
-    """Render attendance modal and handle daily marking"""
+    """Handles attendance marking — supports AJAX for no page reload."""
     today = timezone.localdate()
     now = timezone.localtime()
     weekday = today.strftime("%A").lower()
-    
-    events = Event.objects.filter(is_active=True)
 
+    events = Event.objects.filter(is_active=True)
     available_events = []
+
     for e in events:
-        # Follow-up events always available
         if e.event_type == "followup":
             available_events.append(e)
-        # Weekly recurring events
         elif e.day_of_week and e.day_of_week.lower() == weekday:
             available_events.append(e)
-        # Specific meetings
         elif e.event_type == "meeting" and weekday == "wednesday":
             available_events.append(e)
-    
-    # Actual events today (exclude follow-up)
+
+    # Only show “other” when there are real events
     actual_events_today = [e for e in available_events if e.event_type != "followup"]
     show_other_option = len(actual_events_today) > 0
 
-    # Check if user had guest activity this week
-    week_start = today - timedelta(days=today.weekday())  # Monday
+    # Weekly guest activity check
+    week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
     guest_activity_types = ["followup", "message", "guest_view", "call", "report", "other"]
 
@@ -883,69 +887,168 @@ def mark_attendance(request):
         user=request.user,
         activity_type__in=guest_activity_types,
         created_at__date__gte=week_start,
-        created_at__date__lte=week_end
+        created_at__date__lte=week_end,
     ).exists()
 
-    # Determine if attendance can be marked now (event time)
-    can_mark_now = False
-    for e in actual_events_today:
-        if e.time:
-            event_dt = datetime.combine(today, e.time)
-            if now >= timezone.make_aware(event_dt):
-                can_mark_now = True
-        else:
-            can_mark_now = True
+    # Whether user can mark now
+    can_mark_now = any(
+        e.time is None or now >= timezone.make_aware(datetime.combine(today, e.time))
+        for e in actual_events_today
+    )
 
+    # --- Handle POST ---
     if request.method == "POST":
+        is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+
         event_id = request.POST.get("event_id")
         remarks = request.POST.get("remarks", "").strip()
         status = request.POST.get("status", "present")
         user_lat = request.POST.get("latitude")
         user_lon = request.POST.get("longitude")
+        next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "/"
 
-        # Find event
+        # Find event or create custom one
         if event_id == "other":
             custom_name = request.POST.get("custom_event")
-            event, _ = Event.objects.get_or_create(name=custom_name, event_type="custom", date=today)
+            event, _ = Event.objects.get_or_create(
+                name=custom_name, event_type="custom", date=today
+            )
         else:
             event = Event.objects.get(id=event_id)
 
-        # Determine late
+        # ✅ Enforce physical presence validation for physical events
+        mode = (getattr(event, "attendance_mode", "") or "").lower()
+        is_physical = mode == "physical"
+
+        if status == "present" and is_physical:
+            try:
+                print(f"[DEBUG] Checking proximity for {request.user} at {user_lat},{user_lon}")
+                validate_church_proximity(user_lat, user_lon)
+            except ValidationError as e:
+                print(f"[DEBUG] Validation failed: {e}")
+                if is_ajax:
+                    # JSON response → frontend toast, modal stays open
+                    return JsonResponse({"success": False, "error": str(e)}, status=400)
+                else:
+                    # Fallback for non-AJAX form
+                    messages.error(request, str(e))
+                    return HttpResponseRedirect(next_url)
+
+        # Determine lateness
         if status == "present" and event.time:
             event_dt = datetime.combine(today, event.time)
             if now > timezone.make_aware(event_dt + timedelta(minutes=15)):
                 status = "late"
 
-        # Save attendance
+        # Save or update record
         AttendanceRecord.objects.update_or_create(
             user=request.user,
             event=event,
             date=today,
-            defaults={"status": status, "remarks": remarks}
+            defaults={"status": status, "remarks": remarks},
         )
 
-        messages.success(request, f"Attendance marked for {event.name} ({status}).")
-        return redirect("accounts:attendance_summary")
+        # 🔔 Notify live dashboard
+        broadcast_attendance_summary()
+
+        message_text = f"Attendance marked for {event.name} ({status})."
+        if is_ajax:
+            return JsonResponse({"success": True, "message": message_text})
+        else:
+            messages.success(request, message_text)
+            return HttpResponseRedirect(next_url)
 
     context = {
         "events": available_events,
         "show_other_option": show_other_option,
         "skip_attendance": user_guest_activity,
         "can_mark_now": can_mark_now,
-        "show_weekly_summary": today.weekday() == 5 and now.hour >= 20,  # Saturday 20:00+
+        "show_weekly_summary": today.weekday() == 5 and now.hour >= 20,
     }
     return render(request, "accounts/mark_attendance.html", context)
 
 
 
+from datetime import timedelta
+from django.utils import timezone
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Event, AttendanceRecord
+from django.db.models import Q
+
+@login_required
+def recent_event(request):
+    """Return the most recent event (within 45 mins) if active and not yet marked by user."""
+    now = timezone.localtime()
+    window_start = now - timedelta(minutes=45)
+    window_end = now + timedelta(minutes=5)
+    weekday = now.strftime("%A").lower()
+
+    # Include today's dated events OR weekly recurring events for today
+    events_today = Event.objects.filter(
+        Q(date=now.date()) | Q(day_of_week=weekday),
+        is_active=True
+    )
+
+    recent_event = None
+    for event in events_today:
+        # If event has explicit date & time
+        if event.date and event.time:
+            event_dt = timezone.make_aware(
+                timezone.datetime.combine(event.date, event.time),
+                timezone.get_current_timezone()
+            )
+        # Otherwise, treat recurring events as happening "today" at their time
+        elif event.day_of_week and event.time:
+            event_dt = timezone.make_aware(
+                timezone.datetime.combine(now.date(), event.time),
+                timezone.get_current_timezone()
+            )
+        else:
+            # Skip undated + timeless events (like follow-ups)
+            continue
+
+        print(f"Now={now}, Event={event_dt}, Match={window_start <= event_dt <= window_end}")
+
+        if window_start <= event_dt <= window_end:
+            recent_event = event
+            break
+
+    if not recent_event:
+        return JsonResponse({"event": None})
+
+    MARKED_STATUSES = ("present", "late", "excused")
+
+    already_marked = AttendanceRecord.objects.filter(
+        user=request.user,
+        event=recent_event,
+        date=now.date(),
+        status__in=MARKED_STATUSES
+    ).exists()
+
+    if already_marked:
+        print(f"User {request.user} already marked for event {recent_event.name}")
+        return JsonResponse({"event": None})
+
+    return JsonResponse({
+        "event": {
+            "id": recent_event.id,
+            "name": recent_event.name,
+            "date": str(now.date()),
+            "time": recent_event.time.strftime("%H:%M:%S") if recent_event.time else None,
+        }
+    })
+
+
 
 from datetime import timedelta, date
 from django.utils import timezone
 from .models import Event, PersonalReminder
-
-from datetime import timedelta, date
+from datetime import date, datetime, timedelta, time
 from django.utils import timezone
-from .models import Event, PersonalReminder
+
+from datetime import date, timedelta
+from django.utils import timezone
 
 def get_calendar_items(user):
     today = timezone.localdate()
@@ -958,7 +1061,7 @@ def get_calendar_items(user):
     calendar_items = []
 
     weekday_map = {
-        'sunday': 6,      # ✅ Django weekday() → Sunday = 6
+        'sunday': 6,
         'monday': 0,
         'tuesday': 1,
         'wednesday': 2,
@@ -967,51 +1070,62 @@ def get_calendar_items(user):
         'saturday': 5,
     }
 
-    # --- Church events ---
+    color_map = {
+        "service": "#3b82f6",
+        "meeting": "#10b981",
+        "training": "#8b5cf6",
+        "followup": "#e11d48",
+        "reminder": "#f59e0b",
+        "other": "#9ca3af",
+    }
+
+    def build_datetime(d, t):
+        if not t:
+            return d.isoformat()
+        return datetime.combine(d, t).isoformat()
+
     for e in events:
-        if e.date and getattr(e, "duration_days", 1) > 1:
-            # Multi-day events (e.g. BTF, SOS)
-            start = e.date
-            end = e.date + timedelta(days=(getattr(e, "duration_days", 1) - 1))
-            calendar_items.append({
-                "title": e.name,
-                "start": start.strftime("%Y-%m-%d"),
-                "end": end.strftime("%Y-%m-%d"),
-                "type": e.event_type,
-                "color": "blue" if e.event_type != "reminder" else "orange",
-            })
+        event_type = (e.event_type or "other").lower()
+        color = color_map.get(event_type, "#4dabf7")
+
+        base_event = {
+            "title": e.name,
+            "type": e.event_type,
+            "mode": getattr(e, "mode", ""),
+            "color": color,
+            "description": getattr(e, "description", ""),
+            "time": e.time.strftime("%H:%M") if e.time else None,
+            "duration_days": getattr(e, "duration_days", 1),
+        }
+
+        if e.date and e.duration_days > 1:
+            start = build_datetime(e.date, e.time)
+            end = build_datetime(e.date + timedelta(days=e.duration_days - 1), e.time)
+            calendar_items.append({**base_event, "start": start, "end": end})
 
         elif e.date:
-            # Single-day event
-            calendar_items.append({
-                "title": e.name,
-                "start": e.date.strftime("%Y-%m-%d"),
-                "type": e.event_type,
-                "color": "blue" if e.event_type != "reminder" else "orange",
-            })
+            calendar_items.append({**base_event, "start": build_datetime(e.date, e.time)})
 
-        elif e.day_of_week:
-            # Weekly recurring events for the year
+        elif e.is_recurring_weekly and e.day_of_week:
             current = start_of_year
-            weekday = weekday_map[e.day_of_week.lower()]
+            weekday = weekday_map.get(e.day_of_week.lower())
             while current <= end_of_year:
                 if current.weekday() == weekday:
                     calendar_items.append({
-                        "title": e.name,
-                        "start": current.strftime("%Y-%m-%d"),
-                        "type": e.event_type,
-                        "color": "blue" if e.event_type != "reminder" else "orange",
+                        **base_event,
+                        "start": build_datetime(current, e.time),
                     })
                 current += timedelta(days=1)
 
-    # --- Personal reminders ---
+    # Reminders
     for r in reminders:
         calendar_items.append({
             "title": r.title,
-            "start": r.date.strftime("%Y-%m-%d"),
+            "start": build_datetime(r.date, getattr(r, "time", None)),
             "type": "reminder",
-            "time": getattr(r, "time", None),
-            "color": "orange",
+            "mode": "personal",
+            "color": color_map["reminder"],
+            "description": getattr(r, "note", ""),
         })
 
     return calendar_items
@@ -1090,13 +1204,18 @@ def delete_event(request, pk):
     return JsonResponse({"status": "deleted"})
 
 
+
+
+from datetime import date, datetime, timedelta, time
+from django.utils import timezone
+from django.http import JsonResponse
+
+
 from datetime import date, timedelta
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
 
-@login_required
 def api_events(request):
-    """Return JSON for FullCalendar (handles both date-based and recurring events)."""
+    """Return JSON for FullCalendar with proper mode, color, and 24hr time."""
     events = Event.objects.filter(is_active=True)
     data = []
 
@@ -1107,7 +1226,16 @@ def api_events(request):
         'thursday': 3,
         'friday': 4,
         'saturday': 5,
-        'sunday': 6,  # Django's weekday() treats Monday as 0, Sunday as 6
+        'sunday': 6,
+    }
+
+    color_map = {
+        "service": "#3b82f6",
+        "meeting": "#10b981",
+        "training": "#8b5cf6",
+        "reminder": "#f59e0b",
+        "event": "#e11d48",
+        "other": "#9ca3af",
     }
 
     today = date.today()
@@ -1115,32 +1243,49 @@ def api_events(request):
     end_of_year = date(today.year, 12, 31)
 
     for e in events:
-        # Single or multi-day events
+        event_type = (e.event_type or "other").lower()
+        color = color_map.get(event_type, "#4dabf7")
+
+        base_event = {
+            "title": e.name,
+            "color": color,
+            "extendedProps": {
+                "type": e.event_type,
+                "mode": getattr(e, "mode", ""),
+                "location": getattr(e, "location", ""),
+                "description": getattr(e, "description", ""),
+                "time": e.time.strftime("%H:%M") if e.time else None,
+            },
+        }
+
+        # Determine start with proper datetime
+        def build_datetime(d, t):
+            if not t:
+                return d.isoformat()
+            dt = datetime.combine(d, t)
+            return dt.isoformat()
+
         if e.date:
             start_date = e.date
             end_date = e.end_date or (start_date + timedelta(days=getattr(e, "duration_days", 1) - 1))
-            data.append({
-                "title": e.name,
-                "start": start_date.isoformat(),
-                "end": end_date.isoformat(),
-                "color": "#4dabf7" if e.event_type != "reminder" else "#ffa94d",
-            })
+            base_event["start"] = build_datetime(start_date, e.time)
+            base_event["end"] = build_datetime(end_date, e.time)
+            data.append(base_event)
 
-        # Weekly recurring events (e.g. Sunday Service)
-        elif e.day_of_week:
+        elif e.is_recurring_weekly and e.day_of_week:
             weekday = weekday_map.get(e.day_of_week.lower())
             if weekday is not None:
                 current = start_of_year
                 while current <= end_of_year:
                     if current.weekday() == weekday:
-                        data.append({
-                            "title": e.name,
-                            "start": current.isoformat(),
-                            "color": "#4dabf7",
-                        })
+                        recurring = base_event.copy()
+                        recurring["start"] = build_datetime(current, e.time)
+                        data.append(recurring)
                     current += timedelta(days=1)
 
     return JsonResponse(data, safe=False)
+
+
 
 
 from django.http import JsonResponse

@@ -307,19 +307,25 @@ class EventForm(forms.ModelForm):
         fields = [
             "name",
             "event_type",
+            "attendance_mode",
+            "day_of_week",
             "date",
             "end_date",
             "time",
             "duration_days",
+            "is_recurring_weekly",
             "is_active",
         ]
         widgets = {
+            "day_of_week": forms.Select(attrs={"class": "form-select"}),
+            "attendance_mode": forms.Select(attrs={"class": "form-select"}),
             "date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "end_date": forms.DateInput(attrs={"type": "date", "class": "form-control"}),
             "time": forms.TimeInput(attrs={"type": "time", "class": "form-control"}),
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "event_type": forms.Select(attrs={"class": "form-select"}),
             "duration_days": forms.NumberInput(attrs={"class": "form-control"}),
+            "is_recurring_weekly": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
         help_texts = {

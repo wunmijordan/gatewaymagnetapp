@@ -25,3 +25,14 @@ def auto_generate_attendance(sender, request, user, **kwargs):
             date=today,
             defaults={"status": "absent", "remarks": ""}
         )
+
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import Event
+from .scheduler import schedule_event_notifications
+
+@receiver(post_save, sender=Event)
+def reschedule_on_event_save(sender, instance, **kwargs):
+    print(f"🔁 [Signal] Event saved: {instance.name} — refreshing scheduler")
+    schedule_event_notifications()

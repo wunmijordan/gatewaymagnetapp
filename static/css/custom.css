@@ -1352,17 +1352,39 @@
   border: none !important;
 }
 
-/* Optional subtle border for grid lines */
+/* Remove borders for clean dark look */
+.fc-theme-bootstrap5 td,
+.fc-theme-bootstrap5 th,
+.fc-theme-bootstrap5 .fc-scrollgrid {
+  border: none !important;
+}
+
+/* Optional subtle border for grid lines 
 .fc .fc-daygrid-day-frame {
   border: 1px solid rgba(255, 255, 255, 0.05);
-}
+}*/
 
 /* Hide top header background (days of week row) */
 .fc .fc-col-header-cell {
   background: #111827 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--tblr-muted, #aaa);
-  font-weight: 500;
+  color: #f59f00; /* orange text for days */
+  font-weight: 700;
+  padding-top: 0;
+}
+
+/* Give FullCalendar a rounded border and soft shadow */
+.fc {
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 4px 12px #000000c0;
+}
+
+.fc .fc-daygrid {
+  overflow: hidden; /* ensures the inner cells follow the rounding */
+  padding: 2px 0;
+  background-color: #f9741638;
+  border-radius: 8px;
 }
 
 /* Calendar body background */
@@ -1370,21 +1392,25 @@
   background: transparent !important;
 }
 
-/* Event styling (slightly glowing blocks) */
-.fc-event {
-  background: var(--tblr-primary, #3b82f6);
-  border: none !important;
-  color: #fff !important;
-  border-radius: 6px;
-  padding: 2px 4px;
-  font-size: 0.75rem;
-  box-shadow: 0 0 4px rgba(59,130,246,0.3);
+/* Optional: add subtle glow or border for better visibility */
+.fc-daygrid-day.fc-day-today .fc-daygrid-day-frame {
+  background-color: #111827;
+  border: 6px;
+  box-shadow: 0 0 8px #000000c0;
 }
+
+.fc .fc-daygrid.fc-day-today {
+  overflow: hidden; /* ensures the inner cells follow the rounding */
+  padding: 2px 0;
+  background-color: #1c3536;
+  border-radius: 8px;
+}
+
 
 /* Orange reminders */
 .fc-event[style*="orange"] {
   background: #f97316 !important;
-  box-shadow: 0 0 4px rgba(249,115,22,0.3);
+  box-shadow: 0 0 4px #f973164d;
 }
 
 /* Make calendar fully responsive */
@@ -1405,6 +1431,142 @@
 }
 
 
+/* --- Event color strip --- */
+.color-strip {
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  margin: 0.5px 0;
+}
+
+/* --- Popup overlay --- */
+.calendar-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.calendar-popup.show {
+  opacity: 1;
+}
+
+/* --- Popup box --- */
+.calendar-popup-box {
+  background: #111827;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  width: 90%;
+  max-width: 420px;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* --- Title --- */
+.calendar-popup-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #e5e5e5;
+  text-align: center;
+}
+
+/* --- List items --- */
+.calendar-popup-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.calendar-popup-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* --- Color dot --- */
+.color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+}
+
+/* --- Event details --- */
+.event-info {
+  flex: 1;
+}
+
+.event-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.event-chip {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #ccc;
+}
+
+/* --- Mobile adjustments --- */
+@media (max-width: 768px) {
+  .calendar-popup-box {
+    width: 95%;
+    padding: 0.75rem 1rem;
+  }
+  .event-title {
+    font-size: 0.85rem;
+  }
+  .event-chip {
+    font-size: 0.7rem;
+  }
+}
+
+
+
+
+/* Centered alert inside modal */
+#attendanceModal .alert {
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+}
+
+/* Shake animation for modal */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+}
+
+.shake {
+  animation: shake 0.4s ease;
+}
 
 
 

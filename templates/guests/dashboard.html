@@ -755,37 +755,139 @@
 {% block extra_js %}
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  var calendarEl = document.getElementById('calendar');
+document.addEventListener("DOMContentLoaded", function () {
+  const calendarEl = document.getElementById("calendar");
 
-  var events = [
-    {% for item in calendar_items %}
-      {
-        title: "{{ item.title }}",
-        start: "{{ item.start|date:'Y-m-d' }}",
-        {% if item.end %}
-        end: "{{ item.end|date:'Y-m-d' }}",
-        {% endif %}
-        allDay: true,
-        color: "{{ item.color }}"
-      },
-    {% endfor %}
-  ];
-
-  console.log("Calendar events:", events); // debug
-
-  var calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    height: 'auto',
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    
+    initialView: "dayGridMonth",
+    height: "auto",
     expandRows: true,
-    timeZone: 'local',
-    events: '/accounts/api/events/',
-    themeSystem: 'bootstrap5',
+    timeZone: "local",
+    themeSystem: "bootstrap5",
     headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,dayGridWeek,dayGridDay'
-    }
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,dayGridWeek,dayGridDay",
+    },
+    buttonText: {
+      today: 'Today',
+      month: 'Month',
+      week: 'Week',
+      day: 'Day',
+    },
+    events: "/accounts/api/events/",
+
+    // ✅ Show only color strips (no text)
+    eventContent: function (arg) {
+      const bgColor = arg.event.extendedProps.color || arg.event.backgroundColor || "#4dabf7";
+      const strip = document.createElement("div");
+      strip.classList.add("color-strip");
+      strip.style.backgroundColor = bgColor;
+      return { domNodes: [strip] };
+    },
+
+    // ✅ Popup showing events for a clicked date
+    dateClick: function (info) {
+      const clickedDate = info.dateStr;
+      const events = calendar.getEvents().filter((e) => {
+        const eventDate = new Date(e.start).toISOString().split("T")[0];
+        return eventDate === clickedDate;
+      });
+
+      if (events.length === 0) return;
+
+      // Remove any previous popup
+      document.querySelectorAll(".calendar-popup").forEach((el) => el.remove());
+
+      const popup = document.createElement("div");
+      popup.classList.add("calendar-popup");
+
+      const box = document.createElement("div");
+      box.classList.add("calendar-popup-box");
+
+      const title = document.createElement("h5");
+      title.classList.add("calendar-popup-title");
+      title.textContent = new Date(info.date).toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      box.appendChild(title);
+
+      const list = document.createElement("ul");
+      list.classList.add("calendar-popup-list");
+
+      events.forEach((event) => {
+        const item = document.createElement("li");
+
+        const colorDot = document.createElement("span");
+        colorDot.classList.add("color-dot");
+        colorDot.style.backgroundColor =
+          event.extendedProps.color || event.backgroundColor || "#4dabf7";
+
+        const main = document.createElement("div");
+        main.classList.add("event-info");
+
+        const name = document.createElement("div");
+        name.classList.add("event-title");
+        name.textContent = event.title;
+
+        const meta = document.createElement("div");
+        meta.classList.add("event-meta");
+
+        // Time
+        if (event.start) {
+          const time = document.createElement("span");
+          time.classList.add("event-chip");
+          const eventTime = new Date(event.start);
+          time.textContent = `🕒 ${eventTime.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })}`;
+          meta.appendChild(time);
+        }
+
+        // Mode
+        const mode = event.extendedProps.mode;
+        if (mode) {
+          const modeChip = document.createElement("span");
+          modeChip.classList.add("event-chip");
+          modeChip.textContent = mode;
+          meta.appendChild(modeChip);
+        }
+
+        // Type
+        const type = event.extendedProps.type;
+        if (type) {
+          const typeChip = document.createElement("span");
+          typeChip.classList.add("event-chip");
+          typeChip.textContent = type;
+          meta.appendChild(typeChip);
+        }
+
+        main.appendChild(name);
+        main.appendChild(meta);
+
+        item.appendChild(colorDot);
+        item.appendChild(main);
+        list.appendChild(item);
+      });
+
+      box.appendChild(list);
+      popup.appendChild(box);
+      document.body.appendChild(popup);
+
+      // Show animation
+      setTimeout(() => popup.classList.add("show"), 10);
+
+      // Close on background click
+      popup.addEventListener("click", (e) => {
+        if (e.target === popup) popup.remove();
+      });
+    },
   });
 
   calendar.render();
