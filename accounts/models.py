@@ -6,6 +6,9 @@ from django.conf import settings
 from guests.models import GuestEntry
 from django.utils import timezone
 from datetime import datetime
+from django.core.files.storage import FileSystemStorage
+
+local_storage = FileSystemStorage()
 
 
 CHURCH_COORDS = (6.641732871081892, 3.3706539797031843)  # (latitude, longitude)
@@ -94,7 +97,7 @@ class ChatMessage(models.Model):
       related_name='seen_chats',
       blank=True
   )
-  file = models.FileField(upload_to="chat/files/", blank=True, null=True)
+  file = models.FileField(storage=local_storage, upload_to="chat/files/", blank=True, null=True)
   file_type = models.CharField(max_length=100, blank=True, null=True)
   link_url = models.URLField(max_length=500, blank=True, null=True)
   link_title = models.CharField(max_length=255, blank=True, null=True)
