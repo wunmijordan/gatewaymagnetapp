@@ -30,6 +30,7 @@ from urllib.parse import urlparse
 from .utils import serialize_message, build_mention_helpers
 from django.core.files.storage import default_storage
 import urllib.parse
+from django.conf import settings
 
 
 
@@ -789,24 +790,35 @@ def upload_file(request):
     try:
         f = request.FILES["file"]
 
-        # Save file safely
-        file_path = default_storage.save(f"chat/files/{f.name}", f)  # relative storage path
-        file_url = default_storage.url(file_path)  # URL for frontend display
+        if not settings.DEBUG:
+            # 🚀 Upload to Cloudinary in production
+            import cloudinary.uploader
+            result = cloudinary.uploader.upload(
+                f,
+                folder="chat/files",
+                resource_type="auto"  # handles any file type (image, pdf, etc.)
+            )
+            file_url = result["secure_url"]
+            file_path = result["public_id"]  # Cloudinary public ID
+        else:
+            # 💻 Local save for dev
+            file_path = default_storage.save(f"chat/files/{f.name}", f)
+            file_url = default_storage.url(file_path)
 
-        # Guess MIME type
         guessed_type, _ = mimetypes.guess_type(f.name)
 
         return JsonResponse({
-            "url": file_path,  # return **storage path**, not URL
-            "display_url": file_url,  # optional, frontend-friendly
-            "name": f.name,  # ✅ original filename for display
-            "saved_name": os.path.basename(file_path),  # ✅ actual stored filename
+            "url": file_path,  # backend-safe reference (public_id or local path)
+            "display_url": file_url,  # URL for frontend preview
+            "name": f.name,
+            "saved_name": os.path.basename(file_path),
             "size": f.size,
             "type": guessed_type or f.content_type or "application/octet-stream",
         })
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
 
 
 
