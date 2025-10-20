@@ -4,11 +4,13 @@ from datetime import timedelta
 from django.utils.timezone import now
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
+from django.conf import settings
+from django.core.files.storage import default_storage
 
 
 logger = logging.getLogger(__name__)
 
-url_pattern = re.compile(r'(https?://[^\s]+)')
+
 
 # =================== Helpers ===================
 def get_user_color(user_id):
@@ -22,6 +24,32 @@ def get_user_color(user_id):
         "bg-purple-200 text-white","bg-pink-200 text-white"
     ]
     return colors[user_id % len(colors)]
+
+
+# ---------- Helper ----------
+def handle_file_upload(file_url):
+    """
+    Upload to Cloudinary in production, or use MEDIA_ROOT path in development.
+    """
+    from cloudinary.uploader import upload as cloudinary_upload
+    if not file_url:
+        return None
+
+    # ✅ Keep local media in dev
+    if settings.DEBUG:
+        if file_url.startswith("http"):
+            return file_url
+        return file_url
+
+    # ✅ Upload to Cloudinary in prod
+    if file_url.startswith("http"):
+        return file_url
+    try:
+        upload_result = cloudinary_upload(file_url, folder="chat/files/")
+        return upload_result.get("secure_url")
+    except Exception as e:
+        logger.warning("Cloudinary upload failed: %s", e)
+        return file_url
 
 
 # =================== Chat Consumer ===================
@@ -245,34 +273,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         mention_map, mention_regex = build_mention_helpers()
         return serialize_message(msg, mention_map, mention_regex)
-        
-        
-        
-    @staticmethod
-    def handle_file_upload(file_url):
-        """
-        Upload to Cloudinary in production, or use MEDIA_ROOT path in development.
-        """
-        from django.conf import settings
-        from cloudinary.uploader import upload as cloudinary_upload
-        # ✅ In dev, keep using local MEDIA
-        if settings.DEBUG:
-            if file_url.startswith("http"):
-                return file_url  # already URL (e.g., existing image)
-            return file_url  # keep as local /media path
-
-        # ✅ In production, upload to Cloudinary
-        if file_url:
-            # If it's already a Cloudinary URL, just return it
-            if file_url.startswith("http"):
-                return file_url
-            try:
-                upload_result = cloudinary_upload(file_url, folder="chat/files/")
-                return upload_result.get("secure_url")  # store actual cloud URL
-            except Exception:
-                return file_url  # fallback to original path
-        return None
-
 
     # ---------- Create Message (Async DB) ----------
     @sync_to_async
@@ -287,6 +287,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         from django.core.files.storage import default_storage
         import os
 
+        url_pattern = re.compile(r'(https?://[^\s]+)')
         mentions_ids = mentions_ids or []
 
         try:
@@ -302,8 +303,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 match = url_pattern.search(message or "")
                 if match:
                     link_meta = get_link_preview(match.group(0))
-            # ✅ Handle FileField (no external requests!)
-            file_field = self.handle_file_upload(file_url)
+
+            # ✅ Cloudinary / Local upload
+            file_field = None
+            if file_url:
+                file_field = handle_file_upload(file_url)
 
             # ✅ Save message with real FileField
             saved = ChatMessage.objects.create(
