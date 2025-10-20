@@ -245,6 +245,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         mention_map, mention_regex = build_mention_helpers()
         return serialize_message(msg, mention_map, mention_regex)
+        
+        
+        
+    @staticmethod
+    def handle_file_upload(file_url):
+        """
+        Upload to Cloudinary in production, or use MEDIA_ROOT path in development.
+        """
+        from django.conf import settings
+        from cloudinary.uploader import upload as cloudinary_upload
+        # ✅ In dev, keep using local MEDIA
+        if settings.DEBUG:
+            if file_url.startswith("http"):
+                return file_url  # already URL (e.g., existing image)
+            return file_url  # keep as local /media path
+
+        # ✅ In production, upload to Cloudinary
+        if file_url:
+            # If it's already a Cloudinary URL, just return it
+            if file_url.startswith("http"):
+                return file_url
+            try:
+                upload_result = cloudinary_upload(file_url, folder="chat/files/")
+                return upload_result.get("secure_url")  # store actual cloud URL
+            except Exception:
+                return file_url  # fallback to original path
+        return None
+
 
     # ---------- Create Message (Async DB) ----------
     @sync_to_async
@@ -274,16 +302,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 match = url_pattern.search(message or "")
                 if match:
                     link_meta = get_link_preview(match.group(0))
-
             # ✅ Handle FileField (no external requests!)
-            file_field = None
-            if file_url:
-                # file_url is the storage-relative path returned by upload_file
-                if default_storage.exists(file_url):
-                    file_field = file_url  # safe to store as FileField
-                else:
-                    # fallback: keep string reference instead of breaking
-                    file_field = file_url
+            file_field = self.handle_file_upload(file_url)
 
             # ✅ Save message with real FileField
             saved = ChatMessage.objects.create(

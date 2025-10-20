@@ -62,9 +62,18 @@ def build_mention_helpers():
     return mention_map, regex
 
 
+import os
+import urllib
+import mimetypes
+from django.conf import settings
+from django.db.models.fields.files import FieldFile
+from django.core.files.storage import default_storage
+from guests.models import GuestEntry
+from .utils import get_user_color
+
+
 def serialize_message(m, mention_map=None, mention_regex=None):
     """Unified serializer for both WebSocket + Views."""
-
     # Mentions
     mentions_payload = []
     if mention_regex and m.message:
@@ -80,7 +89,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
                     "color": get_user_color(u.id),
                 })
 
-    # Guest
+    # --- Guest
     guest_payload = None
     if m.guest_card:
         g = GuestEntry.objects.select_related("assigned_to").get(id=m.guest_card.id)
@@ -99,113 +108,46 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             } if g.assigned_to else None
         }
 
-    # Parent (reply-to)
-    parent_payload = None
-    if m.parent:
-        parent = m.parent
-
-        # --- Guest (if parent had a guest card)
-        parent_guest_payload = None
-        if parent.guest_card:
-            g = parent.guest_card
-            parent_guest_payload = {
-                "id": g.id,
-                "name": g.full_name,
-                "title": g.title,
-                "image": g.picture.url if g.picture else None,
-                "date_of_visit": g.date_of_visit.strftime("%Y-%m-%d") if g.date_of_visit else "",
-            }
-
-        # --- File (if parent has file)
-        parent_file_payload = None
-        if parent.file:
-            try:
-                if isinstance(parent.file, FieldFile):
-                    file_name = urllib.parse.unquote(os.path.basename(parent.file.name))
-                    file_url = default_storage.url(parent.file.name)
-                    file_size = getattr(parent.file, "size", None)
-                    guessed_type, _ = mimetypes.guess_type(parent.file.name)
-                    file_type = getattr(parent.file.file, "content_type", None) or guessed_type or "application/octet-stream"
-                else:
-                    file_path = str(parent.file)
-                    file_name = urllib.parse.unquote(os.path.basename(file_path)) or "file"
-                    if not file_path.startswith("/media/"):
-                        file_url = f"/media/{file_path.lstrip('/')}"
-                    else:
-                        file_url = file_path
-                    file_size = None
-                    guessed_type, _ = mimetypes.guess_type(file_path)
-                    file_type = guessed_type or "application/octet-stream"
-
-                parent_file_payload = {
-                    "id": parent.id,
-                    "url": file_url,
-                    "name": file_name,
-                    "size": file_size,
-                    "type": file_type,
-                }
-            except Exception as e:
-                import logging
-                logging.warning("serialize_message: parent file error %s", e)
-
-        # --- Link (if parent has link preview)
-        parent_link_payload = None
-        if parent.link_url:
-            parent_link_payload = {
-                "url": parent.link_url,
-                "title": parent.link_title,
-                "description": parent.link_description,
-                "image": parent.link_image,
-            }
-
-        # --- Message preview text
-        if parent.message:
-            parent_message_preview = parent.message[:50]
-        elif parent.file:
-            parent_message_preview = "(Attachment)"
-        elif parent.guest_card:
-            parent_message_preview = "(Guest Card)"
-        elif parent.link_url:
-            parent_message_preview = "(Link)"
-        else:
-            parent_message_preview = "(No content)"
-
-        parent_payload = {
-            "id": parent.id,
-            "sender_id": parent.sender.id,
-            "sender_title": getattr(parent.sender, "title", ""),
-            "sender_name": parent.sender.full_name or parent.sender.username,
-            "sender_color": get_user_color(parent.sender.id),
-            "message": parent_message_preview,
-            "guest": parent_guest_payload,
-            "file": parent_file_payload,
-            "link_preview": parent_link_payload,
-        }
-
-    # File
-    file_payload = None
-    if m.file:
+    # --- Helper to resolve file URLs
+    def build_file_payload(file_obj, message_id):
+        if not file_obj:
+            return None
         try:
-            if isinstance(m.file, FieldFile):  # FileField object
-                # ✅ Decode filename for display
-                file_name = urllib.parse.unquote(os.path.basename(m.file.name))
-                file_url = default_storage.url(m.file.name)  # correct URL for frontend
-                file_size = getattr(m.file, "size", None)
-                guessed_type, _ = mimetypes.guess_type(m.file.name)
-                file_type = getattr(m.file.file, "content_type", None) or guessed_type or "application/octet-stream"
-            else:  # stored string path
-                file_path = str(m.file)
+            # 1️⃣ For Django FileField (local or CloudinaryField)
+            if isinstance(file_obj, FieldFile):
+                file_name = urllib.parse.unquote(os.path.basename(file_obj.name))
+                file_url = getattr(file_obj, "url", None)
+
+                # Force Cloudinary or media resolution depending on environment
+                if not file_url:
+                    if settings.DEBUG:
+                        file_url = default_storage.url(file_obj.name)
+                    else:
+                        file_url = f"{settings.MEDIA_URL}{file_obj.name}"
+
+                file_size = getattr(file_obj, "size", None)
+                guessed_type, _ = mimetypes.guess_type(file_name)
+                file_type = getattr(file_obj.file, "content_type", None) or guessed_type or "application/octet-stream"
+
+            # 2️⃣ If it’s already a Cloudinary or remote URL string
+            else:
+                file_path = str(file_obj)
                 file_name = urllib.parse.unquote(os.path.basename(file_path)) or "file"
-                if not file_path.startswith("/media/"):
+
+                if file_path.startswith("http"):
+                    file_url = file_path  # ✅ Cloudinary or remote
+                elif settings.DEBUG:
                     file_url = f"/media/{file_path.lstrip('/')}"
                 else:
+                    # production fallback (Cloudinary path stored as name)
                     file_url = file_path
+
                 file_size = None
                 guessed_type, _ = mimetypes.guess_type(file_path)
                 file_type = guessed_type or "application/octet-stream"
 
-            file_payload = {
-                "id": m.id,
+            return {
+                "id": message_id,
                 "url": file_url,
                 "name": file_name,
                 "size": file_size,
@@ -215,9 +157,39 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         except Exception as e:
             import logging
             logging.warning("serialize_message: file error %s", e)
+            return None
 
+    # --- Parent (reply-to)
+    parent_payload = None
+    if m.parent:
+        parent = m.parent
+        parent_payload = {
+            "id": parent.id,
+            "sender_id": parent.sender.id,
+            "sender_title": getattr(parent.sender, "title", ""),
+            "sender_name": parent.sender.full_name or parent.sender.username,
+            "sender_color": get_user_color(parent.sender.id),
+            "message": parent.message[:50] if parent.message else "(Attachment)" if parent.file else "(No content)",
+            "guest": {
+                "id": parent.guest_card.id,
+                "name": parent.guest_card.full_name,
+                "title": parent.guest_card.title,
+                "image": parent.guest_card.picture.url if parent.guest_card.picture else None,
+                "date_of_visit": parent.guest_card.date_of_visit.strftime("%Y-%m-%d") if parent.guest_card.date_of_visit else "",
+            } if parent.guest_card else None,
+            "file": build_file_payload(parent.file, parent.id),
+            "link_preview": {
+                "url": parent.link_url,
+                "title": parent.link_title,
+                "description": parent.link_description,
+                "image": parent.link_image,
+            } if parent.link_url else None,
+        }
 
-    # Link
+    # --- File payload (main message)
+    file_payload = build_file_payload(m.file, m.id)
+
+    # --- Link preview
     link_payload = None
     if m.link_url:
         link_payload = {
@@ -227,7 +199,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             "image": m.link_image,
         }
 
-    # --- Pinned info ---
+    # --- Pinned info
     pinned_by_payload = None
     if getattr(m, "pinned_by", None):
         pinned_by_payload = {
@@ -236,6 +208,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
             "title": getattr(m.pinned_by, "title", ""),
         }
 
+    # ✅ Final return
     return {
         "id": m.id,
         "message": m.message,
@@ -255,6 +228,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
         "pinned_at": m.pinned_at.isoformat() if getattr(m, "pinned_at", None) else None,
         "pinned_by": pinned_by_payload,
     }
+
 
 
 
