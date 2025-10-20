@@ -5,11 +5,5 @@
   },
   "deploy": {
     "startCommand": "sh -c 'daphne -b 0.0.0.0 -p $PORT --ping-interval 30 --ping-timeout 120 gatewaymagnetapp.asgi:application'"
-  },
-  "volumes": [
-    {
-      "name": "media",
-      "mountPath": "/app/media"
-    }
-  ]
+  }
 }

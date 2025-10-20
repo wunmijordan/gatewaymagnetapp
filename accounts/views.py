@@ -790,7 +790,7 @@ def upload_file(request):
         f = request.FILES["file"]
 
         # Save file safely
-        file_path = default_storage.save(f"chat_uploads/{f.name}", f)  # relative storage path
+        file_path = default_storage.save(f"chat/files/{f.name}", f)  # relative storage path
         file_url = default_storage.url(file_path)  # URL for frontend display
 
         # Guess MIME type

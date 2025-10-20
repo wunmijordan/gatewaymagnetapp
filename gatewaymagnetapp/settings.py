@@ -3,6 +3,8 @@ from pathlib import Path
 import environ
 import cloudinary
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
+
 
 # =========================
 # BASE DIRECTORY & ENV SETUP
@@ -174,13 +176,18 @@ MEDIA_ROOT = BASE_DIR / "media"
 # =========================
 # CLOUDINARY
 # =========================
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+
 cloudinary.config(
     cloud_name=env("CLOUDINARY_CLOUD_NAME"),
     api_key=env("CLOUDINARY_API_KEY"),
     api_secret=env("CLOUDINARY_API_SECRET"),
 )
 
-DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+if not DEBUG:
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 CLOUDINARY_STORAGE = {
     "CLOUD_NAME": env("CLOUDINARY_CLOUD_NAME"),
     "API_KEY": env("CLOUDINARY_API_KEY"),
