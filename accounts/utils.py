@@ -10,6 +10,7 @@ from django.core.files.storage import default_storage
 from django.utils import timezone
 from .models import Event, AttendanceRecord
 from django.db.models import Q
+from django.conf import settings
 
 
 
@@ -110,47 +111,54 @@ def serialize_message(m, mention_map=None, mention_regex=None):
 
     # --- Helper to resolve file URLs
     def build_file_payload(file_obj, message_id):
-        """Return standardized file payload for chat messages."""
+        """Return standardized file payload for chat messages (Cloudinary + Local)."""
         if not file_obj:
             return None
 
         try:
-            # 1️⃣ Django FileField or CloudinaryField
+            # --- Case 1: Django FileField or CloudinaryField ---
             if isinstance(file_obj, FieldFile):
                 file_name = urllib.parse.unquote(os.path.basename(file_obj.name))
                 file_url = getattr(file_obj, "url", None)
 
-                # Fix double /media/ issues
+                # --- Fix missing or malformed URLs ---
                 if not file_url:
                     if settings.DEBUG:
                         file_url = f"/media/{file_obj.name.lstrip('/')}"
                     else:
                         file_url = file_obj.name
+
                 elif file_url.startswith("/media/media/"):
                     file_url = file_url.replace("/media/media/", "/media/")
+
+                # --- Ensure full Cloudinary URL in production ---
+                if not settings.DEBUG and not file_url.startswith("http"):
+                    if "res.cloudinary.com" not in file_url:
+                        file_url = f"https://res.cloudinary.com/{settings.CLOUDINARY_STORAGE['CLOUD_NAME']}/image/upload/{file_url.lstrip('/')}"
 
                 file_size = getattr(file_obj, "size", None)
                 guessed_type, _ = mimetypes.guess_type(file_name)
                 file_type = getattr(file_obj.file, "content_type", None) or guessed_type or "application/octet-stream"
 
-            # 2️⃣ Already a stored URL/path string
+            # --- Case 2: Raw path or Cloudinary URL string ---
             else:
                 file_path = str(file_obj).lstrip("/")
                 file_name = urllib.parse.unquote(os.path.basename(file_path)) or "file"
 
                 if file_path.startswith("http"):
                     file_url = file_path
-                elif file_path.startswith("media/"):
-                    file_url = f"/{file_path}"
                 elif settings.DEBUG:
                     file_url = f"/media/{file_path}"
-                else:
+                elif "res.cloudinary.com" in file_path:
                     file_url = file_path
+                else:
+                    file_url = f"https://res.cloudinary.com/{settings.CLOUDINARY_STORAGE['CLOUD_NAME']}/image/upload/{file_path}"
 
-                file_size = None
                 guessed_type, _ = mimetypes.guess_type(file_path)
                 file_type = guessed_type or "application/octet-stream"
+                file_size = None
 
+            # --- Return consistent structure for frontend ---
             return {
                 "id": message_id,
                 "url": file_url,
@@ -161,7 +169,7 @@ def serialize_message(m, mention_map=None, mention_regex=None):
 
         except Exception as e:
             import logging
-            logging.warning("serialize_message: file error %s", e)
+            logging.warning("build_file_payload error: %s", e)
             return None
 
     # --- Parent (reply-to)
