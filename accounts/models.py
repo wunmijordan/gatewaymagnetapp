@@ -94,7 +94,10 @@ class ChatMessage(models.Model):
       related_name='seen_chats',
       blank=True
   )
-  file = models.FileField(upload_to="chat/files/", blank=True, null=True)
+  if settings.DEBUG:
+      file = models.FileField(upload_to="chat/files/", blank=True, null=True)
+  else:
+      file = CloudinaryField("file", folder="chat/files", blank=True, null=True)
   file_type = models.CharField(max_length=100, blank=True, null=True)
   link_url = models.URLField(max_length=500, blank=True, null=True)
   link_title = models.CharField(max_length=255, blank=True, null=True)
