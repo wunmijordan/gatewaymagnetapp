@@ -176,8 +176,6 @@ MEDIA_ROOT = BASE_DIR / "media"
 # =========================
 # CLOUDINARY
 # =========================
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-
 cloudinary.config(
     cloud_name=env("CLOUDINARY_CLOUD_NAME"),
     api_key=env("CLOUDINARY_API_KEY"),
