@@ -796,19 +796,22 @@ def upload_file(request):
             result = cloudinary.uploader.upload(
                 f,
                 folder="chat/files",
-                resource_type="auto"  # handles any file type (image, pdf, etc.)
+                resource_type="auto"  # handles any file type
             )
             file_url = result["secure_url"]
-            file_path = result["public_id"]  # Cloudinary public ID
+            file_path = result["public_id"]
+
         else:
             # 💻 Local save for dev
             file_path = default_storage.save(f"chat/files/{f.name}", f)
-            file_url = default_storage.url(file_path)
+            # Always return a single /media/ prefix
+            file_url = f"/media/{file_path.lstrip('/')}"
 
         guessed_type, _ = mimetypes.guess_type(f.name)
 
         return JsonResponse({
-            "url": file_path,  # backend-safe reference (public_id or local path)
+            "url": file_url,          # ✅ always Cloudinary or /media/ URL
+            "path": file_path,        # optional internal reference
             "display_url": file_url,  # URL for frontend preview
             "name": f.name,
             "saved_name": os.path.basename(file_path),
@@ -818,9 +821,6 @@ def upload_file(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
-
-
-
 
 
 

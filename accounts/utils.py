@@ -110,36 +110,41 @@ def serialize_message(m, mention_map=None, mention_regex=None):
 
     # --- Helper to resolve file URLs
     def build_file_payload(file_obj, message_id):
+        """Return standardized file payload for chat messages."""
         if not file_obj:
             return None
+
         try:
-            # 1️⃣ For Django FileField (local or CloudinaryField)
+            # 1️⃣ Django FileField or CloudinaryField
             if isinstance(file_obj, FieldFile):
                 file_name = urllib.parse.unquote(os.path.basename(file_obj.name))
                 file_url = getattr(file_obj, "url", None)
 
-                # Force Cloudinary or media resolution depending on environment
+                # Fix double /media/ issues
                 if not file_url:
                     if settings.DEBUG:
-                        file_url = default_storage.url(file_obj.name)
+                        file_url = f"/media/{file_obj.name.lstrip('/')}"
                     else:
-                        file_url = f"{settings.MEDIA_URL}{file_obj.name}"
+                        file_url = file_obj.name
+                elif file_url.startswith("/media/media/"):
+                    file_url = file_url.replace("/media/media/", "/media/")
 
                 file_size = getattr(file_obj, "size", None)
                 guessed_type, _ = mimetypes.guess_type(file_name)
                 file_type = getattr(file_obj.file, "content_type", None) or guessed_type or "application/octet-stream"
 
-            # 2️⃣ If it’s already a Cloudinary or remote URL string
+            # 2️⃣ Already a stored URL/path string
             else:
-                file_path = str(file_obj)
+                file_path = str(file_obj).lstrip("/")
                 file_name = urllib.parse.unquote(os.path.basename(file_path)) or "file"
 
                 if file_path.startswith("http"):
-                    file_url = file_path  # ✅ Cloudinary or remote
+                    file_url = file_path
+                elif file_path.startswith("media/"):
+                    file_url = f"/{file_path}"
                 elif settings.DEBUG:
-                    file_url = f"/media/{file_path.lstrip('/')}"
+                    file_url = f"/media/{file_path}"
                 else:
-                    # production fallback (Cloudinary path stored as name)
                     file_url = file_path
 
                 file_size = None

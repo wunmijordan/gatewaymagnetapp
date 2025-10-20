@@ -29,27 +29,27 @@ def get_user_color(user_id):
 # ---------- Helper ----------
 def handle_file_upload(file_url):
     """
-    Upload to Cloudinary in production, or use MEDIA_ROOT path in development.
+    Normalize file URLs for chat messages across dev/prod.
+    Ensures no duplicate /media/ prefix and preserves Cloudinary URLs.
     """
-    from cloudinary.uploader import upload as cloudinary_upload
     if not file_url:
         return None
 
-    # ✅ Keep local media in dev
-    if settings.DEBUG:
-        if file_url.startswith("http"):
-            return file_url
-        return file_url
-
-    # ✅ Upload to Cloudinary in prod
+    # Full Cloudinary or remote URL — leave untouched
     if file_url.startswith("http"):
         return file_url
-    try:
-        upload_result = cloudinary_upload(file_url, folder="chat/files/")
-        return upload_result.get("secure_url")
-    except Exception as e:
-        logger.warning("Cloudinary upload failed: %s", e)
-        return file_url
+
+    # Normalize redundant slashes and remove extra /media/
+    cleaned = file_url.lstrip("/")
+    if cleaned.startswith("media/"):
+        cleaned = cleaned[len("media/"):]
+
+    if settings.DEBUG:
+        return f"/media/{cleaned}"
+
+    # In production, stored Cloudinary path or S3 key
+    return cleaned
+
 
 
 # =================== Chat Consumer ===================
